@@ -1,0 +1,4 @@
+include ':app'
+
+def flutterSdkPath = settings.providers.environmentVariable("FLUTTER_ROOT").get()
+apply from: "$flutterSdkPath/packages/flutter_tools/gradle/app_plugin_loader.gradle"
