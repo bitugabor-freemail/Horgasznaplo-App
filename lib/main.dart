@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'torzsadatok.dart'; // <-- Hozzáadva a Törzsadatok importja
 
 void main() {
   runApp(const HorgaszApp());
@@ -16,8 +17,8 @@ class HorgaszApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: Colors.green[700],
-        scaffoldBackgroundColor: const Color(0xFF121212), // Mély sötét háttér
-        cardColor: const Color(0xFF1E1E1E), // Világosabb szürke a kártyáknak
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        cardColor: const Color(0xFF1E1E1E),
         useMaterial3: true,
         colorScheme: ColorScheme.dark(
           primary: Colors.green[600]!,
@@ -78,7 +79,7 @@ class _MainScreenState extends State<MainScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => index == 4
-              ? const PlaceholderScreen(title: 'Törzsadatok Kezelése\n(torzsadatok.dart)')
+              ? const TorzsadatokScreen() // <-- Beállítva az új Törzsadatok oldalra
               : const PlaceholderScreen(title: 'Adatkezelés: Import/Export\n(adatkezeles.dart)'),
         ),
       );
