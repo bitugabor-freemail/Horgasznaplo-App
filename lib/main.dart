@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'torzsadatok.dart'; // <-- Hozzáadva a Törzsadatok importja
+import 'torzsadatok.dart';
+import 'turak.dart'; // <-- Hozzáadva a Túrák importja
 
 void main() {
   runApp(const HorgaszApp());
@@ -13,7 +14,6 @@ class HorgaszApp extends StatelessWidget {
     return MaterialApp(
       title: 'Horgásznapló & Halhatározó',
       debugShowCheckedModeBanner: false,
-      // ---- SÖTÉT TÉMA (DARK MODE) BEÁLLÍTÁSA ----
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: Colors.green[700],
@@ -52,9 +52,9 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // Helyőrző oldalak, amíg meg nem írjuk a különálló dart fájlokat
+  // Az első képernyő mostmár a valós TurakScreen()
   final List<Widget> _screens = [
-    const PlaceholderScreen(title: 'Horgásztúráim\n(Hamarosan a turak.dart-ból)'),
+    const TurakScreen(), // <-- Rájuk kötve
     const PlaceholderScreen(title: 'Kedvenc fogások\n(Hamarosan a kedvencek.dart-ból)'),
     const PlaceholderScreen(title: 'Halfajok Lexikon\n(Hamarosan a lexikon.dart-ból)'),
     const PlaceholderScreen(title: 'Statisztika\n(Hamarosan a statisztika.dart-ból)'),
@@ -67,19 +67,17 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onDrawerItemTapped(int index) {
-    Navigator.pop(context); // Becsukja a menüt
+    Navigator.pop(context);
     if (index < 4) {
-      // Az első 4 menüpont az alsó sávon is rajta van
       setState(() {
         _selectedIndex = index;
       });
     } else {
-      // A Törzsadatok és Adatkezelés új oldalként nyílik meg
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => index == 4
-              ? const TorzsadatokScreen() // <-- Beállítva az új Törzsadatok oldalra
+              ? const TorzsadatokScreen()
               : const PlaceholderScreen(title: 'Adatkezelés: Import/Export\n(adatkezeles.dart)'),
         ),
       );
@@ -94,11 +92,10 @@ class _MainScreenState extends State<MainScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none, color: Colors.white70),
-            onPressed: () {}, // Későbbi extra funkciók helye
+            onPressed: () {},
           )
         ],
       ),
-      // ---- BAL OLDALI HAMBURGER MENÜ (FŐKÖNYV) ----
       drawer: Drawer(
         backgroundColor: const Color(0xFF1A1A1A),
         child: ListView(
@@ -133,10 +130,7 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
       ),
-      // ---- KÖZÉPSŐ TARTALOM ----
       body: _screens[_selectedIndex],
-      
-      // ---- ALSÓ GYORSGOMBOK ----
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -151,7 +145,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildDrawerItem(IconData icon, String title, int index) {
-    // Kiemeli a menüpontot, ha az van kiválasztva
     final isSelected = _selectedIndex == index && index < 4;
     return ListTile(
       leading: Icon(icon, color: isSelected ? Colors.green[400] : Colors.white70),
@@ -167,7 +160,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// ---- HELYŐRZŐ KÉPERNYŐ (Amíg a többi fájl el nem készül) ----
 class PlaceholderScreen extends StatelessWidget {
   final String title;
   const PlaceholderScreen({super.key, required this.title});
