@@ -112,7 +112,7 @@ class HalhatarozoView extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  crossAxisAlignment: CrossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(hal['leiras']!, style: const TextStyle(fontSize: 14)),
                     const SizedBox(height: 10),
@@ -182,7 +182,7 @@ class SzabalyzatView extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -204,4 +204,3 @@ class SzabalyzatView extends StatelessWidget {
     );
   }
 }
-
