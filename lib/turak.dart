@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'torzsadatok.dart';
+import 'fogasok.dart'; // <-- Hozzáadva a fogásokhoz való átlépéshez
 
 // ---- TÚRA ADATMODELL ÉS ADATBÁZIS ----
 class TuraModel {
@@ -420,6 +421,15 @@ class _TurakScreenState extends State<TurakScreen> {
     }
   }
 
+  // Segédfüggvény a statisztikákhoz
+  String _getTuraFogasStatisztika(String turaId) {
+    final fogasok = FogasAdatbazis.fogasok.where((f) => f.turaId == turaId).toList();
+    if (fogasok.isEmpty) return 'Fogások: 0 db | Összsúly: 0.00 kg';
+    
+    double osszsuly = fogasok.fold(0.0, (sum, item) => sum + item.suly);
+    return 'Fogások: ${fogasok.length} db | Összsúly: ${osszsuly.toStringAsFixed(2)} kg';
+  }
+
   @override
   Widget build(BuildContext context) {
     final evek = _getEvekListaja();
@@ -517,7 +527,7 @@ class _TurakScreenState extends State<TurakScreen> {
                                     ),
                                   ],
                                   const SizedBox(height: 8),
-                                  const Text('Fogások: 0 db | Összsúly: 0.00 kg', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                                  Text(_getTuraFogasStatisztika(tura.id), style: const TextStyle(color: Colors.white54, fontSize: 13)),
                                   if (tura.horgasztarsak.isNotEmpty) ...[
                                     const SizedBox(height: 4),
                                     Text('Társak: ${tura.horgasztarsak.join(', ')}', style: TextStyle(color: Colors.white54, fontSize: 13)),
@@ -548,9 +558,16 @@ class _TurakScreenState extends State<TurakScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.visibility, color: Colors.greenAccent),
                                     onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('A fogások nézet a következő lépésben érkezik!')),
-                                      );
+                                      // ---- ITT LÉPÜNK BE A FOGÁSOK OLDALRA ----
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => FogasokScreen(tura: tura),
+                                        ),
+                                      ).then((_) {
+                                        // Frissítjük a kártyát, ha visszatértünk, hogy frissüljön a darab/súly statisztika
+                                        setState(() {}); 
+                                      });
                                     },
                                   ),
                                 ],
