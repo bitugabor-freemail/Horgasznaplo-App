@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'halak.dart';
 
 void main() {
   runApp(const HorgaszApp());
@@ -10,11 +11,12 @@ class HorgaszApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Horgásznapló',
+      title: 'Horgásznapló & Halhatározó',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.green,
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF5F7F5),
       ),
       home: const HomeScreen(),
     );
@@ -23,22 +25,32 @@ class HorgaszApp extends StatelessWidget {
 
 class Fogas {
   final String halfaj;
-  final String suly;
+  final double suly;
+  final double hossz;
+  final String csali;
   final String datum;
+  final String megjegyzes;
 
-  Fogas({required this.halfaj, required this.suly, required this.datum});
+  Fogas({
+    required this.halfaj,
+    required this.suly,
+    required this.hossz,
+    required this.csali,
+    required this.datum,
+    required this.megjegyzes,
+  });
 }
 
 class Horgasztura {
   final String nev;
   final String helyszin;
-  final String datum;
+  final String kezdetDatum;
   final List<Fogas> fogasok;
 
   Horgasztura({
     required this.nev,
     required this.helyszin,
-    required this.datum,
+    required this.kezdetDatum,
     List<Fogas>? fogasok,
   }) : fogasok = fogasok ?? [];
 }
@@ -52,7 +64,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNavIndex = 0;
-
   final List<Horgasztura> _turak = [];
 
   final _turaNevController = TextEditingController();
@@ -60,39 +71,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final _halfajController = TextEditingController();
   final _sulyController = TextEditingController();
+  final _hosszController = TextEditingController();
+  final _csaliController = TextEditingController();
+  final _megjegyzesController = TextEditingController();
 
   void _ujTuraParbeszed() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Új Horgásztúra indítása'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _turaNevController,
-              decoration: const InputDecoration(labelText: 'Túra neve (pl. Balatoni hétvége)'),
-            ),
-            TextField(
-              controller: _turaHelyszinController,
-              decoration: const InputDecoration(labelText: 'Helyszín (pl. Tihany)'),
-            ),
-          ],
+        title: const Text('Új Horgásztúra Indítása'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _turaNevController,
+                decoration: const InputDecoration(labelText: 'Túra neve *', hintText: 'pl. Balatoni Hétvége'),
+              ),
+              TextField(
+                controller: _turaHelyszinController,
+                decoration: const InputDecoration(labelText: 'Helyszín / Vízterület *', hintText: 'pl. Ráckevei-Duna'),
+              ),
+            ],
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Mégse'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
             onPressed: () {
-              if (_turaNevController.text.isNotEmpty) {
+              if (_turaNevController.text.isNotEmpty && _turaHelyszinController.text.isNotEmpty) {
                 setState(() {
                   _turak.add(
                     Horgasztura(
                       nev: _turaNevController.text,
-                      helyszin: _turaHelyszinController.text.isEmpty ? 'Ismeretlen hely' : _turaHelyszinController.text,
-                      datum: DateTime.now().toString().split(' ')[0],
+                      helyszin: _turaHelyszinController.text,
+                      kezdetDatum: DateTime.now().toString().split(' ')[0],
                     ),
                   );
                 });
@@ -101,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Túra Létrehozása'),
+            child: const Text('Túra Indítása'),
           ),
         ],
       ),
@@ -113,39 +127,58 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Új fogás: ${tura.nev}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _halfajController,
-              decoration: const InputDecoration(labelText: 'Hal fajtája (pl. Ponty, Csuka)'),
-            ),
-            TextField(
-              controller: _sulyController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Súly (kg)'),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _halfajController,
+                decoration: const InputDecoration(labelText: 'Hal fajtája * (pl. Ponty)'),
+              ),
+              TextField(
+                controller: _sulyController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Súly (kg) * (pl. 3.5)'),
+              ),
+              TextField(
+                controller: _hosszController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Hossz (cm) (pl. 55)'),
+              ),
+              TextField(
+                controller: _csaliController,
+                decoration: const InputDecoration(labelText: 'Csali / Módszer (pl. Boilie / Feeder)'),
+              ),
+              TextField(
+                controller: _megjegyzesController,
+                decoration: const InputDecoration(labelText: 'Megjegyzés / Időjárás'),
+              ),
+            ],
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Mégse'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
             onPressed: () {
-              if (_halfajController.text.isNotEmpty) {
+              if (_halfajController.text.isNotEmpty && _sulyController.text.isNotEmpty) {
                 setState(() {
                   tura.fogasok.add(
                     Fogas(
                       halfaj: _halfajController.text,
-                      suly: '${_sulyController.text} kg',
+                      suly: double.tryParse(_sulyController.text) ?? 0.0,
+                      hossz: double.tryParse(_hosszController.text) ?? 0.0,
+                      csali: _csaliController.text.isEmpty ? 'Nincs megadva' : _csaliController.text,
                       datum: DateTime.now().toString().split(' ')[0],
+                      megjegyzes: _megjegyzesController.text,
                     ),
                   );
                 });
                 _halfajController.clear();
                 _sulyController.clear();
+                _hosszController.clear();
+                _csaliController.clear();
+                _megjegyzesController.clear();
                 Navigator.pop(context);
               }
             },
@@ -160,12 +193,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_selectedNavIndex == 0
-            ? 'Horgásztúrák & Napló'
-            : _selectedNavIndex == 1
-                ? 'Összes Fogás'
-                : 'Magyar Halhatározó'),
-        backgroundColor: Colors.green[700],
+        title: Text(_getAppbarTitle()),
+        backgroundColor: Colors.green[800],
         foregroundColor: Colors.white,
       ),
       drawer: Drawer(
@@ -173,16 +202,16 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              decoration: BoxDecoration(color: Colors.green[800]),
-              accountName: const Text('Horgásznapló', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              accountEmail: const Text('Saját fogási naplód'),
+              decoration: BoxDecoration(color: Colors.green[900]),
+              accountName: const Text('Horgásznapló & Határozó', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              accountEmail: const Text('Professzionális vízparti kísérő'),
               currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.phishing, color: Colors.green, size: 40),
+                child: Icon(Icons.phishing, color: Colors.green, size: 36),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.map, color: Colors.green),
+              leading: const Icon(Icons.cabin, color: Colors.green),
               title: const Text('Horgásztúrák'),
               selected: _selectedNavIndex == 0,
               onTap: () {
@@ -191,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.menu_book, color: Colors.green),
+              leading: const Icon(Icons.book, color: Colors.green),
               title: const Text('Összes Fogási Napló'),
               selected: _selectedNavIndex == 1,
               onTap: () {
@@ -199,13 +228,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context);
               },
             ),
-            const Divider(),
             ListTile(
-              leading: const Icon(Icons.set_meal, color: Colors.blue),
-              title: const Text('Halhatározó'),
+              leading: const Icon(Icons.bar_chart, color: Colors.green),
+              title: const Text('Statisztikák'),
               selected: _selectedNavIndex == 2,
               onTap: () {
                 setState(() => _selectedNavIndex = 2);
+                Navigator.pop(context);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.set_meal, color: Colors.blue),
+              title: const Text('Magyar Halhatározó (20+ faj)'),
+              selected: _selectedNavIndex == 3,
+              onTap: () {
+                setState(() => _selectedNavIndex = 3);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.gavel, color: Colors.orange),
+              title: const Text('Szabályzat & Kíméletes Kezelés'),
+              selected: _selectedNavIndex == 4,
+              onTap: () {
+                setState(() => _selectedNavIndex = 4);
                 Navigator.pop(context);
               },
             ),
@@ -216,184 +263,185 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: _selectedNavIndex == 0
           ? FloatingActionButton.extended(
               onPressed: _ujTuraParbeszed,
-              backgroundColor: Colors.green[700],
+              backgroundColor: Colors.green[800],
               icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text('Új Túra', style: TextStyle(color: Colors.white)),
+              label: const Text('Új Túra Indítása', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             )
           : null,
     );
   }
 
+  String _getAppbarTitle() {
+    switch (_selectedNavIndex) {
+      case 0:
+        return 'Horgásztúrák';
+      case 1:
+        return 'Összesített Fogási Napló';
+      case 2:
+        return 'Fogási Statisztikák';
+      case 3:
+        return 'Magyar Halhatározó';
+      case 4:
+        return 'Szabályzat és Védelem';
+      default:
+        return 'Horgásznapló';
+    }
+  }
+
   Widget _buildSelectedBody() {
-    if (_selectedNavIndex == 0) {
-      // Túrák nézet
-      if (_turak.isEmpty) {
-        return const Center(
-          child: Text(
-            'Még nincs létrehozott horgásztúrád.\nKattints az "Új Túra" gombra alul!',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        );
-      }
-      return ListView.builder(
-        itemCount: _turak.length,
-        itemBuilder: (context, index) {
-          final tura = _turak[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: ExpansionTile(
-              leading: const CircleAvatar(
-                backgroundColor: Colors.green,
-                child: Icon(Icons.cabin, color: Colors.white),
+    switch (_selectedNavIndex) {
+      case 0:
+        return _buildTurakView();
+      case 1:
+        return _buildOsszesFogasView();
+      case 2:
+        return _buildStatisztikaView();
+      case 3:
+        return const HalhatarozoView();
+      case 4:
+        return const SzabalyzatView();
+      default:
+        return _buildTurakView();
+    }
+  }
+
+  Widget _buildTurakView() {
+    if (_turak.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.phishing, size: 80, color: Colors.green[300]),
+              const SizedBox(height: 16),
+              const Text('Még nincs rögzített horgásztúrád.', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text(
+                'Kattints az "Új Túra Indítása" gombra alul a túra és a fogások rögzítéséhez!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
               ),
-              title: Text(tura.nev, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${tura.helyszin} • ${tura.datum}\nFogások száma: ${tura.fogasok.length} db'),
-              children: [
-                ...tura.fogasok.map((fogas) => ListTile(
-                      leading: const Icon(Icons.set_meal, color: Colors.green),
-                      title: Text(fogas.halfaj),
-                      subtitle: Text('Dátum: ${fogas.datum}'),
-                      trailing: Text(fogas.suly, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    )),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
+            ],
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      itemCount: _turak.length,
+      itemBuilder: (context, index) {
+        final tura = _turak[index];
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: ExpansionTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.green[700],
+              child: const Icon(Icons.cabin, color: Colors.white),
+            ),
+            title: Text(tura.nev, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+            subtitle: Text('Helyszín: ${tura.helyszin} • ${tura.kezdetDatum}\nFogások: ${tura.fogasok.length} db'),
+            children: [
+              if (tura.fogasok.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(12.0),
+                  child: Text('Még nincs fogás rögzítve ehhez a túrához.', style: TextStyle(fontStyle: FontStyle.italic)),
+                ),
+              ...tura.fogasok.map((f) => ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.set_meal, color: Colors.green),
+                    title: Text('${f.halfaj} - ${f.suly} kg (${f.hossz > 0 ? "${f.hossz} cm" : "n/a"})'),
+                    subtitle: Text('Csali: ${f.csali} ${f.megjegyzes.isNotEmpty ? "• ${f.megjegyzes}" : ""}'),
+                    trailing: Text(f.datum),
+                  )),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: SizedBox(
+                  width: double.infinity,
                   child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
                     onPressed: () => _ujFogasParbeszed(tura),
                     icon: const Icon(Icons.add),
                     label: const Text('Fogás hozzáadása ehhez a túrához'),
                   ),
-                )
-              ],
-            ),
-          );
-        },
-      );
-    } else if (_selectedNavIndex == 1) {
-      // Összes fogás egyben
-      final osszesFogas = <Map<String, String>>[];
-      for (var tura in _turak) {
-        for (var f in tura.fogasok) {
-          osszesFogas.add({
-            'tura': tura.nev,
-            'hal': f.halfaj,
-            'suly': f.suly,
-            'datum': f.datum,
-          });
-        }
-      }
-      if (osszesFogas.isEmpty) {
-        return const Center(
-            child: Text('Még egyetlen túrához sincs rögzítve fogás.', style: TextStyle(color: Colors.grey)));
-      }
-      return ListView.builder(
-        itemCount: osszesFogas.length,
-        itemBuilder: (context, index) {
-          final f = osszesFogas[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: ListTile(
-              leading: const Icon(Icons.phishing, color: Colors.green),
-              title: Text('${f['hal']} (${f['suly']})'),
-              subtitle: Text('Túra: ${f['tura']}'),
-              trailing: Text(f['datum']!),
-            ),
-          );
-        },
-      );
-    } else {
-      // Bővített Halhatározó
-      return const HalhatarozoView();
-    }
-  }
-}
-
-class HalhatarozoView extends StatelessWidget {
-  const HalhatarozoView({super.key});
-
-  final List<Map<String, String>> _halak = const [
-    {
-      'nev': 'Ponty',
-      'leiras': 'Legelterjedtebb békés halunk. Hátúszója hosszú, száján 4 bajuszszál található.',
-      'meret': 'Méretkorlátozás: min. 30 cm | Tilosalmi idő: 05.02 - 05.31.'
-    },
-    {
-      'nev': 'Amur',
-      'leiras': 'Növényevő, rendkívül erős harcos hal. Hosszúkás, hengeres testállású.',
-      'meret': 'Méretkorlátozás: min. 40 cm'
-    },
-    {
-      'nev': 'Ezüstkárász / Aranykárász',
-      'leiras': 'Magas testű, szívós békés hal. Az ezüstkárász inváziós faj, nem védett.',
-      'meret': 'Nincs méretkorlátozás'
-    },
-    {
-      'nev': 'Dévérkeszeg',
-      'leiras': 'Oldalról erősen lapított, magas testű keszegféle, sötét úszókkal.',
-      'meret': 'Méretkorlátozás: min. 20 cm'
-    },
-    {
-      'nev': 'Süllő',
-      'leiras': 'Népszerű ragadozó hal. Hátúszója osztott, szájában ebefogak találhatók.',
-      'meret': 'Méretkorlátozás: min. 30 cm | Tilosalmi idő: 03.01 - 04.30.'
-    },
-    {
-      'nev': 'Kősüllő',
-      'leiras': 'A süllőnél kisebb, sötétebb harántcsíkos ragadozó.',
-      'meret': 'Méretkorlátozás: min. 25 cm | Tilosalmi idő: 03.01 - 06.30.'
-    },
-    {
-      'nev': 'Csuka',
-      'leiras': 'Kiváló látású, agresszív ragadozó. Hosszúkás test, kacsa-csőrre emlékeztető fej.',
-      'meret': 'Méretkorlátozás: min. 40 cm | Tilosalmi idő: 02.01 - 03.31.'
-    },
-    {
-      'nev': 'Harcsa',
-      'leiras': 'Legnagyobb édesvízi ragadozónk. Hosszú pofaszakáll, apró szemek.',
-      'meret': 'Méretkorlátozás: min. 60 cm | Tilosalmi idő: 05.02 - 06.15.'
-    },
-    {
-      'nev': 'Balin',
-      'leiras': 'Gyors úszású ragadozó keszegféle. Fogatlan száj, kemény ragadozó kapás.',
-      'meret': 'Méretkorlátozás: min. 40 cm | Tilosalmi idő: 03.01 - 04.30.'
-    },
-    {
-      'nev': 'Márna',
-      'leiras': 'Folyóvizek erős, áramvonalas hala. Alsó állású száján 4 bajuszszál van.',
-      'meret': 'Méretkorlátozás: min. 40 cm | Tilosalmi idő: 04.15 - 05.31.'
-    },
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: _halak.length,
-      itemBuilder: (context, index) {
-        final hal = _halak[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: ExpansionTile(
-            leading: const Icon(Icons.water, color: Colors.blue),
-            title: Text(hal['nev']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(hal['leiras']!, style: const TextStyle(fontSize: 14)),
-                    const SizedBox(height: 8),
-                    Text(
-                      hal['meret']!,
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red[700]),
-                    ),
-                  ],
                 ),
-              ),
+              )
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildOsszesFogasView() {
+    final List<Map<String, dynamic>> osszes = [];
+    for (var tura in _turak) {
+      for (var f in tura.fogasok) {
+        osszes.add({'tura': tura.nev, 'hely': tura.helyszin, 'fogas': f});
+      }
+    }
+
+    if (osszes.isEmpty) {
+      return const Center(child: Text('Még egyetlen túrához sem rögzítettél fogást.', style: TextStyle(color: Colors.grey, fontSize: 16)));
+    }
+
+    return ListView.builder(
+      itemCount: osszes.length,
+      itemBuilder: (context, index) {
+        final item = osszes[index];
+        final Fogas f = item['fogas'];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: ListTile(
+            leading: CircleAvatar(backgroundColor: Colors.green[100], child: Icon(Icons.phishing, color: Colors.green[800])),
+            title: Text('${f.halfaj} - ${f.suly} kg', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Túra: ${item['tura']} (${item['hely']})\nCsali: ${f.csali}'),
+            trailing: Text(f.datum, style: const TextStyle(color: Colors.grey)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatisztikaView() {
+    int totalFogas = 0;
+    double totalSuly = 0;
+    double legnagyobbSuly = 0;
+    String legnagyobbHal = 'Nincs';
+
+    for (var tura in _turak) {
+      for (var f in tura.fogasok) {
+        totalFogas++;
+        totalSuly += f.suly;
+        if (f.suly > legnagyobbSuly) {
+          legnagyobbSuly = f.suly;
+          legnagyobbHal = '${f.halfaj} (${f.suly} kg)';
+        }
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          _buildStatCard('Összes Horgásztúra', '${_turak.length} alkalom', Icons.cabin, Colors.brown),
+          _buildStatCard('Összes Rögzített Fogás', '$totalFogas db', Icons.phishing, Colors.green),
+          _buildStatCard('Összsúly', '${totalSuly.toStringAsFixed(1)} kg', Icons.scale, Colors.blue),
+          _buildStatCard('Legnagyobb Hal', legnagyobbHal, Icons.emoji_events, Colors.amber[800]!),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        leading: CircleAvatar(backgroundColor: color.withOpacity(0.2), child: Icon(icon, color: color)),
+        title: Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+        trailing: Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+      ),
     );
   }
 }
