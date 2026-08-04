@@ -77,7 +77,7 @@ class _NaploPageState extends State<NaploPage> {
   final _halfajController = TextEditingController();
   final _sulyController = TextEditingController();
 
-  void _ujFogasPárbeszéd() {
+  void _ujFogasParbeszed() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -161,7 +161,7 @@ class _NaploPageState extends State<NaploPage> {
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _ujFogasPárbeszéd,
+        onPressed: _ujFogasParbeszed,
         backgroundColor: Colors.green[700],
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -217,7 +217,7 @@ class HalhatarozoPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(hal['leiras']!, style: const TextStyle(fontSize: 14)),
                       const SizedBox(height: 8),
