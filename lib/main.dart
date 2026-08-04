@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'torzsadatok.dart';
-import 'turak.dart'; // <-- Hozzáadva a Túrák importja
+import 'turak.dart';
+import 'kedvencek.dart'; // <-- Hozzáadva a Kedvencek importja
 
 void main() {
   runApp(const HorgaszApp());
@@ -52,10 +53,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // Az első képernyő mostmár a valós TurakScreen()
+  // Most már a második képernyő is éles!
   final List<Widget> _screens = [
-    const TurakScreen(), // <-- Rájuk kötve
-    const PlaceholderScreen(title: 'Kedvenc fogások\n(Hamarosan a kedvencek.dart-ból)'),
+    const TurakScreen(),
+    const KedvencekScreen(), // <-- Bekötve!
     const PlaceholderScreen(title: 'Halfajok Lexikon\n(Hamarosan a lexikon.dart-ból)'),
     const PlaceholderScreen(title: 'Statisztika\n(Hamarosan a statisztika.dart-ból)'),
   ];
