@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'torzsadatok.dart';
 import 'turak.dart';
-import 'kedvencek.dart'; // <-- Hozzáadva a Kedvencek importja
+import 'kedvencek.dart';
+import 'lexikon.dart'; // <-- Hozzáadva a Lexikon importja
 
 void main() {
   runApp(const HorgaszApp());
@@ -53,11 +54,11 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // Most már a második képernyő is éles!
+  // Harmadik képernyő (Halfajok) is éles!
   final List<Widget> _screens = [
     const TurakScreen(),
-    const KedvencekScreen(), // <-- Bekötve!
-    const PlaceholderScreen(title: 'Halfajok Lexikon\n(Hamarosan a lexikon.dart-ból)'),
+    const KedvencekScreen(),
+    const LexikonScreen(), // <-- Bekötve!
     const PlaceholderScreen(title: 'Statisztika\n(Hamarosan a statisztika.dart-ból)'),
   ];
 
@@ -169,7 +170,7 @@ class PlaceholderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Icon(Icons.construction, size: 80, color: Colors.green[800]),
           const SizedBox(height: 20),
