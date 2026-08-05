@@ -246,7 +246,7 @@ class _KvizScreenState extends State<KvizScreen> {
   bool _valaszolva = false;
   String? _kivalasztottValasz;
 
-  @bodyInit // ignore: annotate_overrides
+  @override
   void initState() {
     super.initState();
     _ujKerdes();
