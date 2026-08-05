@@ -3,7 +3,8 @@ import 'torzsadatok.dart';
 import 'turak.dart';
 import 'kedvencek.dart';
 import 'lexikon.dart';
-import 'statisztika.dart'; // <-- Hozzáadva a Statisztika importja
+import 'statisztika.dart';
+import 'adatkezeles.dart'; // <-- Hozzáadva az utolsó fájl importja
 
 void main() {
   runApp(const HorgaszApp());
@@ -55,12 +56,12 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // Most már MIND A NÉGY fő képernyő éles!
+  // A 4 fő képernyő
   final List<Widget> _screens = [
     const TurakScreen(),
     const KedvencekScreen(),
     const LexikonScreen(),
-    const StatisztikaScreen(), // <-- Bekötve!
+    const StatisztikaScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -76,12 +77,13 @@ class _MainScreenState extends State<MainScreen> {
         _selectedIndex = index;
       });
     } else {
+      // Itt történik az ugrás a Törzsadatokra vagy az Adatkezelésre
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => index == 4
               ? const TorzsadatokScreen()
-              : const PlaceholderScreen(title: 'Adatkezelés: Import/Export\n(adatkezeles.dart)'),
+              : const AdatkezelesScreen(),
         ),
       );
     }
@@ -159,29 +161,6 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
       onTap: () => _onDrawerItemTapped(index),
-    );
-  }
-}
-
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.construction, size: 80, color: Colors.green[800]),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 18, color: Colors.white70, height: 1.5),
-          ),
-        ],
-      ),
     );
   }
 }
