@@ -83,22 +83,7 @@ class _LexikonScreenState extends State<LexikonScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Halfajok Lexikon'),
-        backgroundColor: const Color(0xFF121212),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.quiz, color: Colors.greenAccent),
-            tooltip: 'Hal Felismerő Kvíz',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const KvizScreen()),
-              );
-            },
-          ),
-        ],
-      ),
+      // KIVETTÜK AZ APPBAR-T, MERT A MAIN.DART FOGJA KEZELNI!
       body: Column(
         children: [
           // Keresőmező
