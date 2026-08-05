@@ -5,6 +5,7 @@ import 'kedvencek.dart';
 import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
+import 'adattarolo.dart'; // <-- ÚJ IMPORT AZ ADATBÁZISHOZ
 
 void main() {
   runApp(const HorgaszApp());
@@ -41,7 +42,6 @@ class HorgaszApp extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
         ),
       ),
-      // Az első képernyő mostantól a Splash Screen!
       home: const SplashScreen(), 
     );
   }
@@ -59,13 +59,21 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // 4 másodperc várakozás, majd navigálás a főképernyőre
-    Future.delayed(const Duration(seconds: 4), () {
+    _adatokBetolteseEsInditas(); // <-- ITT INDUL A BETÖLTÉS
+  }
+
+  Future<void> _adatokBetolteseEsInditas() async {
+    // Később ide jön a tényleges adatok memóriába olvasása
+    
+    // 4 másodperc várakozás a dizájn kedvéért
+    await Future.delayed(const Duration(seconds: 4));
+
+    if (mounted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MainScreen()),
       );
-    });
+    }
   }
 
   @override
@@ -77,7 +85,6 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // A logó beállítása a kért pozícióba (alja pontosan a képernyő felénél)
           Positioned(
             bottom: size.height / 2,
             left: 0,
@@ -86,11 +93,10 @@ class _SplashScreenState extends State<SplashScreen> {
               alignment: Alignment.bottomCenter,
               child: Image.asset(
                 'assets/2825.png',
-                width: size.width * 0.5, // Képernyő szélességének fele
+                width: size.width * 0.5,
               ),
             ),
           ),
-          // Szöveg beállítása a kép alá
           Positioned(
             top: (size.height / 2) + 20,
             left: 0,
@@ -112,7 +118,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// ---- FŐ KÉPERNYŐ (A korábbi tartalommal) ----
+// ---- FŐ KÉPERNYŐ ----
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -130,7 +136,6 @@ class _MainScreenState extends State<MainScreen> {
     const StatisztikaScreen(),
   ];
 
-  // A fejlécben megjelenő dinamikus nevek
   final List<String> _appBarTitles = [
     'Horgásztúráim',
     'Kedvenc fogások',
@@ -151,9 +156,7 @@ class _MainScreenState extends State<MainScreen> {
       setState(() {
         _selectedIndex = index;
       });
-    } 
-    // NÉVJEGY (About) menüpont lekezelése
-    else if (index == 6) {
+    } else if (index == 6) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -186,8 +189,7 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
       );
-    } 
-    else {
+    } else {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -203,10 +205,8 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // Dinamikus fejléc név az alapján, melyik menüpontban vagyunk!
         title: Text(_appBarTitles[_selectedIndex], style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
         actions: [
-          // Ha a Lexikonon (index == 2) vagyunk, mutassuk a Kvíz gombot az AppBarban!
           if (_selectedIndex == 2)
             IconButton(
               icon: const Icon(Icons.quiz, color: Colors.greenAccent),
@@ -260,7 +260,6 @@ class _MainScreenState extends State<MainScreen> {
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Divider(color: Colors.white24),
             ),
-            // AZ ÚJ NÉVJEGY MENÜPONT
             _buildDrawerItem(Icons.info_outline, 'Névjegy', 6),
           ],
         ),
@@ -280,7 +279,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildDrawerItem(IconData icon, String title, int index) {
-    // Az 5-ös (Adatkezelés) és 6-os (Névjegy) indexek sosem aktívak a bottom baron
     final isSelected = _selectedIndex == index && index < 4;
     return ListTile(
       leading: Icon(icon, color: isSelected ? Colors.green[400] : Colors.white70),
