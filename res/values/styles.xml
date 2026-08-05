@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ez a téma felel azért, hogy ne legyen felső fejléc (Action Bar) -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+    </style>
+    
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>
