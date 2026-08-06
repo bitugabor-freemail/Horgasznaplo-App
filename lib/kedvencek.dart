@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'fogasok.dart';
-import 'turak.dart';
+import 'modellek.dart'; // <--- A Tura és Helyszin modellek miatt kell
+import 'adattarolo.dart'; // <--- A valódi adatbázis miatt kell
 
 class KedvencekScreen extends StatefulWidget {
   const KedvencekScreen({super.key});
@@ -11,8 +12,28 @@ class KedvencekScreen extends StatefulWidget {
 }
 
 class _KedvencekScreenState extends State<KedvencekScreen> {
+  // A valódi túrákat és helyszíneket ide töltjük be, hogy ki tudjuk írni a neveket
+  List<Tura> _osszesTura = [];
+  List<Helyszin> _osszesHelyszin = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _adatokBetoltese();
+  }
+
+  // --- VALÓDI ADATOK BETÖLTÉSE ---
+  Future<void> _adatokBetoltese() async {
+    final turakAdat = await AdatTarolo.betoltes('turak_adatok');
+    final helyszinekAdat = await AdatTarolo.betoltes('helyszinek_adatok');
+
+    setState(() {
+      _osszesTura = turakAdat.map((e) => Tura.fromJson(e)).toList();
+      _osszesHelyszin = helyszinekAdat.map((e) => Helyszin.fromJson(e)).toList();
+    });
+  }
   
-  // Lekérjük az összes kedvenc fogást a globális adatbázisból
+  // Lekérjük az összes kedvenc fogást a globális memóriából
   List<FogasModel> _getKedvencFogasok() {
     List<FogasModel> lista = FogasAdatbazis.fogasok.where((f) => f.isKedvenc).toList();
     // Rendezés: Legfrissebb legelöl
@@ -57,16 +78,29 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
     return const Color(0xFF1E1E1E);
   }
 
+  // --- ÚJ HELYSZÍN KERESŐ LOGIKA (VALÓDI ADATOKBÓL) ---
   String _getTuraHelyszin(String turaId) {
-    final tura = TuraAdatbazis.turak.firstWhere(
-      (t) => t.id == turaId, 
-      orElse: () => TuraModel(
-        id: '', kezdodatum: DateTime.now(), befejezodatum: DateTime.now(), 
-        helyszin: 'Ismeretlen', vizterKod: '', horgaszhely: '', 
-        horgasztarsak: [], megjegyzes: ''
-      )
+    // 1. Megkeressük a túrát az ID alapján (ha nem találja, null-t ad)
+    final keresettTura = _osszesTura.cast<Tura?>().firstWhere(
+      (t) => t?.id == turaId, 
+      orElse: () => null
     );
-    return tura.helyszin;
+
+    // 2. Ha megvan a túra, és van is benne helyszín ID, megkeressük a helyszínt
+    if (keresettTura != null && keresettTura.helyszinId != null) {
+      final helyszin = _osszesHelyszin.cast<Helyszin?>().firstWhere(
+        (h) => h?.id == keresettTura.helyszinId,
+        orElse: () => null
+      );
+      
+      // Ha a helyszín is megvan, visszaadjuk a nevét
+      if (helyszin != null) {
+        return helyszin.nev;
+      }
+    }
+    
+    // Ha bármelyik ponton elakadunk, ezt írjuk ki
+    return 'Ismeretlen helyszín';
   }
 
   @override
