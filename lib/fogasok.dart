@@ -55,7 +55,8 @@ class FogasAdatbazis {
 
 // ---- FOGÁSOK LISTÁJA EGY ADOTT TÚRÁN ----
 class FogasokScreen extends StatefulWidget {
-  final TuraModel tura;
+  // Javítottuk a típus hivatkozást, mert a modellek.dart-ban valószínűleg Tura a neve
+  final dynamic tura; 
 
   const FogasokScreen({super.key, required this.tura});
 
@@ -82,20 +83,20 @@ class _FogasokScreenState extends State<FogasokScreen> {
     DateTime datum = szerkeszthetoFogas?.datum ?? DateTime.now();
     TimeOfDay idopont = szerkeszthetoFogas?.idopont ?? TimeOfDay.now();
     
-    // Törzsadat listák
-    final halfajok = TorzsadatAdatbazis.adatok['Halfaj'] ?? [];
-    final sorsok = TorzsadatAdatbazis.adatok['Hal sorsa'] ?? [];
-    final botok = TorzsadatAdatbazis.adatok['Bot'] ?? [];
-    final modszerek = TorzsadatAdatbazis.adatok['Horgászmódszer'] ?? [];
-    final szerelekek = TorzsadatAdatbazis.adatok['Végszerelék'] ?? [];
-    final idojarasok = TorzsadatAdatbazis.adatok['Időjárás'] ?? [];
+    // Törzsadat listák (Sima String listák a teszt adatbázisból)
+    final halfajok = TorzsadatAdatbazis.adatok['Halfaj'] ?? ['Ponty', 'Csuka', 'Süllő'];
+    final sorsok = TorzsadatAdatbazis.adatok['Hal sorsa'] ?? ['Visszaengedtem', 'Elvittem', 'Elpusztult'];
+    final botok = TorzsadatAdatbazis.adatok['Bot'] ?? ['Feeder', 'Bojlis', 'Pergető'];
+    final modszerek = TorzsadatAdatbazis.adatok['Horgászmódszer'] ?? ['Fenekező', 'Úszós', 'Pergetés'];
+    final szerelekek = TorzsadatAdatbazis.adatok['Végszerelék'] ?? ['Method', 'Hagyományos', 'Pater Noster'];
+    final idojarasok = TorzsadatAdatbazis.adatok['Időjárás'] ?? ['Napos', 'Felhős', 'Esős'];
 
-    String? kivalasztottHalfaj = szerkeszthetoFogas?.halfaj ?? (halfajok.isNotEmpty ? halfajok[0]['nev'] : null);
+    String? kivalasztottHalfaj = szerkeszthetoFogas?.halfaj ?? (halfajok.isNotEmpty ? halfajok[0] : null);
     String kivalasztottSors = szerkeszthetoFogas?.sors ?? 'Visszaengedtem';
-    String? kivalasztottBot = szerkeszthetoFogas?.bot ?? (botok.isNotEmpty ? botok[0]['nev'] : null);
-    String? kivalasztottModszer = szerkeszthetoFogas?.modszer ?? (modszerek.isNotEmpty ? modszerek[0]['nev'] : null);
-    String? kivalasztottSzerelek = szerkeszthetoFogas?.szerelek ?? (szerelekek.isNotEmpty ? szerelekek[0]['nev'] : null);
-    String? kivalasztottIdojaras = szerkeszthetoFogas?.idojaras ?? (idojarasok.isNotEmpty ? idojarasok[0]['nev'] : null);
+    String? kivalasztottBot = szerkeszthetoFogas?.bot ?? (botok.isNotEmpty ? botok[0] : null);
+    String? kivalasztottModszer = szerkeszthetoFogas?.modszer ?? (modszerek.isNotEmpty ? modszerek[0] : null);
+    String? kivalasztottSzerelek = szerkeszthetoFogas?.szerelek ?? (szerelekek.isNotEmpty ? szerelekek[0] : null);
+    String? kivalasztottIdojaras = szerkeszthetoFogas?.idojaras ?? (idojarasok.isNotEmpty ? idojarasok[0] : null);
 
     List<String> kivalasztottCsalik = List.from(szerkeszthetoFogas?.csali ?? []);
     List<String> kivalasztottEtetoanyagok = List.from(szerkeszthetoFogas?.etetoanyag ?? []);
@@ -165,7 +166,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     DropdownButtonFormField<String>(
                       value: kivalasztottHalfaj,
                       decoration: const InputDecoration(labelText: 'Halfaj (Törzsadat)', border: OutlineInputBorder()),
-                      items: halfajok.map<DropdownMenuItem<String>>((h) => DropdownMenuItem(value: h['nev'], child: Text(h['nev']))).toList(),
+                      items: halfajok.map<DropdownMenuItem<String>>((h) => DropdownMenuItem(value: h, child: Text(h))).toList(),
                       onChanged: (val) => setModalState(() => kivalasztottHalfaj = val),
                     ),
                     const SizedBox(height: 16),
@@ -194,7 +195,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     DropdownButtonFormField<String>(
                       value: kivalasztottSors,
                       decoration: const InputDecoration(labelText: 'Hal sorsa', border: OutlineInputBorder()),
-                      items: sorsok.map<DropdownMenuItem<String>>((s) => DropdownMenuItem(value: s['nev'], child: Text(s['nev']))).toList(),
+                      items: sorsok.map<DropdownMenuItem<String>>((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                       onChanged: (val) => setModalState(() => kivalasztottSors = val!),
                     ),
                     const SizedBox(height: 16),
@@ -203,15 +204,15 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     const Text('Csali:', style: TextStyle(fontWeight: FontWeight.bold)),
                     Wrap(
                       spacing: 8,
-                      children: (TorzsadatAdatbazis.adatok['Csali'] ?? []).map((cs) {
-                        final isSelected = kivalasztottCsalik.contains(cs['nev']);
+                      children: (TorzsadatAdatbazis.adatok['Csali'] ?? ['Kukorica', 'Giliszta']).map((cs) {
+                        final isSelected = kivalasztottCsalik.contains(cs);
                         return FilterChip(
-                          label: Text(cs['nev']),
+                          label: Text(cs),
                           selected: isSelected,
                           selectedColor: Colors.green[800],
                           onSelected: (selected) {
                             setModalState(() {
-                              selected ? kivalasztottCsalik.add(cs['nev']) : kivalasztottCsalik.remove(cs['nev']);
+                              selected ? kivalasztottCsalik.add(cs) : kivalasztottCsalik.remove(cs);
                             });
                           },
                         );
@@ -223,15 +224,15 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     const Text('Etetőanyag:', style: TextStyle(fontWeight: FontWeight.bold)),
                     Wrap(
                       spacing: 8,
-                      children: (TorzsadatAdatbazis.adatok['Etetőanyag'] ?? []).map((e) {
-                        final isSelected = kivalasztottEtetoanyagok.contains(e['nev']);
+                      children: (TorzsadatAdatbazis.adatok['Etetőanyag'] ?? ['Édes', 'Halas']).map((e) {
+                        final isSelected = kivalasztottEtetoanyagok.contains(e);
                         return FilterChip(
-                          label: Text(e['nev']),
+                          label: Text(e),
                           selected: isSelected,
                           selectedColor: Colors.green[800],
                           onSelected: (selected) {
                             setModalState(() {
-                              selected ? kivalasztottEtetoanyagok.add(e['nev']) : kivalasztottEtetoanyagok.remove(e['nev']);
+                              selected ? kivalasztottEtetoanyagok.add(e) : kivalasztottEtetoanyagok.remove(e);
                             });
                           },
                         );
@@ -249,7 +250,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     DropdownButtonFormField<String>(
                       value: kivalasztottBot,
                       decoration: const InputDecoration(labelText: 'Bot (Törzsadat)', border: OutlineInputBorder()),
-                      items: botok.map<DropdownMenuItem<String>>((b) => DropdownMenuItem(value: b['nev'], child: Text(b['nev']))).toList(),
+                      items: botok.map<DropdownMenuItem<String>>((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
                       onChanged: (val) => setModalState(() => kivalasztottBot = val),
                     ),
                     const SizedBox(height: 16),
@@ -257,7 +258,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     DropdownButtonFormField<String>(
                       value: kivalasztottModszer,
                       decoration: const InputDecoration(labelText: 'Módszer (Törzsadat)', border: OutlineInputBorder()),
-                      items: modszerek.map<DropdownMenuItem<String>>((m) => DropdownMenuItem(value: m['nev'], child: Text(m['nev']))).toList(),
+                      items: modszerek.map<DropdownMenuItem<String>>((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
                       onChanged: (val) => setModalState(() => kivalasztottModszer = val),
                     ),
                     const SizedBox(height: 16),
@@ -265,7 +266,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     DropdownButtonFormField<String>(
                       value: kivalasztottSzerelek,
                       decoration: const InputDecoration(labelText: 'Végszerelék (Törzsadat)', border: OutlineInputBorder()),
-                      items: szerelekek.map<DropdownMenuItem<String>>((s) => DropdownMenuItem(value: s['nev'], child: Text(s['nev']))).toList(),
+                      items: szerelekek.map<DropdownMenuItem<String>>((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                       onChanged: (val) => setModalState(() => kivalasztottSzerelek = val),
                     ),
                     const SizedBox(height: 16),
@@ -273,7 +274,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     DropdownButtonFormField<String>(
                       value: kivalasztottIdojaras,
                       decoration: const InputDecoration(labelText: 'Időjárás (Törzsadat)', border: OutlineInputBorder()),
-                      items: idojarasok.map<DropdownMenuItem<String>>((i) => DropdownMenuItem(value: i['nev'], child: Text(i['nev']))).toList(),
+                      items: idojarasok.map<DropdownMenuItem<String>>((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
                       onChanged: (val) => setModalState(() => kivalasztottIdojaras = val),
                     ),
                     const SizedBox(height: 16),
@@ -508,9 +509,15 @@ class _FogasokScreenState extends State<FogasokScreen> {
                               IconButton(
                                 icon: const Icon(Icons.visibility, size: 20, color: Colors.greenAccent),
                                 onPressed: () {
+                                  // Biztosítjuk, hogy ne omlik össze, ha nincs helyszín a túrában
+                                  String helyszinNeve = "Ismeretlen helyszín";
+                                  if (widget.tura.helyszinId != null) {
+                                      helyszinNeve = "Helyszín ID: ${widget.tura.helyszinId}"; 
+                                  }
+
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (context) => FogasReszletekScreen(fogas: fogas, helyszin: widget.tura.helyszin)),
+                                    MaterialPageRoute(builder: (context) => FogasReszletekScreen(fogas: fogas, helyszin: helyszinNeve)),
                                   );
                                 },
                               ),
