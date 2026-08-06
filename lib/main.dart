@@ -1,53 +1,45 @@
 import 'package:flutter/material.dart';
-import 'torzsadatok.dart';
+import 'dart:async';
+
+// Képernyők importálása
 import 'turak.dart';
 import 'kedvencek.dart';
 import 'lexikon.dart';
 import 'statisztika.dart';
+import 'torzsadatok.dart';
 import 'adatkezeles.dart';
-import 'adattarolo.dart'; // <-- ÚJ IMPORT AZ ADATBÁZISHOZ
 
 void main() {
-  runApp(const HorgaszApp());
+  runApp(const HorgasznaploApp());
 }
 
-class HorgaszApp extends StatelessWidget {
-  const HorgaszApp({super.key});
+class HorgasznaploApp extends StatelessWidget {
+  const HorgasznaploApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Horgásznapló & Halhatározó',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        primaryColor: Colors.green[700],
+      theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF121212),
-        cardColor: const Color(0xFF1E1E1E),
-        useMaterial3: true,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.green[600]!,
-          secondary: Colors.greenAccent,
-          surface: const Color(0xFF1E1E1E),
-        ),
+        primaryColor: Colors.green[700],
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF121212),
+          backgroundColor: Color(0xFF161616),
           elevation: 0,
           centerTitle: true,
         ),
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: const Color(0xFF1A1A1A),
-          selectedItemColor: Colors.green[500],
-          unselectedItemColor: Colors.grey[600],
-          type: BottomNavigationBarType.fixed,
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.greenAccent,
+          secondary: Colors.green,
         ),
       ),
-      home: const SplashScreen(), 
+      home: const SplashScreen(),
     );
   }
 }
 
-// ---- BEJELENTKEZŐ (SPLASH) KÉPERNYŐ ----
+// ---- SPLASH SCREEN (INDÍTÓKÉPERNYŐ) ----
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -59,237 +51,189 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _adatokBetolteseEsInditas(); // <-- ITT INDUL A BETÖLTÉS
-  }
-
-  Future<void> _adatokBetolteseEsInditas() async {
-    // Később ide jön a tényleges adatok memóriába olvasása
-    
-    // 4 másodperc várakozás a dizájn kedvéért
-    await Future.delayed(const Duration(seconds: 4));
-
-    if (mounted) {
+    // 4 másodperces várakozás, majd irány a Főképernyő
+    Timer(const Duration(seconds: 4), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainScreen()),
+        MaterialPageRoute(builder: (context) => const FoKepernyo()),
       );
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            bottom: size.height / 2,
-            left: 0,
-            right: 0,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Image.asset(
-                'assets/2825.png',
-                width: size.width * 0.5,
-              ),
-            ),
-          ),
-          Positioned(
-            top: (size.height / 2) + 20,
-            left: 0,
-            right: 0,
-            child: const Text(
-              'Horgásznapló',
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Ide jön majd a saját logód, addig egy elegáns ikon
+            Icon(Icons.sailing, size: 100, color: Colors.green[700]),
+            const SizedBox(height: 24),
+            const Text(
+              'HORGÁOZNAPLÓ\n& HALHATÁROZÓ',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.greenAccent,
-                letterSpacing: 2,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2, color: Colors.greenAccent),
             ),
-          ),
-        ],
+            const SizedBox(height: 40),
+            const CircularProgressIndicator(color: Colors.greenAccent),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ---- FŐ KÉPERNYŐ ----
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+// ---- FŐKÉPERNYŐ (HIBRID NAVIGÁCIÓ) ----
+class FoKepernyo extends StatefulWidget {
+  const FoKepernyo({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<FoKepernyo> createState() => _FoKepernyoState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
+class _FoKepernyoState extends State<FoKepernyo> {
+  int _aktualisIndex = 0;
 
-  final List<Widget> _screens = [
+  // Az alsó menü 4 képernyője
+  final List<Widget> _kepernyok = [
     const TurakScreen(),
     const KedvencekScreen(),
     const LexikonScreen(),
     const StatisztikaScreen(),
   ];
 
-  final List<String> _appBarTitles = [
+  final List<String> _cimek = [
     'Horgásztúráim',
-    'Kedvenc fogások',
-    'Halfajok Lexikon',
+    'Kedvenc Fogások',
+    'Halfajok & Kvíz',
     'Statisztika',
   ];
 
-  void _onItemTapped(int index) {
+  void _navigalas(int index) {
     setState(() {
-      _selectedIndex = index;
+      _aktualisIndex = index;
     });
+    Navigator.pop(context); // Bezárja a drawert, ha onnan kattintottak
   }
 
-  void _onDrawerItemTapped(int index) {
-    Navigator.pop(context);
-    
-    if (index < 4) {
-      setState(() {
-        _selectedIndex = index;
-      });
-    } else if (index == 6) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          title: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.greenAccent),
-              SizedBox(width: 10),
-              Text('Névjegy'),
-            ],
-          ),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Készítette:', style: TextStyle(color: Colors.white54, fontSize: 14)),
-              SizedBox(height: 4),
-              Text('Google Gemini & B2', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 16),
-              Text('Verzió:', style: TextStyle(color: Colors.white54, fontSize: 14)),
-              SizedBox(height: 4),
-              Text('1.0.0', style: TextStyle(color: Colors.white, fontSize: 16)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Bezárás', style: TextStyle(color: Colors.greenAccent)),
-            ),
-          ],
-        ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => index == 4
-              ? const TorzsadatokScreen()
-              : const AdatkezelesScreen(),
-        ),
-      );
-    }
+  void _ujAblak(Widget kepernyo) {
+    Navigator.pop(context); // Drawer bezárása
+    Navigator.push(context, MaterialPageRoute(builder: (context) => kepernyo));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_appBarTitles[_selectedIndex], style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
-        actions: [
-          if (_selectedIndex == 2)
-            IconButton(
-              icon: const Icon(Icons.quiz, color: Colors.greenAccent),
-              tooltip: 'Hal Felismerő Kvíz',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const KvizScreen()),
-                );
-              },
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.notifications_none, color: Colors.white70),
-              onPressed: () {},
-            )
-        ],
+        title: Text(_cimek[_aktualisIndex], style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       drawer: Drawer(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF1E1E1E),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.green[900],
-                border: const Border(bottom: BorderSide(color: Colors.green, width: 2)),
-              ),
+              decoration: BoxDecoration(color: Colors.green[900]),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Icon(Icons.phishing, size: 48, color: Colors.white),
+                  Icon(Icons.sailing, size: 50, color: Colors.white),
                   SizedBox(height: 10),
-                  Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                  Text('& Halhatározó', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  Text('Horgásznapló 1.0', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
-            _buildDrawerItem(Icons.sailing, 'Horgásztúráim', 0),
-            _buildDrawerItem(Icons.favorite, 'Kedvenc fogások', 1),
-            _buildDrawerItem(Icons.set_meal, 'Halfajok', 2),
-            _buildDrawerItem(Icons.bar_chart, 'Statisztika', 3),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.sailing, color: Colors.greenAccent),
+              title: const Text('1. Horgásztúráim'),
+              selected: _aktualisIndex == 0,
+              onTap: () => _navigalas(0),
             ),
-            _buildDrawerItem(Icons.storage, 'Törzsadatok', 4),
-            _buildDrawerItem(Icons.import_export, 'Adatkezelés', 5),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.favorite, color: Colors.redAccent),
+              title: const Text('2. Kedvenc fogások'),
+              selected: _aktualisIndex == 1,
+              onTap: () => _navigalas(1),
             ),
-            _buildDrawerItem(Icons.info_outline, 'Névjegy', 6),
+            ListTile(
+              leading: const Icon(Icons.menu_book, color: Colors.blueAccent),
+              title: const Text('3. Halfajok (Lexikon)'),
+              selected: _aktualisIndex == 2,
+              onTap: () => _navigalas(2),
+            ),
+            ListTile(
+              leading: const Icon(Icons.analytics, color: Colors.orangeAccent),
+              title: const Text('4. Statisztika'),
+              selected: _aktualisIndex == 3,
+              onTap: () => _navigalas(3),
+            ),
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.settings, color: Colors.white70),
+              title: const Text('5. Törzsadatok'),
+              onTap: () => _ujAblak(const TorzsadatokScreen()),
+            ),
+            ListTile(
+              leading: const Icon(Icons.save_alt, color: Colors.white70),
+              title: const Text('6. Adatkezelés (Export)'),
+              onTap: () => _ujAblak(const AdatkezelesScreen()),
+            ),
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: Colors.white54),
+              title: const Text('7. Névjegy'),
+              onTap: () => _ujAblak(const NevjegyScreen()),
+            ),
           ],
         ),
       ),
-      body: _screens[_selectedIndex],
+      body: _kepernyok[_aktualisIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        currentIndex: _aktualisIndex,
+        onTap: (idx) => setState(() => _aktualisIndex = idx),
+        backgroundColor: const Color(0xFF161616),
+        selectedItemColor: Colors.greenAccent,
+        unselectedItemColor: Colors.white54,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.sailing), label: 'Túrák'),
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Kedvencek'),
-          BottomNavigationBarItem(icon: Icon(Icons.set_meal), label: 'Halfajok'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Statisztika'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Halfajok'),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: 'Statisztika'),
         ],
       ),
     );
   }
+}
 
-  Widget _buildDrawerItem(IconData icon, String title, int index) {
-    final isSelected = _selectedIndex == index && index < 4;
-    return ListTile(
-      leading: Icon(icon, color: isSelected ? Colors.green[400] : Colors.white70),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isSelected ? Colors.green[400] : Colors.white,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+// ---- NÉVJEGY KÉPERNYŐ ----
+class NevjegyScreen extends StatelessWidget {
+  const NevjegyScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Névjegy')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.sailing, size: 80, color: Colors.green[700]),
+              const SizedBox(height: 24),
+              const Text('Horgásznapló & Halhatározó', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+              const SizedBox(height: 8),
+              const Text('Verzió: 1.0 (Végleges kiadás)', style: TextStyle(color: Colors.white54)),
+              const SizedBox(height: 32),
+              const Text('Ez az alkalmazás szenvedéllyel készült horgászok számára. Offline működik, minden adatot a telefonodon tárol.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, height: 1.5)),
+            ],
+          ),
         ),
       ),
-      onTap: () => _onDrawerItemTapped(index),
     );
   }
 }
