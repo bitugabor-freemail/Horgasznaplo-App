@@ -277,3 +277,13 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
     );
   }
 }
+
+// ---- IDEIGLENES ADATBÁZIS A FOGÁSOK KÉPERNYŐNEK ----
+// Ezt majd kivesszük, amikor a Fogások képernyőt is felokosítjuk!
+class TorzsadatAdatbazis {
+  static const Map<String, List<String>> adatok = {
+    'Időjárás': ['Napos', 'Felhős', 'Esős', 'Szeles', 'Viharos'],
+    'Csali': ['Csontkukac', 'Giliszta', 'Kukorica', 'Bojli', 'Pellet', 'Műcsali'],
+    'Etetőanyag': ['Édes', 'Büdös', 'Fokhagymás', 'Halas', 'Nincs'],
+  };
+}
