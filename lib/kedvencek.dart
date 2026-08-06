@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'fogasok.dart';
-import 'modellek.dart'; // <--- A Tura és Helyszin modellek miatt kell
-import 'adattarolo.dart'; // <--- A valódi adatbázis miatt kell
+import 'package:intl/intl.dart';
+import 'adattarolo.dart';
+import 'modellek.dart';
+import 'fogasok.dart'; // A Részletes Nézet innen jön!
 
 class KedvencekScreen extends StatefulWidget {
   const KedvencekScreen({super.key});
@@ -12,7 +13,7 @@ class KedvencekScreen extends StatefulWidget {
 }
 
 class _KedvencekScreenState extends State<KedvencekScreen> {
-  // A valódi túrákat és helyszíneket ide töltjük be, hogy ki tudjuk írni a neveket
+  List<FogasModel> _kedvencFogasok = [];
   List<Tura> _osszesTura = [];
   List<Helyszin> _osszesHelyszin = [];
 
@@ -22,30 +23,29 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
     _adatokBetoltese();
   }
 
-  // --- VALÓDI ADATOK BETÖLTÉSE ---
   Future<void> _adatokBetoltese() async {
-    final turakAdat = await AdatTarolo.betoltes('turak_adatok');
-    final helyszinekAdat = await AdatTarolo.betoltes('helyszinek_adatok');
+    final fogasok = await AdatTarolo.fogasokBetoltese();
+    final turak = await AdatTarolo.turakBetoltese();
+    final helyszinek = await AdatTarolo.helyszinekBetoltese();
+
+    // Csak a kedvencek szűrése
+    List<FogasModel> kedvencek = fogasok.where((f) => f.isKedvenc).toList();
+    
+    // Rendezés: Legfrissebb legelöl
+    kedvencek.sort((a, b) {
+      String aKomp = "${DateFormat('yyyy-MM-dd').format(a.datum)} ${a.idopontString}";
+      String bKomp = "${DateFormat('yyyy-MM-dd').format(b.datum)} ${b.idopontString}";
+      return bKomp.compareTo(aKomp);
+    });
 
     setState(() {
-      _osszesTura = turakAdat.map((e) => Tura.fromJson(e)).toList();
-      _osszesHelyszin = helyszinekAdat.map((e) => Helyszin.fromJson(e)).toList();
+      _kedvencFogasok = kedvencek;
+      _osszesTura = turak;
+      _osszesHelyszin = helyszinek;
     });
-  }
-  
-  // Lekérjük az összes kedvenc fogást a globális memóriából
-  List<FogasModel> _getKedvencFogasok() {
-    List<FogasModel> lista = FogasAdatbazis.fogasok.where((f) => f.isKedvenc).toList();
-    // Rendezés: Legfrissebb legelöl
-    lista.sort((a, b) {
-      final aDT = DateTime(a.datum.year, a.datum.month, a.datum.day, a.idopont.hour, a.idopont.minute);
-      final bDT = DateTime(b.datum.year, b.datum.month, b.datum.day, b.idopont.hour, b.idopont.minute);
-      return bDT.compareTo(aDT);
-    });
-    return lista;
   }
 
-  void _fogasTorles(int valodiIndex) {
+  void _fogasTorles(FogasModel fogas) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -53,17 +53,15 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
         title: const Text('Fogás törlése'),
         content: const Text('Biztosan törölni szeretnéd ezt a fogást a teljes rendszerből?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context), 
-            child: const Text('Mégsem', style: TextStyle(color: Colors.white54))
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégsem')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
-            onPressed: () {
-              setState(() {
-                FogasAdatbazis.fogasok.removeAt(valodiIndex);
-              });
-              Navigator.pop(context);
+            onPressed: () async {
+              final osszes = await AdatTarolo.fogasokBetoltese();
+              osszes.removeWhere((f) => f.id == fogas.id);
+              await AdatTarolo.fogasokMentes(osszes);
+              if (mounted) Navigator.pop(context);
+              _adatokBetoltese();
             },
             child: const Text('Törlés', style: TextStyle(color: Colors.white)),
           ),
@@ -72,43 +70,37 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
     );
   }
 
-  Color _getKartyaszin(String sors) {
-    if (sors == 'Elvittem') return Colors.orange.withOpacity(0.15);
-    if (sors == 'Elpusztult') return Colors.red.withOpacity(0.15);
-    return const Color(0xFF1E1E1E);
-  }
-
-  // --- ÚJ HELYSZÍN KERESŐ LOGIKA (VALÓDI ADATOKBÓL) ---
-  String _getTuraHelyszin(String turaId) {
-    // 1. Megkeressük a túrát az ID alapján (ha nem találja, null-t ad)
-    final keresettTura = _osszesTura.cast<Tura?>().firstWhere(
-      (t) => t?.id == turaId, 
-      orElse: () => null
-    );
-
-    // 2. Ha megvan a túra, és van is benne helyszín ID, megkeressük a helyszínt
-    if (keresettTura != null && keresettTura.helyszinId != null) {
-      final helyszin = _osszesHelyszin.cast<Helyszin?>().firstWhere(
-        (h) => h?.id == keresettTura.helyszinId,
-        orElse: () => null
-      );
-      
-      // Ha a helyszín is megvan, visszaadjuk a nevét
-      if (helyszin != null) {
-        return helyszin.nev;
+  Future<void> _kedvencEltavolitas(FogasModel fogas) async {
+    final osszes = await AdatTarolo.fogasokBetoltese();
+    final idx = osszes.indexWhere((f) => f.id == fogas.id);
+    if (idx != -1) {
+      osszes[idx].isKedvenc = false;
+      await AdatTarolo.fogasokMentes(osszes);
+      _adatokBetoltese();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eltávolítva a kedvencek közül.')));
       }
     }
-    
-    // Ha bármelyik ponton elakadunk, ezt írjuk ki
-    return 'Ismeretlen helyszín';
+  }
+
+  // --- Helyszín kereső a Túra alapján ---
+  Map<String, String> _getTuraHelyszinEsHorgaszhely(String turaId) {
+    final tura = _osszesTura.cast<Tura?>().firstWhere((t) => t?.id == turaId, orElse: () => null);
+    if (tura != null) {
+      String helyszinNev = 'Ismeretlen helyszín';
+      if (tura.helyszinId != null) {
+        final h = _osszesHelyszin.cast<Helyszin?>().firstWhere((x) => x?.id == tura.helyszinId, orElse: () => null);
+        if (h != null) helyszinNev = h.nev;
+      }
+      return {'helyszin': helyszinNev, 'horgaszhely': tura.horgaszhely};
+    }
+    return {'helyszin': 'Ismeretlen helyszín', 'horgaszhely': ''};
   }
 
   @override
   Widget build(BuildContext context) {
-    final kedvencekListaja = _getKedvencFogasok();
-
     return Scaffold(
-      body: kedvencekListaja.isEmpty
+      body: _kedvencFogasok.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -123,107 +115,96 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(12),
-              itemCount: kedvencekListaja.length,
+              itemCount: _kedvencFogasok.length,
               itemBuilder: (context, index) {
-                final fogas = kedvencekListaja[index];
-                final valodiIndex = FogasAdatbazis.fogasok.indexWhere((f) => f.id == fogas.id);
-                final turaHelyszin = _getTuraHelyszin(fogas.turaId);
+                final fogas = _kedvencFogasok[index];
+                final turaAdatok = _getTuraHelyszinEsHorgaszhely(fogas.turaId);
+                final turaHelyszin = turaAdatok['helyszin']!;
+                final turaHorgaszhely = turaAdatok['horgaszhely']!;
+
+                Color keretSzin = Colors.transparent;
+                if (fogas.sors == 'Elvittem') keretSzin = Colors.orangeAccent;
+                if (fogas.sors == 'Elpusztult') keretSzin = Colors.redAccent;
 
                 return Card(
+                  color: const Color(0xFF1E1E1E),
                   margin: const EdgeInsets.only(bottom: 12),
-                  color: _getKartyaszin(fogas.sors),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Row(
-                    children: [
-                      // Miniatűr kép
-                      Container(
-                        width: 80,
-                        height: 80,
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: keretSzin, width: keretSzin == Colors.transparent ? 0 : 2),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} ${fogas.idopontString}',
+                          style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: (fogas.kepUtvonal != null && File(fogas.kepUtvonal!).existsSync())
-                            ? Image.file(File(fogas.kepUtvonal!), fit: BoxFit.cover)
-                            : const Icon(Icons.image, color: Colors.white24),
-                      ),
-                      // Adatok
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${fogas.datum.year}.${fogas.datum.month.toString().padLeft(2, '0')}.${fogas.datum.day.toString().padLeft(2, '0')}. ${fogas.idopont.format(context)}',
-                                style: const TextStyle(fontSize: 12, color: Colors.greenAccent),
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 80, height: 80,
+                              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+                              clipBehavior: Clip.antiAlias,
+                              child: (fogas.kepUtvonal != null && File(fogas.kepUtvonal!).existsSync())
+                                  ? Image.file(File(fogas.kepUtvonal!), fit: BoxFit.cover)
+                                  : const Icon(Icons.set_meal, color: Colors.white24, size: 40),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(fogas.halfaj, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${fogas.suly != null ? "${fogas.suly} kg" : "- kg"} • ${fogas.hossz != null ? "${fogas.hossz} cm" : "- cm"}',
+                                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(turaHelyszin, style: const TextStyle(fontSize: 12, color: Colors.greenAccent, fontStyle: FontStyle.italic)),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(fogas.halfaj, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              Text('${fogas.suly} kg • ${fogas.hossz} cm', style: const TextStyle(fontSize: 14, color: Colors.white70)),
-                              const SizedBox(height: 4),
-                              Text(turaHelyszin, style: const TextStyle(fontSize: 12, color: Colors.white54, fontStyle: FontStyle.italic)),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ),
-                      // Akciósáv
-                      Column(
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
-                                onPressed: () => _fogasTorles(valodiIndex),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.white38),
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Szerkeszteni az eredeti túra nézetben tudod!')),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.favorite, size: 20, color: Colors.red),
-                                onPressed: () {
-                                  // Kedvencből való eltávolítás
-                                  setState(() {
-                                    FogasAdatbazis.fogasok[valodiIndex].isKedvenc = false;
-                                  });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Eltávolítva a kedvencek közül.')),
-                                  );
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.visibility, size: 20, color: Colors.greenAccent),
-                                onPressed: () {
-                                  // Megnyitjuk a Részletes Nézetet, ami a fogasok.dart-ban van!
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => FogasReszletekScreen(
-                                        fogas: fogas, 
-                                        helyszin: turaHelyszin
-                                      ),
+                        const Divider(height: 24, color: Colors.white12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _fogasTorles(fogas)),
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, color: Colors.white38),
+                                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Szerkeszteni az eredeti Túra nézetben tudod!'))),
+                                ),
+                                IconButton(icon: const Icon(Icons.favorite, color: Colors.red), onPressed: () => _kedvencEltavolitas(fogas)),
+                              ],
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.visibility, color: Colors.greenAccent),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FogasReszletekScreen(
+                                      fogas: fogas, 
+                                      turaHelyszinNev: turaHelyszin,
+                                      turaHorgaszhely: turaHorgaszhely,
                                     ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
