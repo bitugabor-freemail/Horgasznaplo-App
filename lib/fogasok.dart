@@ -259,7 +259,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   @override
   void initState() {
     super.initState();
-    _törzsadatokBetoltese();
+    _torzsadatokBetoltese();
 
     if (widget.szerkeszthetoFogas != null) {
       final f = widget.szerkeszthetoFogas!;
@@ -284,7 +284,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     }
   }
 
-  Future<void> _törzsadatokBetoltese() async {
+  Future<void> _torzsadatokBetoltese() async {
     _halfajok = await AdatTarolo.halfajokBetoltese();
     _sorsok = await AdatTarolo.sorsBetoltese();
     if (_sorsok.isEmpty) _sorsok = ['Visszaengedtem', 'Elvittem', 'Elpusztult'];
