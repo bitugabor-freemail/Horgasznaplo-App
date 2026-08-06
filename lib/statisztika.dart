@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'fogasok.dart';
-import 'turak.dart';
-import 'torzsadatok.dart';
+import 'modellek.dart'; // <--- Ezt be kellett hívni a Tura miatt
+import 'adattarolo.dart'; // <--- Ezt be kellett hívni az adatbázis betöltéséhez
 
 class StatisztikaScreen extends StatefulWidget {
   const StatisztikaScreen({super.key});
@@ -18,7 +18,31 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
   String? _szuroHelyszin;
   String? _szuroSors;
   
-  // A szűrt adatok lekérése
+  // Valódi adatbázis listák a memóriában
+  List<Tura> _osszesTura = [];
+  List<Helyszin> _osszesHelyszin = [];
+  List<Halfaj> _osszesHalfaj = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _adatokBetoltese();
+  }
+
+  // --- VALÓDI ADATOK BETÖLTÉSE ---
+  Future<void> _adatokBetoltese() async {
+    final turakAdat = await AdatTarolo.betoltes('turak_adatok');
+    final helyszinekAdat = await AdatTarolo.betoltes('helyszinek_adatok');
+    final halfajokAdat = await AdatTarolo.betoltes('halfajok_adatok');
+
+    setState(() {
+      _osszesTura = turakAdat.map((e) => Tura.fromJson(e)).toList();
+      _osszesHelyszin = helyszinekAdat.map((e) => Helyszin.fromJson(e)).toList();
+      _osszesHalfaj = halfajokAdat.map((e) => Halfaj.fromJson(e)).toList();
+    });
+  }
+  
+  // A szűrt adatok lekérése (Már a memóriába betöltött valódi túrákból)
   List<FogasModel> _getSzurtFogasok() {
     return FogasAdatbazis.fogasok.where((f) {
       // 1. Év szűrés (Alapértelmezett)
@@ -30,10 +54,23 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       // Helyszín szűréséhez meg kell keresnünk a túrát
       bool helyszinMatch = true;
       if (_szuroHelyszin != null) {
-        final tura = TuraAdatbazis.turak.firstWhere((t) => t.id == f.turaId, orElse: () => TuraModel(
-            id: '', kezdodatum: DateTime.now(), befejezodatum: DateTime.now(), 
-            helyszin: '', vizterKod: '', horgaszhely: '', horgasztarsak: [], megjegyzes: ''));
-        helyszinMatch = tura.helyszin == _szuroHelyszin;
+        // Megkeressük a túrát az új memórialistából (ha nincs meg, null-t adunk vissza biztonságból)
+        final keresettTura = _osszesTura.cast<Tura?>().firstWhere(
+            (t) => t?.id == f.turaId, 
+            orElse: () => null
+        );
+
+        if (keresettTura != null && keresettTura.helyszinId != null) {
+          // Ha van túra és van helyszín ID, megkeressük a helyszín nevét
+          final helyszin = _osszesHelyszin.cast<Helyszin?>().firstWhere(
+            (h) => h?.id == keresettTura.helyszinId,
+            orElse: () => null
+          );
+          
+          helyszinMatch = helyszin?.nev == _szuroHelyszin;
+        } else {
+          helyszinMatch = false; // Ha nincs túra vagy nincs helyszín a túrában, akkor biztos nem egyezik
+        }
       }
 
       return evMatch && halfajMatch && sorsMatch && helyszinMatch;
@@ -41,9 +78,8 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
   }
 
   void _nyitReszletesSzurok() {
-    final halfajok = TorzsadatAdatbazis.adatok['Halfaj'] ?? [];
-    final helyszinek = TorzsadatAdatbazis.adatok['Helyszín'] ?? [];
-    final sorsok = TorzsadatAdatbazis.adatok['Hal sorsa'] ?? [];
+    // Alap hal sorsok, ahogy eddig
+    final sorsok = ['Visszaengedtem', 'Elvittem', 'Elpusztult'];
 
     showModalBottomSheet(
       context: context,
@@ -62,34 +98,37 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                   const Text('Részletes Szűrők', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
                   const SizedBox(height: 16),
                   
+                  // HALFAJOK AZ ÚJ ADATBÁZISBÓL (JAVÍTVA A STRING/OBJECT HIBA)
                   DropdownButtonFormField<String>(
                     value: _szuroHalfaj,
                     decoration: const InputDecoration(labelText: 'Halfaj', border: OutlineInputBorder()),
                     items: [
                       const DropdownMenuItem<String>(value: null, child: Text('Összes halfaj')),
-                      ...halfajok.map((h) => DropdownMenuItem<String>(value: h['nev'], child: Text(h['nev']))),
+                      ..._osszesHalfaj.map((h) => DropdownMenuItem<String>(value: h.nev, child: Text(h.nev))),
                     ],
                     onChanged: (val) => setModalState(() => _szuroHalfaj = val),
                   ),
                   const SizedBox(height: 16),
                   
+                  // HELYSZÍNEK AZ ÚJ ADATBÁZISBÓL (JAVÍTVA A STRING/OBJECT HIBA)
                   DropdownButtonFormField<String>(
                     value: _szuroHelyszin,
                     decoration: const InputDecoration(labelText: 'Helyszín', border: OutlineInputBorder()),
                     items: [
                       const DropdownMenuItem<String>(value: null, child: Text('Összes helyszín')),
-                      ...helyszinek.map((h) => DropdownMenuItem<String>(value: h['nev'], child: Text(h['nev']))),
+                      ..._osszesHelyszin.map((h) => DropdownMenuItem<String>(value: h.nev, child: Text(h.nev))),
                     ],
                     onChanged: (val) => setModalState(() => _szuroHelyszin = val),
                   ),
                   const SizedBox(height: 16),
 
+                  // SORSOK (JAVÍTVA A STRING/OBJECT HIBA)
                   DropdownButtonFormField<String>(
                     value: _szuroSors,
                     decoration: const InputDecoration(labelText: 'Hal sorsa', border: OutlineInputBorder()),
                     items: [
                       const DropdownMenuItem<String>(value: null, child: Text('Összes')),
-                      ...sorsok.map((s) => DropdownMenuItem<String>(value: s['nev'], child: Text(s['nev']))),
+                      ...sorsok.map((s) => DropdownMenuItem<String>(value: s, child: Text(s))),
                     ],
                     onChanged: (val) => setModalState(() => _szuroSors = val),
                   ),
