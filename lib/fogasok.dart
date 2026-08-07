@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'torzsadatok.dart';
