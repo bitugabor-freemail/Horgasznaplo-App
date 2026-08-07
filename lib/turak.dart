@@ -1,14 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart'; // Ha image_picker-t használsz, ez a standard importsor: 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'fogasok.dart';
-
-// --- HOGY BIZTOSAN JÓ LEGYEN A KÉPKIVÁLASZTÓ IMPORT ---
-// (Ha a fentivel hiba lenne, az alábbi standard image_picker importot használd a fájl tetején:)
-// import 'package:image_picker/image_picker.dart';
 
 class TurakScreen extends StatefulWidget {
   const TurakScreen({super.key});
@@ -43,7 +39,7 @@ class _TurakScreenState extends State<TurakScreen> {
   List<int> _getEvekListaja() {
     Set<int> evek = {_kivEv};
     for (var t in _turak) {
-      evek.add(t.kezdDatum.year);
+      evek.add(t.kezdoDatum.year);
     }
     List<int> lista = evek.toList();
     lista.sort((a, b) => b.compareTo(a));
@@ -51,8 +47,8 @@ class _TurakScreenState extends State<TurakScreen> {
   }
 
   List<Tura> _getSzurtTurak() {
-    List<Tura> szurt = _turak.where((t) => t.kezdDatum.year == _kivEv).toList();
-    szurt.sort((a, b) => b.kezdDatum.compareTo(a.kezdDatum)); // Legfrissebb elöl
+    List<Tura> szurt = _turak.where((t) => t.kezdoDatum.year == _kivEv).toList();
+    szurt.sort((a, b) => b.kezdoDatum.compareTo(a.kezdoDatum));
     return szurt;
   }
 
@@ -83,7 +79,6 @@ class _TurakScreenState extends State<TurakScreen> {
               _turak.removeWhere((t) => t.id == tura.id);
               await AdatTarolo.turakMentes(_turak);
               
-              // Hozzá tartozó fogások törlése is
               final f = await AdatTarolo.fogasokBetoltese();
               f.removeWhere((fogas) => fogas.turaId == tura.id);
               await AdatTarolo.fogasokMentes(f);
@@ -124,7 +119,6 @@ class _TurakScreenState extends State<TurakScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // ÉV SZŰRŐ SÁV
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: const Color(0xFF161616),
@@ -161,20 +155,18 @@ class _TurakScreenState extends State<TurakScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Dátum sáv felül
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               color: Colors.green[900]?.withOpacity(0.4),
                               child: Text(
-                                '${DateFormat('yyyy.MM.dd.').format(tura.kezdDatum)} - ${DateFormat('yyyy.MM.dd.').format(tura.vegDatum)}',
+                                '${DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum)} - ${DateFormat('yyyy.MM.dd.').format(tura.befejezoDatum)}',
                                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent),
                               ),
                             ),
                             
-                            // Borítókép (ha van)
-                            if (tura.boritokepUtvonal != null && File(tura.boritokepUtvonal!).existsSync())
-                              Image.file(File(tura.boritokepUtvonal!), height: 180, width: double.infinity, fit: BoxFit.cover),
+                            if (tura.boritoKep != null && File(tura.boritoKep!).existsSync())
+                              Image.file(File(tura.boritoKep!), height: 180, width: double.infinity, fit: BoxFit.cover),
 
                             Padding(
                               padding: const EdgeInsets.all(12.0),
@@ -188,7 +180,6 @@ class _TurakScreenState extends State<TurakScreen> {
                                   ],
                                   const Divider(height: 20, color: Colors.white12),
                                   
-                                  // Statisztika sor
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                                     children: [
@@ -198,7 +189,6 @@ class _TurakScreenState extends State<TurakScreen> {
                                     ],
                                   ),
                                   
-                                  // Horgásztársak (MEGNÖVELT BETŰMÉRET - 3. pont)
                                   if (tura.horgasztarsak.isNotEmpty) ...[
                                     const SizedBox(height: 12),
                                     Row(
@@ -208,7 +198,7 @@ class _TurakScreenState extends State<TurakScreen> {
                                         Expanded(
                                           child: Text(
                                             'Társak: ${tura.horgasztarsak.join(', ')}',
-                                            style: const TextStyle(fontSize: 16, color: Colors.white), // Megnövelve!
+                                            style: const TextStyle(fontSize: 16, color: Colors.white),
                                           ),
                                         ),
                                       ],
@@ -217,7 +207,6 @@ class _TurakScreenState extends State<TurakScreen> {
 
                                   const Divider(height: 20, color: Colors.white12),
 
-                                  // Gombok sávja
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
@@ -277,7 +266,6 @@ class _StatisztikaElem extends StatelessWidget {
   }
 }
 
-// --- TÚRA SZERKESZTŐ (Legördülő horgásztársak + Zöld címke törlés funkcióval - 2. pont) ---
 class TuraSzerkesztoScreen extends StatefulWidget {
   final Tura? szerkeszthetoTura;
   final VoidCallback mentesCallback;
@@ -298,7 +286,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
   List<String> _kivalasztottTarsak = [];
   List<Helyszin> _helyszinek = [];
-  List<String> _elerhetoTarsak = []; // Törzsadatból betöltve
+  List<String> _elerhetoTarsak = [];
 
   @override
   void initState() {
@@ -307,13 +295,13 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
     if (widget.szerkeszthetoTura != null) {
       final t = widget.szerkeszthetoTura!;
-      _kezdDatum = t.kezdDatum;
-      _vegDatum = t.vegDatum;
+      _kezdDatum = t.kezdoDatum;
+      _vegDatum = t.befejezoDatum;
       _kivalasztottHelyszinId = t.helyszinId;
       _horgaszhelyCtrl.text = t.horgaszhely;
       _kivalasztottTarsak = List.from(t.horgasztarsak);
       _megjegyzesCtrl.text = t.megjegyzes;
-      _boritokepUtvonal = t.boritokepUtvonal;
+      _boritokepUtvonal = t.boritoKep;
     }
   }
 
@@ -359,12 +347,12 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
   Future<void> _mentes() async {
     final ujTura = Tura(
       id: widget.szerkeszthetoTura?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      kezdDatum: _kezdDatum,
-      vegDatum: _vegDatum,
+      kezdoDatum: _kezdDatum,
+      befejezoDatum: _vegDatum,
       helyszinId: _kivalasztottHelyszinId,
       horgaszhely: _horgaszhelyCtrl.text.trim(),
       horgasztarsak: _kivalasztottTarsak,
-      boritokepUtvonal: _boritokepUtvonal,
+      boritoKep: _boritokepUtvonal,
       megjegyzes: _megjegyzesCtrl.text.trim(),
     );
 
@@ -390,7 +378,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Dátumok sáv
             Row(
               children: [
                 Expanded(
@@ -418,7 +405,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Helyszín legördülő
             DropdownButtonFormField<String>(
               value: _kivalasztottHelyszinId,
               isExpanded: true,
@@ -434,7 +420,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             TextField(controller: _horgaszhelyCtrl, decoration: const InputDecoration(labelText: 'Horgászhely / Állás', border: OutlineInputBorder())),
             const SizedBox(height: 20),
 
-            // --- HORGÁSZTÁRSAK (Legördülő választás + zöld címkék törlés opcióval - 2. pont) ---
             const Text('Horgásztársak hozzáadása:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             Row(
@@ -467,7 +452,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            // Kiválasztott társak zöld címkeként (Kattintásra eltűnnek!)
             if (_kivalasztottTarsak.isNotEmpty) ...[
               const Text('Kiválasztott társak (kattintásra törölhető):', style: TextStyle(fontSize: 12, color: Colors.white54)),
               const SizedBox(height: 6),
@@ -488,7 +472,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ],
             const SizedBox(height: 20),
 
-            // Borítókép
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800], padding: const EdgeInsets.all(12)),
               icon: const Icon(Icons.camera_alt),
