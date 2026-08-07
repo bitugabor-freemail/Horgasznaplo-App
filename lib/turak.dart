@@ -93,6 +93,34 @@ class _TurakScreenState extends State<TurakScreen> {
     );
   }
 
+  // Megjegyzés megjelenítő dialógus
+  void _megjegyzresMutatasa(BuildContext context, Tura tura) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Row(
+          children: const [
+            Icon(Icons.note_alt, color: Colors.greenAccent),
+            SizedBox(width: 8),
+            Text('Túra megjegyzése'),
+          ],
+        ),
+        content: Text(
+          tura.megjegyzes.isNotEmpty ? tura.megjegyzes : 'Ehhez a túrához nincs rögzített megjegyzés.',
+          style: const TextStyle(fontSize: 16, color: Colors.white70),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Bezár', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _getHelyszinNeve(String? helyszinId) {
     if (helyszinId == null) return 'Ismeretlen helyszín';
     final h = _helyszinek.where((x) => x.id == helyszinId).toList();
@@ -146,6 +174,7 @@ class _TurakScreenState extends State<TurakScreen> {
                       final tura = mutatottTurak[index];
                       final stat = _getStatisztika(tura.id);
                       final helyszinNev = _getHelyszinNeve(tura.helyszinId);
+                      final vanMegjegyzes = tura.megjegyzes.isNotEmpty;
 
                       return Card(
                         color: const Color(0xFF1E1E1E),
@@ -207,13 +236,31 @@ class _TurakScreenState extends State<TurakScreen> {
 
                                   const Divider(height: 20, color: Colors.white12),
 
+                                  // AKCIÓSÁV: Kuka -> Ceruza -> Jegyzettömb (kiemelve, ha van megjegyzés) -> Szem (Fogások)
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Row(
                                         children: [
-                                          IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _turaTorlese(tura)),
-                                          IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.white70), onPressed: () => _turaSzerkesztes(tura)),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                            tooltip: 'Túra törlése',
+                                            onPressed: () => _turaTorlese(tura),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.edit_outlined, color: Colors.white70),
+                                            tooltip: 'Túra szerkesztése',
+                                            onPressed: () => _turaSzerkesztes(tura),
+                                          ),
+                                          // JEGYZETTÖMB IKON (Kiemelve, ha van megjegyzés!)
+                                          IconButton(
+                                            icon: Icon(
+                                              vanMegjegyzes ? Icons.note_alt : Icons.note_alt_outlined,
+                                              color: vanMegjegyzes ? Colors.greenAccent : Colors.white38,
+                                            ),
+                                            tooltip: vanMegjegyzes ? 'Megjegyzés megtekintése' : 'Nincs megjegyzés',
+                                            onPressed: () => _megjegyzresMutatasa(context, tura),
+                                          ),
                                         ],
                                       ),
                                       ElevatedButton.icon(
@@ -475,13 +522,12 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String?>(
-                    value: null, // Mindig null marad, így soha nem dob asszertációs hibát!
+                    value: null,
                     isExpanded: true,
                     hint: const Text('Válassz horgásztársat...'),
                     decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                     items: [
                       const DropdownMenuItem<String?>(value: null, child: Text('-- Válassz társat --')),
-                      // Nem szűrjük ki a kiválasztottakat, így minden törzsadat benne marad a listában
                       ..._elerhetoTarsak.map((t) => DropdownMenuItem<String?>(value: t, child: Text(t))),
                     ],
                     onChanged: (val) {
