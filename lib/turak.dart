@@ -447,7 +447,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Helyszín legördülő + Új hozzáadása opció
             DropdownButtonFormField<String?>(
               value: _kivalasztottHelyszinId,
               isExpanded: true,
@@ -476,15 +475,14 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String?>(
-                    value: null,
+                    value: null, // Mindig null marad, így soha nem dob asszertációs hibát!
                     isExpanded: true,
                     hint: const Text('Válassz horgásztársat...'),
                     decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                     items: [
                       const DropdownMenuItem<String?>(value: null, child: Text('-- Válassz társat --')),
-                      ..._elerhetoTarsak
-                          .where((t) => !_kivalasztottTarsak.contains(t))
-                          .map((t) => DropdownMenuItem<String?>(value: t, child: Text(t))),
+                      // Nem szűrjük ki a kiválasztottakat, így minden törzsadat benne marad a listában
+                      ..._elerhetoTarsak.map((t) => DropdownMenuItem<String?>(value: t, child: Text(t))),
                     ],
                     onChanged: (val) {
                       if (val != null && !_kivalasztottTarsak.contains(val)) {
