@@ -1,3 +1,4 @@
+// lib/turak.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -17,7 +18,8 @@ class _TurakScreenState extends State<TurakScreen> {
   List<Tura> _turak = [];
   List<FogasModel> _fogasok = [];
   List<Helyszin> _helyszinek = [];
-  int _kivEv = DateTime.now().year;
+  
+  int? _kivEv = DateTime.now().year;
 
   @override
   void initState() {
@@ -36,18 +38,24 @@ class _TurakScreenState extends State<TurakScreen> {
     });
   }
 
-  List<int> _getEvekListaja() {
-    Set<int> evek = {_kivEv};
+  List<dynamic> _getEvekListaja() {
+    Set<int> evek = {DateTime.now().year};
     for (var t in _turak) {
       evek.add(t.kezdoDatum.year);
     }
-    List<int> lista = evek.toList();
-    lista.sort((a, b) => b.compareTo(a));
-    return lista;
+    List<int> rendezettEvek = evek.toList();
+    rendezettEvek.sort((a, b) => b.compareTo(a));
+    
+    return [null, ...rendezettEvek];
   }
 
   List<Tura> _getSzurtTurak() {
-    List<Tura> szurt = _turak.where((t) => t.kezdoDatum.year == _kivEv).toList();
+    List<Tura> szurt;
+    if (_kivEv == null) {
+      szurt = List.from(_turak);
+    } else {
+      szurt = _turak.where((t) => t.kezdoDatum.year == _kivEv).toList();
+    }
     szurt.sort((a, b) => b.kezdoDatum.compareTo(a.kezdoDatum));
     return szurt;
   }
@@ -93,7 +101,6 @@ class _TurakScreenState extends State<TurakScreen> {
     );
   }
 
-  // Megjegyzés megjelenítő dialógus
   void _megjegyzresMutatasa(BuildContext context, Tura tura) {
     showDialog(
       context: context,
@@ -153,12 +160,22 @@ class _TurakScreenState extends State<TurakScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Szűrés év szerint:', style: TextStyle(color: Colors.white70)),
-                DropdownButton<int>(
+                const Text('Szűrés:', style: TextStyle(color: Colors.white70)),
+                DropdownButton<int?>(
                   value: _kivEv,
                   dropdownColor: const Color(0xFF1E1E1E),
-                  items: evek.map((e) => DropdownMenuItem(value: e, child: Text('$e. év', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)))).toList(),
-                  onChanged: (val) { if (val != null) setState(() => _kivEv = val); },
+                  items: evek.map((e) {
+                    return DropdownMenuItem<int?>(
+                      value: e,
+                      child: Text(
+                        e == null ? 'Összes Túra' : '$e', // <-- Itt csak az évszám jelenik meg ("2026", "2025", stb.)
+                        style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    setState(() => _kivEv = val);
+                  },
                 ),
               ],
             ),
@@ -166,7 +183,7 @@ class _TurakScreenState extends State<TurakScreen> {
           
           Expanded(
             child: mutatottTurak.isEmpty
-                ? const Center(child: Text('Nincs rögzített túra ebben az évben.\nKattints a + gombra!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 16)))
+                ? const Center(child: Text('Nincs rögzített túra.\nKattints a + gombra!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 16)))
                 : ListView.builder(
                     padding: const EdgeInsets.all(12),
                     itemCount: mutatottTurak.length,
@@ -236,7 +253,6 @@ class _TurakScreenState extends State<TurakScreen> {
 
                                   const Divider(height: 20, color: Colors.white12),
 
-                                  // AKCIÓSÁV: Kuka -> Ceruza -> Jegyzettömb (kiemelve, ha van megjegyzés) -> Szem (Fogások)
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
@@ -252,7 +268,6 @@ class _TurakScreenState extends State<TurakScreen> {
                                             tooltip: 'Túra szerkesztése',
                                             onPressed: () => _turaSzerkesztes(tura),
                                           ),
-                                          // JEGYZETTÖMB IKON (Kiemelve, ha van megjegyzés!)
                                           IconButton(
                                             icon: Icon(
                                               vanMegjegyzes ? Icons.note_alt : Icons.note_alt_outlined,
