@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 class IdojarasSzolgaltato {
   // Ide kell majd beilleszteni az ingyenes OpenWeatherMap API kulcsodat
-  static const String _apiKey = 'IDE_JON_AZ_API_KULCSOD';
+  static const String _apiKey = '53806ac9c451601b112061b1c699fc0f';
 
   static Future<double?> getAktualisHomerseklet() async {
     try {
