@@ -5,6 +5,7 @@ import 'kedvencek.dart';
 import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
+import 'torzsadatok.dart'; // <-- Bizonyosodj meg róla, hogy ez az import sor itt van!
 
 void main() {
   runApp(const HorgaszNaploApp());
@@ -34,7 +35,7 @@ class HorgaszNaploApp extends StatelessWidget {
   }
 }
 
-// --- SPLASH SCREEN (Megnövelt logó és "Horgásznapló" felirat) ---
+// --- SPLASH SCREEN ---
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -66,7 +67,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Megnövelt logó méret (180-as magasság)
             Image.asset('assets/2825.png', height: 180, fit: BoxFit.contain),
             const SizedBox(height: 28),
             const Text(
@@ -162,7 +162,11 @@ class _FomenuScreenState extends State<FomenuScreen> {
               leading: const Icon(Icons.category, color: Colors.greenAccent),
               title: const Text('5. Törzsadatok'),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(context); // Bezárja a drawer-t
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TorzsadatokScreen()), // Megnyitja a törzsadatokat
+                );
               },
             ),
             ListTile(
