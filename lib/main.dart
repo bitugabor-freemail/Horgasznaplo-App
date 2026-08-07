@@ -120,7 +120,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AdatKezelesScreen()), // <-- Itt volt a javítás
+                MaterialPageRoute(builder: (context) => const AdatkezelesScreen()),
               );
             },
           ),
