@@ -1,4 +1,3 @@
-// lib/turak.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -168,7 +167,7 @@ class _TurakScreenState extends State<TurakScreen> {
                     return DropdownMenuItem<int?>(
                       value: e,
                       child: Text(
-                        e == null ? 'Összes Túra' : '$e', // <-- Itt csak az évszám jelenik meg ("2026", "2025", stb.)
+                        e == null ? 'Összes Túra' : '$e',
                         style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
                       ),
                     );
@@ -193,6 +192,13 @@ class _TurakScreenState extends State<TurakScreen> {
                       final helyszinNev = _getHelyszinNeve(tura.helyszinId);
                       final vanMegjegyzes = tura.megjegyzes.isNotEmpty;
 
+                      // Napok számolása a kezdő és végdátum között
+                      final kezdo = DateTime(tura.kezdoDatum.year, tura.kezdoDatum.month, tura.kezdoDatum.day);
+                      final befejezo = DateTime(tura.befejezoDatum.year, tura.befejezoDatum.month, tura.befejezoDatum.day);
+                      final int diffDays = befejezo.difference(kezdo).inDays;
+                      final String extraNapok = diffDays > 0 ? ' (${diffDays + 1} napos)' : '';
+                      final String fejlecCim = '${DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum)}$extraNapok';
+
                       return Card(
                         color: const Color(0xFF1E1E1E),
                         margin: const EdgeInsets.only(bottom: 16),
@@ -201,13 +207,19 @@ class _TurakScreenState extends State<TurakScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Megújult Fejléc
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               color: Colors.green[900]?.withOpacity(0.4),
                               child: Text(
-                                '${DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum)} - ${DateFormat('yyyy.MM.dd.').format(tura.befejezoDatum)}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent),
+                                fejlecCim,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 20, // Akkora, mint a helyszín betűmérete
+                                  fontWeight: FontWeight.bold, 
+                                  color: Colors.greenAccent
+                                ),
                               ),
                             ),
                             
