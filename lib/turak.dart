@@ -196,7 +196,7 @@ class _TurakScreenState extends State<TurakScreen> {
                       final kezdo = DateTime(tura.kezdoDatum.year, tura.kezdoDatum.month, tura.kezdoDatum.day);
                       final befejezo = DateTime(tura.befejezoDatum.year, tura.befejezoDatum.month, tura.befejezoDatum.day);
                       final int diffDays = befejezo.difference(kezdo).inDays;
-                      final String extraNapok = diffDays > 0 ? ' (${diffDays + 1} napos)' : '';
+                      final String extraNapok = diffDays > 0 ? ' (${diffDays + 1} nap)' : '';
                       final String fejlecCim = '${DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum)}$extraNapok';
 
                       return Card(
@@ -216,7 +216,7 @@ class _TurakScreenState extends State<TurakScreen> {
                                 fejlecCim,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  fontSize: 20, // Akkora, mint a helyszín betűmérete
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold, 
                                   color: Colors.greenAccent
                                 ),
