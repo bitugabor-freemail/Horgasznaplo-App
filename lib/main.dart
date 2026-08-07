@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'turak.dart';
 import 'kedvencek.dart';
@@ -119,7 +120,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AdatKezeletScreen()),
+                MaterialPageRoute(builder: (context) => const AdatKezelesScreen()), // <-- Itt volt a javítás
               );
             },
           ),
