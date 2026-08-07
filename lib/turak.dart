@@ -307,7 +307,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
   Future<void> _adatokBetoltese() async {
     _helyszinek = await AdatTarolo.helyszinekBetoltese();
-    _elerhetoTarsak = await AdatTarolo.horgasztarsakBetoltese();
+    _elerhetoTarsak = await AdatTarolo.tarsakBetoltese(); // <-- Javítva a helyes metódusra[span_4](start_span)[span_4](end_span)
     setState(() {});
   }
 
@@ -328,7 +328,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                 final nev = ctrl.text.trim();
                 if (!_elerhetoTarsak.contains(nev)) {
                   _elerhetoTarsak.add(nev);
-                  await AdatTarolo.horgasztarsakMentes(_elerhetoTarsak);
+                  await AdatTarolo.tarsakMentes(_elerhetoTarsak); // <-- Javítva a helyes metódusra[span_5](start_span)[span_5](end_span)
                 }
                 if (!_kivalasztottTarsak.contains(nev)) {
                   _kivalasztottTarsak.add(nev);
