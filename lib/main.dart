@@ -5,6 +5,8 @@ import 'kedvencek.dart';
 import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
+// Ha van külön törzsadat nézet fájlod, importáld be itt, pl:
+// import 'torzsadatok.dart';
 
 void main() {
   runApp(const HorgaszNaploApp());
@@ -34,7 +36,7 @@ class HorgaszNaploApp extends StatelessWidget {
   }
 }
 
-// --- SPLASH SCREEN (4 másodperces induló képernyő) ---
+// --- SPLASH SCREEN ---
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -66,7 +68,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Saját logó betöltése az assets könyvtárból
             Image.asset('assets/2825.png', height: 120, fit: BoxFit.contain),
             const SizedBox(height: 24),
             const Text(
@@ -88,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// --- FŐMENÜ / ALSÓ NAVIGÁCIÓS KERET ---
+// --- FŐMENÜ / ALSÓ NAVIGÁCIÓS KERET & HAMBURGER MENÜ (DRAWER) ---
 class FomenuScreen extends StatefulWidget {
   const FomenuScreen({super.key});
 
@@ -106,29 +107,96 @@ class _FomenuScreenState extends State<FomenuScreen> {
     const StatisztikaScreen(),
   ];
 
+  final List<String> _cimek = [
+    'Horgásztúráim',
+    'Kedvenc fogások',
+    'Halfajok / Lexikon',
+    'Statisztika',
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF161616),
-        title: const Text('Horgásznapló & Halhatározó', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          // Adatkezelés (Export / Import / Törzsadatok) gomb a jobb felső sarokban
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.greenAccent),
-            tooltip: 'Adatkezelés és Törzsadatok',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AdatkezelesScreen()),
-              );
-            },
-          ),
-        ],
+        title: Text(_cimek[_currentIndex], style: const TextStyle(fontWeight: FontWeight.bold)),
+      ),
+      // HAMBURGER MENÜ (Balról behúzható Drawer a programterv alapján)
+      drawer: Drawer(
+        backgroundColor: const Color(0xFF161616),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Colors.green[900]?.withOpacity(0.5)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('Verzió 2.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.sailing, color: Colors.greenAccent),
+              title: const Text('1. Horgásztúráim'),
+              onTap: () { setState(() => _currentIndex = 0); Navigator.pop(context); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite, color: Colors.greenAccent),
+              title: const Text('2. Kedvenc fogások'),
+              onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.book, color: Colors.greenAccent),
+              title: const Text('3. Halfajok'),
+              onTap: () { setState(() => _currentIndex = 2); Navigator.pop(context); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bar_chart, color: Colors.greenAccent),
+              title: const Text('4. Statisztika'),
+              onTap: () { setState(() => _currentIndex = 3); Navigator.pop(context); },
+            ),
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.category, color: Colors.greenAccent),
+              title: const Text('5. Törzsadatok'),
+              onTap: () {
+                Navigator.pop(context);
+                // Ide jöhet a Törzsadatok képernyő hívása, ha van külön:
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => const TorzsadatokScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings, color: Colors.greenAccent),
+              title: const Text('6. Adatkezelés'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const AdatkezelesScreen()));
+              },
+            ),
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: Colors.white54),
+              title: const Text('7. Névjegy'),
+              onTap: () {
+                Navigator.pop(context);
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'Horgásznapló & Halhatározó',
+                  applicationVersion: '2.0',
+                  applicationLegalese: 'Minden jog fenntartva.',
+                );
+              },
+            ),
+          ],
+        ),
       ),
       body: _kepernyok[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: _currentIndex > 3 ? 0 : _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF161616),
