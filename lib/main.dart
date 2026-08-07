@@ -5,8 +5,6 @@ import 'kedvencek.dart';
 import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
-// Ha van külön törzsadat nézet fájlod, importáld be itt, pl:
-// import 'torzsadatok.dart';
 
 void main() {
   runApp(const HorgaszNaploApp());
@@ -18,7 +16,7 @@ class HorgaszNaploApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Horgásznapló & Halhatározó',
+      title: 'Horgásznapló',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -36,7 +34,7 @@ class HorgaszNaploApp extends StatelessWidget {
   }
 }
 
-// --- SPLASH SCREEN ---
+// --- SPLASH SCREEN (Megnövelt logó és "Horgásznapló" felirat) ---
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -68,13 +66,14 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/2825.png', height: 120, fit: BoxFit.contain),
-            const SizedBox(height: 24),
+            // Megnövelt logó méret (180-as magasság)
+            Image.asset('assets/2825.png', height: 180, fit: BoxFit.contain),
+            const SizedBox(height: 28),
             const Text(
-              'HORGÁSZNAPLÓ\n& HALHATÁROZÓ',
+              'Horgásznapló',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 2,
                 color: Colors.greenAccent,
@@ -121,7 +120,6 @@ class _FomenuScreenState extends State<FomenuScreen> {
         backgroundColor: const Color(0xFF161616),
         title: Text(_cimek[_currentIndex], style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
-      // HAMBURGER MENÜ (Balról behúzható Drawer a programterv alapján)
       drawer: Drawer(
         backgroundColor: const Color(0xFF161616),
         child: ListView(
@@ -165,8 +163,6 @@ class _FomenuScreenState extends State<FomenuScreen> {
               title: const Text('5. Törzsadatok'),
               onTap: () {
                 Navigator.pop(context);
-                // Ide jöhet a Törzsadatok képernyő hívása, ha van külön:
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => const TorzsadatokScreen()));
               },
             ),
             ListTile(
@@ -185,7 +181,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                 Navigator.pop(context);
                 showAboutDialog(
                   context: context,
-                  applicationName: 'Horgásznapló & Halhatározó',
+                  applicationName: 'Horgásznapló',
                   applicationVersion: '2.0',
                   applicationLegalese: 'Minden jog fenntartva.',
                 );
