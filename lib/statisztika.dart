@@ -119,7 +119,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       if (_szuroSors != null && f.sors != _szuroSors) return false;
       if (_szuroBot != null && f.bot != _szuroBot) return false;
       if (_szuroModszer != null && f.modszer != _szuroModszer) return false;
-      if (_szuroSzerelek != null && f.szerelek != _szuroSzerelek) return false;
+      if (_szuroSzerelek != null && f.vegszerelek != _szuroSzerelek) return false;
       if (_szuroIdojaras != null && f.idojaras != _szuroIdojaras) return false;
       if (_szuroCsali != null && !f.csali.contains(_szuroCsali)) return false;
       if (_szuroEtetoanyag != null && !f.etetoanyag.contains(_szuroEtetoanyag)) return false;
@@ -485,7 +485,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                             const Divider(color: Colors.white12),
                             _StatisztikaSor(cim: 'Legjobb Csali + Etetőanyag', ertek: _legjobbKombo(szurtFogasok, (f) => '${f.csali.isNotEmpty ? f.csali.first : ""} + ${f.etetoanyag.isNotEmpty ? f.etetoanyag.first : ""}')),
                             const Divider(color: Colors.white12),
-                            _StatisztikaSor(cim: 'Legnyerőbb módszer', ertek: _legjobbKombo(szurtFogasok, (f) => f.modszer)),
+                            _StatisztikaSor(cim: 'Legnyerőbb módszer', ertek: _legjobbKombo(szurtFogasok, (f) => f.modszer ?? '')),
                             const Divider(color: Colors.white12),
                             _StatisztikaSor(cim: 'Legjobb horgászhely', ertek: _legjobbHelyszin(szurtFogasok)),
                           ],
