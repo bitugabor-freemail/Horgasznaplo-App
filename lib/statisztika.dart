@@ -132,7 +132,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       if (_hosszMaxCtrl.text.isNotEmpty && (f.hossz != null && f.hossz! > int.parse(_hosszMaxCtrl.text))) return false;
 
       if (_hoMinCtrl.text.isNotEmpty || _hoMaxCtrl.text.isNotEmpty) {
-        double? homerseklet = double.tryParse(f.homerseklet.replaceAll(',', '.'));
+        double? homerseklet = f.homerseklet; // JAVÍTVA
         if (homerseklet == null) return false;
         if (_hoMinCtrl.text.isNotEmpty && homerseklet < double.parse(_hoMinCtrl.text.replaceAll(',', '.'))) return false;
         if (_hoMaxCtrl.text.isNotEmpty && homerseklet > double.parse(_hoMaxCtrl.text.replaceAll(',', '.'))) return false;
@@ -141,7 +141,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       // 5. Túra adatokra vonatkozó szűrések (Helyszín, Horgászhely, Társak)
       if (_szuroHelyszin != null || _szuroTars != null || _horgaszhelyCtrl.text.isNotEmpty) {
         final tura = _osszesTura.cast<Tura?>().firstWhere((t) => t?.id == f.turaId, orElse: () => null);
-        if (tura == null) return false; // Ha nincs túra, de szűrünk rá, akkor bukta
+        if (tura == null) return false; 
         
         if (_szuroTars != null && !tura.horgasztarsak.contains(_szuroTars)) return false;
         if (_horgaszhelyCtrl.text.isNotEmpty && !tura.horgaszhely.toLowerCase().contains(_horgaszhelyCtrl.text.toLowerCase())) return false;
@@ -152,7 +152,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
         }
       }
 
-      return true; // Ha minden szűrőn átment
+      return true; 
     }).toList();
   }
 
@@ -287,7 +287,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], padding: const EdgeInsets.symmetric(vertical: 16)),
                       onPressed: () {
-                        setState(() {}); // Fő UI frissítése a szűrőkkel
+                        setState(() {}); 
                         Navigator.pop(context);
                       },
                       child: const Text('Szűrés Alkalmazása', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
@@ -325,7 +325,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       final tParts = f.idopont.split(':');
       if (tParts.length == 2) {
         int ora = int.parse(tParts[0]);
-        int sav = (ora / 3).floor() * 3; // 0, 3, 6, 9...
+        int sav = (ora / 3).floor() * 3; 
         idosavok[sav] = (idosavok[sav] ?? 0) + 1;
       }
     }
