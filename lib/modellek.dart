@@ -50,12 +50,12 @@ class FogasModel {
   final String halfaj;
   final double? suly;
   final double? hossz;
-  final String? halSorsa;
+  final String? sors; // Visszaállítva az eredetire
   final List<String> csali;
   final List<String> etetoanyag;
   final int? etetesGyakorisaga;
   final String? bot;
-  final String? horgaszmodszer;
+  final String? modszer; // Visszaállítva az eredetire
   final String? vegszerelek;
   final String? idojaras;
   final double? homerseklet;
@@ -71,12 +71,12 @@ class FogasModel {
     required this.halfaj,
     this.suly,
     this.hossz,
-    this.halSorsa,
+    this.sors,
     this.csali = const [],
     this.etetoanyag = const [],
     this.etetesGyakorisaga,
     this.bot,
-    this.horgaszmodszer,
+    this.modszer,
     this.vegszerelek,
     this.idojaras,
     this.homerseklet,
@@ -93,12 +93,12 @@ class FogasModel {
     'halfaj': halfaj,
     'suly': suly,
     'hossz': hossz,
-    'halSorsa': halSorsa,
+    'sors': sors, // Visszaállítva az eredetire
     'csali': csali,
     'etetoanyag': etetoanyag,
     'etetesGyakorisaga': etetesGyakorisaga,
     'bot': bot,
-    'horgaszmodszer': horgaszmodszer,
+    'modszer': modszer, // Visszaállítva az eredetire
     'vegszerelek': vegszerelek,
     'idojaras': idojaras,
     'homerseklet': homerseklet,
@@ -115,12 +115,12 @@ class FogasModel {
     halfaj: json['halfaj'],
     suly: json['suly']?.toDouble(),
     hossz: json['hossz']?.toDouble(),
-    halSorsa: json['halSorsa'],
+    sors: json['sors'], // Visszaállítva az eredetire
     csali: List<String>.from(json['csali'] ?? []),
     etetoanyag: List<String>.from(json['etetoanyag'] ?? []),
     etetesGyakorisaga: json['etetesGyakorisaga'],
     bot: json['bot'],
-    horgaszmodszer: json['horgaszmodszer'],
+    modszer: json['modszer'], // Visszaállítva az eredetire
     vegszerelek: json['vegszerelek'],
     idojaras: json['idojaras'],
     homerseklet: json['homerseklet']?.toDouble(),
