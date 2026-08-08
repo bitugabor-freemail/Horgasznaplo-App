@@ -1,89 +1,12 @@
-// lib/modellek.dart
-
-// --- 1. HELYSZÍN (Törzsadat) ---
-class Helyszin {
-  String id;
-  String nev;
-  String vizterKod; // Új mező
-
-  Helyszin({required this.id, required this.nev, this.vizterKod = ''});
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'nev': nev,
-    'vizterKod': vizterKod,
-  };
-
-  factory Helyszin.fromJson(Map<String, dynamic> json) => Helyszin(
-    id: json['id'],
-    nev: json['nev'],
-    vizterKod: json['vizterKod'] ?? '',
-  );
-}
-
-// --- 2. HALFAJ (Törzsadat és Lexikon) ---
-class Halfaj {
-  String id;
-  String nev;
-  String kategoria; // Békés vagy Ragadozó
-  String statusz; // Fogható, Védett, Inváziós, Nem fogható
-  String meretKorlatozas;
-  String darabKorlatozas; // Új mező
-  String tilalmiIdoszak;
-  String szabalyozasEve; // Új mező
-  String megjegyzes; // Élőhely, táplálék, stb.
-  List<String> kepek;
-
-  Halfaj({
-    required this.id,
-    required this.nev,
-    this.kategoria = 'Békés',
-    this.statusz = 'Fogható',
-    this.meretKorlatozas = '',
-    this.darabKorlatozas = '',
-    this.tilalmiIdoszak = '',
-    this.szabalyozasEve = '',
-    this.megjegyzes = '',
-    this.kepek = const [],
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'nev': nev,
-    'kategoria': kategoria,
-    'statusz': statusz,
-    'meretKorlatozas': meretKorlatozas,
-    'darabKorlatozas': darabKorlatozas,
-    'tilalmiIdoszak': tilalmiIdoszak,
-    'szabalyozasEve': szabalyozasEve,
-    'megjegyzes': megjegyzes,
-    'kepek': kepek,
-  };
-
-  factory Halfaj.fromJson(Map<String, dynamic> json) => Halfaj(
-    id: json['id'],
-    nev: json['nev'],
-    kategoria: json['kategoria'] ?? 'Békés',
-    statusz: json['statusz'] ?? 'Fogható',
-    meretKorlatozas: json['meretKorlatozas'] ?? '',
-    darabKorlatozas: json['darabKorlatozas'] ?? '',
-    tilalmiIdoszak: json['tilalmiIdoszak'] ?? '',
-    szabalyozasEve: json['szabalyozasEve'] ?? '',
-    megjegyzes: json['megjegyzes'] ?? '',
-    kepek: List<String>.from(json['kepek'] ?? []),
-  );
-}
-
-// --- 3. TÚRA ---
 class Tura {
-  String id;
-  DateTime kezdoDatum; // Új: Csak ez és a befejező kötelező
-  DateTime befejezoDatum;
-  String? helyszinId; // Opcionális
-  String horgaszhely;
-  List<String> horgasztarsak; // Törzsadatból, több is lehet
-  String? boritoKep;
-  String megjegyzes;
+  final String id;
+  final DateTime kezdoDatum;
+  final DateTime befejezoDatum;
+  final String? helyszinId;
+  final String horgaszhely;
+  final List<String> horgasztarsak;
+  final String? boritoKep;
+  final String megjegyzes;
 
   Tura({
     required this.id,
@@ -119,47 +42,45 @@ class Tura {
   );
 }
 
-// --- 4. FOGÁS ---
 class FogasModel {
-  String id;
-  String turaId;
-  DateTime datum;
-  // A TimeOfDay-t manuálisan Stringbe mentjük és olvassuk, mert a JSON nem ismeri
-  String idopontString; 
-  String halfaj; // Kötelező
-  double? suly; // Mostantól opcionális
-  int? hossz; // Mostantól opcionális
-  String sors; // Alap: Visszaengedtem
-  List<String> csali;
-  List<String> etetoanyag;
-  String etetesGyakorisag;
-  String bot;
-  String modszer;
-  String szerelek;
-  String idojaras;
-  String homerseklet;
-  String? kepUtvonal;
-  String megjegyzes;
+  final String id;
+  final String turaId;
+  final DateTime datum;
+  final String idopont;
+  final String halfaj;
+  final double? suly;
+  final double? hossz;
+  final String? halSorsa;
+  final List<String> csali;
+  final List<String> etetoanyag;
+  final int? etetesGyakorisaga;
+  final String? bot;
+  final String? horgaszmodszer;
+  final String? vegszerelek;
+  final String? idojaras;
+  final double? homerseklet;
+  final String? fenykep;
+  final String megjegyzes;
   bool isKedvenc;
 
   FogasModel({
     required this.id,
     required this.turaId,
     required this.datum,
-    required this.idopontString,
+    required this.idopont,
     required this.halfaj,
     this.suly,
     this.hossz,
-    this.sors = 'Visszaengedtem',
+    this.halSorsa,
     this.csali = const [],
     this.etetoanyag = const [],
-    this.etetesGyakorisag = '',
-    this.bot = '',
-    this.modszer = '',
-    this.szerelek = '',
-    this.idojaras = '',
-    this.homerseklet = '',
-    this.kepUtvonal,
+    this.etetesGyakorisaga,
+    this.bot,
+    this.horgaszmodszer,
+    this.vegszerelek,
+    this.idojaras,
+    this.homerseklet,
+    this.fenykep,
     this.megjegyzes = '',
     this.isKedvenc = false,
   });
@@ -168,20 +89,20 @@ class FogasModel {
     'id': id,
     'turaId': turaId,
     'datum': datum.toIso8601String(),
-    'idopontString': idopontString,
+    'idopont': idopont,
     'halfaj': halfaj,
     'suly': suly,
     'hossz': hossz,
-    'sors': sors,
+    'halSorsa': halSorsa,
     'csali': csali,
     'etetoanyag': etetoanyag,
-    'etetesGyakorisag': etetesGyakorisag,
+    'etetesGyakorisaga': etetesGyakorisaga,
     'bot': bot,
-    'modszer': modszer,
-    'szerelek': szerelek,
+    'horgaszmodszer': horgaszmodszer,
+    'vegszerelek': vegszerelek,
     'idojaras': idojaras,
     'homerseklet': homerseklet,
-    'kepUtvonal': kepUtvonal,
+    'fenykep': fenykep,
     'megjegyzes': megjegyzes,
     'isKedvenc': isKedvenc,
   };
@@ -190,21 +111,97 @@ class FogasModel {
     id: json['id'],
     turaId: json['turaId'],
     datum: DateTime.parse(json['datum']),
-    idopontString: json['idopontString'],
+    idopont: json['idopont'] ?? '00:00',
     halfaj: json['halfaj'],
     suly: json['suly']?.toDouble(),
-    hossz: json['hossz']?.toInt(),
-    sors: json['sors'] ?? 'Visszaengedtem',
+    hossz: json['hossz']?.toDouble(),
+    halSorsa: json['halSorsa'],
     csali: List<String>.from(json['csali'] ?? []),
     etetoanyag: List<String>.from(json['etetoanyag'] ?? []),
-    etetesGyakorisag: json['etetesGyakorisag'] ?? '',
-    bot: json['bot'] ?? '',
-    modszer: json['modszer'] ?? '',
-    szerelek: json['szerelek'] ?? '',
-    idojaras: json['idojaras'] ?? '',
-    homerseklet: json['homerseklet'] ?? '',
-    kepUtvonal: json['kepUtvonal'],
+    etetesGyakorisaga: json['etetesGyakorisaga'],
+    bot: json['bot'],
+    horgaszmodszer: json['horgaszmodszer'],
+    vegszerelek: json['vegszerelek'],
+    idojaras: json['idojaras'],
+    homerseklet: json['homerseklet']?.toDouble(),
+    fenykep: json['fenykep'],
     megjegyzes: json['megjegyzes'] ?? '',
     isKedvenc: json['isKedvenc'] ?? false,
+  );
+}
+
+class Helyszin {
+  final String id;
+  final String nev;
+  final String vizterKod;
+
+  Helyszin({
+    required this.id,
+    required this.nev,
+    this.vizterKod = '',
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'nev': nev,
+    'vizterKod': vizterKod,
+  };
+
+  factory Helyszin.fromJson(Map<String, dynamic> json) => Helyszin(
+    id: json['id'],
+    nev: json['nev'],
+    vizterKod: json['vizterKod'] ?? '',
+  );
+}
+
+class Halfaj {
+  final String id;
+  final String nev;
+  final String kategoria;
+  final String statusz;
+  final String meretKorlatozas;
+  final String darabKorlatozas;
+  final String tilalmiIdoszak;
+  final String szabalyozasEve;
+  final String megjegyzes;
+  final List<String> kepek;
+
+  Halfaj({
+    required this.id,
+    required this.nev,
+    this.kategoria = '',
+    this.statusz = '',
+    this.meretKorlatozas = '',
+    this.darabKorlatozas = '',
+    this.tilalmiIdoszak = '',
+    this.szabalyozasEve = '',
+    this.megjegyzes = '',
+    this.kepek = const [],
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'nev': nev,
+    'kategoria': kategoria,
+    'statusz': statusz,
+    'meretKorlatozas': meretKorlatozas,
+    'darabKorlatozas': darabKorlatozas,
+    'tilalmiIdoszak': tilalmiIdoszak,
+    'szabalyozasEve': szabalyozasEve,
+    'megjegyzes': megjegyzes,
+    'kepek': kepek,
+  };
+
+  factory Halfaj.fromJson(Map<String, dynamic> json) => Halfaj(
+    id: json['id'],
+    nev: json['nev'],
+    kategoria: json['kategoria'] ?? '',
+    statusz: json['statusz'] ?? '',
+    meretKorlatozas: json['meretKorlatozas'] ?? '',
+    darabKorlatozas: json['darabKorlatozas'] ?? '',
+    tilalmiIdoszak: json['tilalmiIdoszak'] ?? '',
+    szabalyozasEve: json['szabalyozasEve'] ?? '',
+    megjegyzes: json['megjegyzes'] ?? '',
+    kepek: List<String>.from(json['kepek'] ?? []),
   );
 }
