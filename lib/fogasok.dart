@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
-import 'idojaras_szolgaltato.dart'; // <-- Itt importáljuk az új GPS szolgáltatásunkat!
+import 'idojaras_szolgaltato.dart'; 
 
 class FogasokScreen extends StatefulWidget {
   final Tura tura;
@@ -30,9 +30,8 @@ class _FogasokScreenState extends State<FogasokScreen> {
     _halfajok = await AdatTarolo.halfajokBetoltese();
     
     setState(() {
-      // Csak az ehhez a túrához tartozó fogásokat listázzuk, időben visszafelé
       _fogasok = osszesFogas.where((f) => f.turaId == widget.tura.id).toList();
-      _fogasok.sort((a, b) => b.datum.compareTo(a.datum)); // Itt az időpontot is érdemes vizsgálni a pontos rendezéshez
+      _fogasok.sort((a, b) => b.datum.compareTo(a.datum));
     });
   }
 
@@ -78,18 +77,16 @@ class _FogasokScreenState extends State<FogasokScreen> {
     final osszes = await AdatTarolo.fogasokBetoltese();
     final idx = osszes.indexWhere((f) => f.id == fogas.id);
     if (idx != -1) {
-      // Feltételezve, hogy a FogasModel-ben van egy 'isKedvenc' boolean mező
-      // osszes[idx].isKedvenc = !osszes[idx].isKedvenc; 
+      osszes[idx].isKedvenc = !osszes[idx].isKedvenc; 
       await AdatTarolo.fogasokMentes(osszes);
       _adatokBetoltese();
     }
   }
 
-  // Színkódolás a Hal sorsa alapján (Programterv 3. pont)
   Color _getSorsSzin(String sors) {
     if (sors.toLowerCase().contains('elvitt')) return Colors.orange;
     if (sors.toLowerCase().contains('elpusztult')) return Colors.red;
-    return Colors.transparent; // Visszaengedett: normál/sötét háttér (nincs keret)
+    return Colors.transparent; 
   }
 
   @override
@@ -106,7 +103,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
               itemCount: _fogasok.length,
               itemBuilder: (context, index) {
                 final fogas = _fogasok[index];
-                final keretSzin = _getSorsSzin(fogas.halSorsa ?? '');
+                final keretSzin = _getSorsSzin(fogas.sors ?? ''); // Itt igazítottuk az eredeti modellnévhez
 
                 return Card(
                   color: const Color(0xFF1E1E1E),
@@ -120,7 +117,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Dátum/Idő fejléc
                         Text(
                           '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} ${fogas.idopont}',
                           style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
@@ -129,7 +125,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
                         
                         Row(
                           children: [
-                            // Miniatűr fénykép
                             if (fogas.fenykep != null && File(fogas.fenykep!).existsSync())
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
@@ -143,7 +138,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
                               ),
                             const SizedBox(width: 16),
                             
-                            // Adatok
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,7 +155,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
                         ),
                         const SizedBox(height: 12),
                         
-                        // Akciósáv (Programterv alapján szigorú sorrend)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -176,7 +169,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
                                   onPressed: () => _fogasSzerkesztes(fogas),
                                 ),
                                 IconButton(
-                                  icon: Icon(Icons.favorite_outline, color: Colors.white70), // Ha kedvenc, legyen Icons.favorite pirosan
+                                  icon: Icon(fogas.isKedvenc ? Icons.favorite : Icons.favorite_outline, color: fogas.isKedvenc ? Colors.redAccent : Colors.white70),
                                   onPressed: () => _kedvencValtoztatas(fogas),
                                 ),
                               ],
@@ -206,7 +199,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
   }
 }
 
-// --- FOGÁS SZERKESZTŐ / RÖGZÍTŐ ŰRLAP ---
 class FogasSzerkesztoScreen extends StatefulWidget {
   final String turaId;
   final FogasModel? szerkeszthetoFogas;
@@ -225,32 +217,27 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   String? _kivalasztottHalfaj;
   final _sulyCtrl = TextEditingController();
   final _hosszCtrl = TextEditingController();
-  String _halSorsa = 'Visszaengedtem'; // Alapértelmezés a terv szerint
+  String _sors = 'Visszaengedtem'; 
   final _homersekletCtrl = TextEditingController();
   final _megjegyzesCtrl = TextEditingController();
   String? _fenykepUtvonal;
 
-  bool _isIdojarasLekeresFolyamatban = false; // GPS lekérés állapotjelzője
+  bool _isIdojarasLekeresFolyamatban = false; 
 
   List<Halfaj> _elerhetoHalfajok = [];
   List<String> _elerhetoSorsok = ['Visszaengedtem', 'Elvittem', 'Elpusztult']; 
-  // A többi listát (Csali, Bot, Módszer stb.) ide kell majd bekötni a Törzsadatokból
 
   @override
   void initState() {
     super.initState();
     _adatokBetoltese();
-    
-    // Ha szerkesztünk, töltsük be az adatokat...
   }
 
   Future<void> _adatokBetoltese() async {
     _elerhetoHalfajok = await AdatTarolo.halfajokBetoltese();
-    // Itt töltjük be a többi törzsadatot is...
     setState(() {});
   }
 
-  // GPS alapú online hőmérséklet lekérés!
   Future<void> _homersekletLekeres() async {
     setState(() => _isIdojarasLekeresFolyamatban = true);
     
@@ -276,7 +263,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // DÁTUM ÉS IDŐ
             Row(
               children: [
                 Expanded(
@@ -304,7 +290,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // HALFAJ (KÖTELEZŐ)
             DropdownButtonFormField<String?>(
               value: _kivalasztottHalfaj,
               isExpanded: true,
@@ -324,7 +309,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // SÚLY ÉS HOSSZ
             Row(
               children: [
                 Expanded(child: TextField(controller: _sulyCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Súly (kg)', border: OutlineInputBorder()))),
@@ -334,14 +318,12 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // HŐMÉRSÉKLET + ONLINE LEKÉRÉS GOMB
             TextField(
               controller: _homersekletCtrl,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: 'Hőmérséklet (°C)',
                 border: const OutlineInputBorder(),
-                // ITT VAN A VARÁZSLAT: A gomb a mező belsejében!
                 suffixIcon: _isIdojarasLekeresFolyamatban
                     ? const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.greenAccent))
                     : IconButton(
@@ -353,7 +335,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
             
-            // FOTÓ
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800], padding: const EdgeInsets.all(12)),
               icon: const Icon(Icons.camera_alt),
