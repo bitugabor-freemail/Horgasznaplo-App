@@ -33,8 +33,8 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
     
     // Rendezés: Legfrissebb legelöl
     kedvencek.sort((a, b) {
-      String aKomp = "${DateFormat('yyyy-MM-dd').format(a.datum)} ${a.idopontString}";
-      String bKomp = "${DateFormat('yyyy-MM-dd').format(b.datum)} ${b.idopontString}";
+      String aKomp = "${DateFormat('yyyy-MM-dd').format(a.datum)} ${a.idopont}";
+      String bKomp = "${DateFormat('yyyy-MM-dd').format(b.datum)} ${b.idopont}";
       return bKomp.compareTo(aKomp);
     });
 
@@ -139,7 +139,7 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} ${fogas.idopontString}',
+                          '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} ${fogas.idopont}',
                           style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         const SizedBox(height: 12),
@@ -150,8 +150,8 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                               width: 80, height: 80,
                               decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
                               clipBehavior: Clip.antiAlias,
-                              child: (fogas.kepUtvonal != null && File(fogas.kepUtvonal!).existsSync())
-                                  ? Image.file(File(fogas.kepUtvonal!), fit: BoxFit.cover)
+                              child: (fogas.fenykep != null && File(fogas.fenykep!).existsSync())
+                                  ? Image.file(File(fogas.fenykep!), fit: BoxFit.cover)
                                   : const Icon(Icons.set_meal, color: Colors.white24, size: 40),
                             ),
                             const SizedBox(width: 12),
@@ -189,16 +189,17 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                             IconButton(
                               icon: const Icon(Icons.visibility, color: Colors.greenAccent),
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FogasReszletekScreen(
-                                      fogas: fogas, 
-                                      turaHelyszinNev: turaHelyszin,
-                                      turaHorgaszhely: turaHorgaszhely,
-                                    ),
-                                  ),
-                                );
+                                // TODO: Ide jön majd a FogasReszletekScreen megnyitása
+                                // Navigator.push(
+                                //   context,
+                                //   MaterialPageRoute(
+                                //     builder: (context) => FogasReszletekScreen(
+                                //       fogas: fogas, 
+                                //       turaHelyszinNev: turaHelyszin,
+                                //       turaHorgaszhely: turaHorgaszhely,
+                                //     ),
+                                //   ),
+                                // );
                               },
                             ),
                           ],
