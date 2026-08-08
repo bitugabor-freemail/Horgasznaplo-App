@@ -106,7 +106,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       if (fDatum.isBefore(_kezdoDatum) || fDatum.isAfter(_vegDatum)) return false;
 
       // 2. Időpont szűrés
-      final tParts = f.idopontString.split(':');
+      final tParts = f.idopont.split(':');
       if (tParts.length == 2) {
         int fMin = int.parse(tParts[0]) * 60 + int.parse(tParts[1]);
         int startMin = _kezdoIdo.hour * 60 + _kezdoIdo.minute;
@@ -322,7 +322,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     if (fogasok.isEmpty) return '-';
     Map<int, int> idosavok = {};
     for (var f in fogasok) {
-      final tParts = f.idopontString.split(':');
+      final tParts = f.idopont.split(':');
       if (tParts.length == 2) {
         int ora = int.parse(tParts[0]);
         int sav = (ora / 3).floor() * 3; // 0, 3, 6, 9...
