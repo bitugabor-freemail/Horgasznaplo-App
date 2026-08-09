@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'idojaras_szolgaltato.dart';
-import 'torzsadatok.dart'; // <--- EZT HOZZÁADTUK!
+import 'torzsadatok.dart'; 
 
 class FogasokScreen extends StatefulWidget {
   final Tura tura;
@@ -95,7 +95,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
     }
   }
 
-  Color _getKartyaszin(String sors) {
+  Color _getKartyaszin(String? sors) {
     if (sors == 'Elvittem') return Colors.orange.withOpacity(0.15);
     if (sors == 'Elpusztult') return Colors.red.withOpacity(0.15);
     return const Color(0xFF1E1E1E); 
@@ -117,7 +117,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
                 final fogas = _fogasok[index];
 
                 return Card(
-                  color: _getKartyaszin(fogas.sors ?? ''),
+                  color: _getKartyaszin(fogas.sors),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   margin: const EdgeInsets.only(bottom: 12),
                   child: InkWell(
@@ -241,7 +241,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   final _sulyCtrl = TextEditingController();
   final _hosszCtrl = TextEditingController();
   
-  String _sors = 'Visszaengedtem'; 
+  String? _sors; // Dinamikussá tettük a fagyás elkerülése miatt!
   String? _kivalasztottBot;
   String? _kivalasztottModszer;
   String? _kivalasztottVegszerelek;
@@ -258,7 +258,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   bool _isIdojarasLekeresFolyamatban = false; 
 
   List<Halfaj> _elerhetoHalfajok = [];
-  List<String> _elerhetoSorsok = ['Visszaengedtem', 'Elvittem', 'Elpusztult']; 
+  List<String> _elerhetoSorsok = []; 
   List<String> _elerhetoBotok = [];
   List<String> _elerhetoModszerek = [];
   List<String> _elerhetoVegszerelekek = [];
@@ -269,7 +269,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   @override
   void initState() {
     super.initState();
-    _adatokBetoltese();
     if (widget.szerkeszthetoFogas != null) {
       final f = widget.szerkeszthetoFogas!;
       _datum = f.datum;
@@ -294,6 +293,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       _megjegyzesCtrl.text = f.megjegyzes;
       _fenykepUtvonal = f.fenykep;
     }
+    _adatokBetoltese();
   }
 
   Future<void> _adatokBetoltese() async {
@@ -306,7 +306,12 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     _elerhetoIdojarasok = await AdatTarolo.idojarasBetoltese();
     
     List<String> mentettSorsok = await AdatTarolo.sorsBetoltese();
-    if (mentettSorsok.isNotEmpty) _elerhetoSorsok = mentettSorsok;
+    _elerhetoSorsok = mentettSorsok;
+    
+    // FAGYÁSVÉDELEM: Ha a korábban beállított sors már nincs a listában, töröljük a kiválasztást
+    if (_sors != null && !_elerhetoSorsok.contains(_sors)) {
+      _sors = null;
+    }
     
     setState(() {});
   }
@@ -498,7 +503,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // --- 3. PONT: TELJES ÉRTÉKŰ HALFAJ ŰRLAP BEKÖTÉSE ---
             DropdownButtonFormField<String?>(
               value: _kivalasztottHalfaj,
               isExpanded: true,
