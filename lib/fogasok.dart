@@ -30,7 +30,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
     final osszesFogas = await AdatTarolo.fogasokBetoltese();
     _halfajok = await AdatTarolo.halfajokBetoltese();
     
-    // Lekérjük a túra helyszínének nevét a részletes nézethez
     if (widget.tura.helyszinId != null) {
       final helyszinek = await AdatTarolo.helyszinekBetoltese();
       final h = helyszinek.cast<Helyszin?>().firstWhere((x) => x?.id == widget.tura.helyszinId, orElse: () => null);
@@ -39,7 +38,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
     
     setState(() {
       _fogasok = osszesFogas.where((f) => f.turaId == widget.tura.id).toList();
-      // Rendezés: Legfrissebb legelöl
       _fogasok.sort((a, b) {
         String aKomp = "${DateFormat('yyyy-MM-dd').format(a.datum)} ${a.idopont}";
         String bKomp = "${DateFormat('yyyy-MM-dd').format(b.datum)} ${b.idopont}";
@@ -121,80 +119,96 @@ class _FogasokScreenState extends State<FogasokScreen> {
                   color: _getKartyaszin(fogas.sors ?? ''),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: (fogas.fenykep != null && File(fogas.fenykep!).existsSync())
-                            ? Image.file(File(fogas.fenykep!), fit: BoxFit.cover)
-                            : const Icon(Icons.set_meal, color: Colors.white24, size: 30),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} ${fogas.idopont}',
-                                style: const TextStyle(fontSize: 12, color: Colors.greenAccent),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(fogas.halfaj, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                              Text('${fogas.suly != null ? '${fogas.suly} kg' : '-'} • ${fogas.hossz != null ? '${fogas.hossz} cm' : '-'}', style: const TextStyle(fontSize: 14, color: Colors.white70)),
-                            ],
+                  // --- 5. PONT: EGÉSZ KÁRTYÁS KATTINTÁS ---
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FogasReszletekScreen(
+                            fogas: fogas,
+                            helyszinNev: _turaHelyszinNev,
+                            horgaszhely: widget.tura.horgaszhely,
                           ),
                         ),
-                      ),
-                      Column(
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
-                                onPressed: () => _fogasTorlese(fogas),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.white70),
-                                onPressed: () => _fogasSzerkesztes(fogas),
-                              ),
-                            ],
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          margin: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black26,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(fogas.isKedvenc ? Icons.favorite : Icons.favorite_outline, size: 20, color: fogas.isKedvenc ? Colors.redAccent : Colors.white70),
-                                onPressed: () => _kedvencValtoztatas(fogas),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.visibility, size: 20, color: Colors.greenAccent),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => FogasReszletekScreen(
-                                        fogas: fogas,
-                                        helyszinNev: _turaHelyszinNev,
-                                        horgaszhely: widget.tura.horgaszhely,
+                          clipBehavior: Clip.antiAlias,
+                          child: (fogas.fenykep != null && File(fogas.fenykep!).existsSync())
+                              ? Image.file(File(fogas.fenykep!), fit: BoxFit.cover)
+                              : const Icon(Icons.set_meal, color: Colors.white24, size: 30),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} ${fogas.idopont}',
+                                  style: const TextStyle(fontSize: 12, color: Colors.greenAccent),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(fogas.halfaj.isEmpty ? 'Ismeretlen halfaj' : fogas.halfaj, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                Text('${fogas.suly != null ? '${fogas.suly} kg' : '-'} • ${fogas.hossz != null ? '${fogas.hossz} cm' : '-'}', style: const TextStyle(fontSize: 14, color: Colors.white70)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                                  onPressed: () => _fogasTorlese(fogas),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.white70),
+                                  onPressed: () => _fogasSzerkesztes(fogas),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(fogas.isKedvenc ? Icons.favorite : Icons.favorite_outline, size: 20, color: fogas.isKedvenc ? Colors.redAccent : Colors.white70),
+                                  onPressed: () => _kedvencValtoztatas(fogas),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.visibility, size: 20, color: Colors.greenAccent),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FogasReszletekScreen(
+                                          fogas: fogas,
+                                          helyszinNev: _turaHelyszinNev,
+                                          horgaszhely: widget.tura.horgaszhely,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -263,7 +277,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       final tParts = f.idopont.split(':');
       if (tParts.length == 2) _idopont = TimeOfDay(hour: int.parse(tParts[0]), minute: int.parse(tParts[1]));
       
-      _kivalasztottHalfaj = f.halfaj;
+      _kivalasztottHalfaj = f.halfaj.isEmpty ? null : f.halfaj; // Üres string kezelése
       if (f.suly != null) _sulyCtrl.text = f.suly.toString();
       if (f.hossz != null) _hosszCtrl.text = f.hossz.toString();
       if (f.sors != null && f.sors!.isNotEmpty) _sors = f.sors!;
@@ -345,60 +359,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  void _tobbElemValaszto(String kategoria, List<String> elerhetoElemek, List<String> kivalasztottElemek) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF1E1E1E),
-              title: Text('$kategoria kiválasztása'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    ...elerhetoElemek.map((elem) {
-                      final isSelected = kivalasztottElemek.contains(elem);
-                      return CheckboxListTile(
-                        title: Text(elem),
-                        value: isSelected,
-                        activeColor: Colors.greenAccent,
-                        onChanged: (bool? val) {
-                          setDialogState(() {
-                            if (val == true) { kivalasztottElemek.add(elem); } else { kivalasztottElemek.remove(elem); }
-                          });
-                          setState(() {});
-                        },
-                      );
-                    }).toList(),
-                    ListTile(
-                      leading: const Icon(Icons.add, color: Colors.greenAccent),
-                      title: const Text('Új hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                      onTap: () {
-                        _ujTorzsadatHozzaadas(kategoria, (ujNev) {
-                          setDialogState(() => kivalasztottElemek.add(ujNev));
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Kész', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildDropdown({required String label, required String? value, required List<String> items, required Function(String?) onChanged, bool allowNew = true}) {
     return DropdownButtonFormField<String?>(
       value: value,
@@ -420,18 +380,80 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  void _mentes() async {
-    if (_kivalasztottHalfaj == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('A Halfaj megadása kötelező!'), backgroundColor: Colors.redAccent));
-      return;
-    }
+  // --- 11. PONT: EGYSÉGES TÖBBES KIVÁLASZTÓ DIZÁJN (Társak mintájára) ---
+  Widget _buildTobbesKivalaszto({
+    required String label,
+    required List<String> elerhetoElemek,
+    required List<String> kivalasztottElemek,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$label hozzáadása:', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String?>(
+                value: null,
+                isExpanded: true,
+                hint: Text('Válassz $label...'),
+                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                items: [
+                  const DropdownMenuItem<String?>(value: null, child: Text('-- Válassz --')),
+                  ...elerhetoElemek.map((e) => DropdownMenuItem<String?>(value: e, child: Text(e))),
+                ],
+                onChanged: (val) {
+                  if (val != null && !kivalasztottElemek.contains(val)) {
+                    setState(() => kivalasztottElemek.add(val));
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green[800], padding: const EdgeInsets.symmetric(vertical: 14)),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Új', style: TextStyle(color: Colors.white)),
+              onPressed: () {
+                _ujTorzsadatHozzaadas(label, (ujNev) {
+                  setState(() => kivalasztottElemek.add(ujNev));
+                });
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (kivalasztottElemek.isNotEmpty) ...[
+          Text('Kiválasztott $label (kattintásra törölhető):', style: const TextStyle(fontSize: 12, color: Colors.white54)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: kivalasztottElemek.map((elem) {
+              return ActionChip(
+                backgroundColor: Colors.green[800],
+                label: Text(elem, style: const TextStyle(color: Colors.white)),
+                avatar: const Icon(Icons.close, size: 16, color: Colors.white70),
+                onPressed: () {
+                  setState(() => kivalasztottElemek.remove(elem));
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
 
+  void _mentes() async {
+    // --- 2. PONT: A halfaj többé nem kötelező, eltávolítva a blokkolás! ---
     final ujFogas = FogasModel(
       id: widget.szerkeszthetoFogas?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       turaId: widget.turaId,
       datum: _datum,
       idopont: '${_idopont.hour.toString().padLeft(2, '0')}:${_idopont.minute.toString().padLeft(2, '0')}',
-      halfaj: _kivalasztottHalfaj!,
+      halfaj: _kivalasztottHalfaj ?? '', // Ha nincs kiválasztva, üres string lesz
       suly: double.tryParse(_sulyCtrl.text.replaceAll(',', '.')),
       hossz: double.tryParse(_hosszCtrl.text),
       sors: _sors,
@@ -482,10 +504,12 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             DropdownButtonFormField<String?>(
               value: _kivalasztottHalfaj,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Halfaj *', border: OutlineInputBorder()),
+              // Csillag levéve
+              decoration: const InputDecoration(labelText: 'Halfaj', border: OutlineInputBorder()),
               items: [
                 const DropdownMenuItem<String?>(value: null, child: Text('-- Válassz halfajt --')),
                 ..._elerhetoHalfajok.map((h) => DropdownMenuItem<String?>(value: h.nev, child: Text(h.nev))),
+                // Később ide kötjük be a teljes értékű hozzáadást a 3. ponthoz!
               ],
               onChanged: (val) => setState(() => _kivalasztottHalfaj = val),
             ),
@@ -503,17 +527,11 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             _buildDropdown(label: 'Hal sorsa', value: _sors, items: _elerhetoSorsok, allowNew: false, onChanged: (val) { if (val != null) setState(() => _sors = val); }),
             const Divider(height: 32, color: Colors.white24),
 
-            OutlinedButton.icon(
-              icon: const Icon(Icons.bug_report, color: Colors.orangeAccent),
-              label: Text(_kivalasztottCsalik.isEmpty ? 'Csali kiválasztása' : 'Csalik: ${_kivalasztottCsalik.join(", ")}'),
-              onPressed: () => _tobbElemValaszto('Csali', _elerhetoCsalik, _kivalasztottCsalik),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.scatter_plot, color: Colors.brown),
-              label: Text(_kivalasztottEtetoanyagok.isEmpty ? 'Etetőanyag kiválasztása' : 'Etetőanyagok: ${_kivalasztottEtetoanyagok.join(", ")}'),
-              onPressed: () => _tobbElemValaszto('Etetőanyag', _elerhetoEtetoanyagok, _kivalasztottEtetoanyagok),
-            ),
+            // --- 11. PONT: Új dizájnú kiválasztók alkalmazása ---
+            _buildTobbesKivalaszto(label: 'Csali', elerhetoElemek: _elerhetoCsalik, kivalasztottElemek: _kivalasztottCsalik),
+            const SizedBox(height: 16),
+            _buildTobbesKivalaszto(label: 'Etetőanyag', elerhetoElemek: _elerhetoEtetoanyagok, kivalasztottElemek: _kivalasztottEtetoanyagok),
+            
             const SizedBox(height: 12),
             TextField(controller: _etetesGyakorisagaCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Etetés gyakorisága (perc)', border: OutlineInputBorder())),
             const Divider(height: 32, color: Colors.white24),
@@ -601,7 +619,6 @@ class FogasReszletekScreen extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.download, color: Colors.white),
                 onPressed: () {
-                  // TODO: Ide jön a tényleges vízjeles képmentés
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Kép sikeresen letöltve vízjellel a Galériába!')),
                   );
@@ -680,7 +697,7 @@ class FogasReszletekScreen extends StatelessWidget {
                   Text(helyszinNev, style: const TextStyle(fontSize: 16, color: Colors.white70)),
                   if (horgaszhely.isNotEmpty) Text(horgaszhely, style: const TextStyle(fontSize: 14, color: Colors.white54)),
                   const SizedBox(height: 8),
-                  Text(fogas.halfaj, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(fogas.halfaj.isEmpty ? 'Ismeretlen halfaj' : fogas.halfaj, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Text('${fogas.suly ?? '-'} kg  |  ${fogas.hossz ?? '-'} cm', style: const TextStyle(fontSize: 20, color: Colors.white70)),
                   const SizedBox(height: 8),
