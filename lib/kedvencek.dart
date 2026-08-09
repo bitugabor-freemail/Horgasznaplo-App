@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
-import 'fogasok.dart'; // A Részletes Nézet innen jön!
+import 'fogasok.dart';
 
 class KedvencekScreen extends StatefulWidget {
   const KedvencekScreen({super.key});
@@ -28,10 +28,8 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
     final turak = await AdatTarolo.turakBetoltese();
     final helyszinek = await AdatTarolo.helyszinekBetoltese();
 
-    // Csak a kedvencek szűrése
     List<FogasModel> kedvencek = fogasok.where((f) => f.isKedvenc).toList();
     
-    // Rendezés: Legfrissebb legelöl
     kedvencek.sort((a, b) {
       String aKomp = "${DateFormat('yyyy-MM-dd').format(a.datum)} ${a.idopont}";
       String bKomp = "${DateFormat('yyyy-MM-dd').format(b.datum)} ${b.idopont}";
@@ -83,7 +81,6 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
     }
   }
 
-  // --- Helyszín kereső a Túra alapján ---
   Map<String, String> _getTuraHelyszinEsHorgaszhely(String turaId) {
     final tura = _osszesTura.cast<Tura?>().firstWhere((t) => t?.id == turaId, orElse: () => null);
     if (tura != null) {
@@ -95,6 +92,33 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
       return {'helyszin': helyszinNev, 'horgaszhely': tura.horgaszhely};
     }
     return {'helyszin': 'Ismeretlen helyszín', 'horgaszhely': ''};
+  }
+
+  // --- Segédfüggvény a navigációkhoz ---
+  void _reszletekMegnyitasa(FogasModel fogas, String helyszinNev, String horgaszhely) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FogasReszletekScreen(
+          fogas: fogas,
+          helyszinNev: helyszinNev,
+          horgaszhely: horgaszhely,
+        ),
+      ),
+    );
+  }
+
+  void _szerkesztesMegnyitasa(FogasModel fogas) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FogasSzerkesztoScreen(
+          turaId: fogas.turaId,
+          szerkeszthetoFogas: fogas,
+          mentesCallback: () => _adatokBetoltese(),
+        ),
+      ),
+    );
   }
 
   @override
@@ -133,78 +157,73 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(color: keretSzin, width: keretSzin == Colors.transparent ? 0 : 2),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} ${fogas.idopont}',
-                          style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 80, height: 80,
-                              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
-                              clipBehavior: Clip.antiAlias,
-                              child: (fogas.fenykep != null && File(fogas.fenykep!).existsSync())
-                                  ? Image.file(File(fogas.fenykep!), fit: BoxFit.cover)
-                                  : const Icon(Icons.set_meal, color: Colors.white24, size: 40),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                  // --- 5. PONT: EGÉSZ KÁRTYÁS KATTINTÁS ---
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _reszletekMegnyitasa(fogas, turaHelyszin, turaHorgaszhely),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} ${fogas.idopont}',
+                            style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 80, height: 80,
+                                decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+                                clipBehavior: Clip.antiAlias,
+                                child: (fogas.fenykep != null && File(fogas.fenykep!).existsSync())
+                                    ? Image.file(File(fogas.fenykep!), fit: BoxFit.cover)
+                                    : const Icon(Icons.set_meal, color: Colors.white24, size: 40),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(fogas.halfaj.isEmpty ? 'Ismeretlen halfaj' : fogas.halfaj, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${fogas.suly != null ? "${fogas.suly} kg" : "- kg"} • ${fogas.hossz != null ? "${fogas.hossz} cm" : "- cm"}',
+                                      style: const TextStyle(fontSize: 16, color: Colors.white70),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(turaHelyszin, style: const TextStyle(fontSize: 12, color: Colors.greenAccent, fontStyle: FontStyle.italic)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24, color: Colors.white12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
                                 children: [
-                                  Text(fogas.halfaj, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${fogas.suly != null ? "${fogas.suly} kg" : "- kg"} • ${fogas.hossz != null ? "${fogas.hossz} cm" : "- cm"}',
-                                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                                  IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _fogasTorles(fogas)),
+                                  // --- 8. PONT: SZERKESZTHETŐSÉG ENGEDÉLYEZÉSE ---
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, color: Colors.white70),
+                                    onPressed: () => _szerkesztesMegnyitasa(fogas),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(turaHelyszin, style: const TextStyle(fontSize: 12, color: Colors.greenAccent, fontStyle: FontStyle.italic)),
+                                  IconButton(icon: const Icon(Icons.favorite, color: Colors.red), onPressed: () => _kedvencEltavolitas(fogas)),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 24, color: Colors.white12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _fogasTorles(fogas)),
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.white38),
-                                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Szerkeszteni az eredeti Túra nézetben tudod!'))),
-                                ),
-                                IconButton(icon: const Icon(Icons.favorite, color: Colors.red), onPressed: () => _kedvencEltavolitas(fogas)),
-                              ],
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.visibility, color: Colors.greenAccent),
-                              onPressed: () {
-                                // TODO: Ide jön majd a FogasReszletekScreen megnyitása
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(
-                                //     builder: (context) => FogasReszletekScreen(
-                                //       fogas: fogas, 
-                                //       turaHelyszinNev: turaHelyszin,
-                                //       turaHorgaszhely: turaHorgaszhely,
-                                //     ),
-                                //   ),
-                                // );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+                              // --- 7. PONT: RÉSZLETES NÉZET BEKÖTÉSE ---
+                              IconButton(
+                                icon: const Icon(Icons.visibility, color: Colors.greenAccent),
+                                onPressed: () => _reszletekMegnyitasa(fogas, turaHelyszin, turaHorgaszhely),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
