@@ -24,9 +24,11 @@ class AdatTarolo {
     final prefs = await SharedPreferences.getInstance();
     List<dynamic> jsonLista = [];
     
+    // Ha összetett objektum (Halfaj, Helyszin, Tura, Fogas)
     if (adatLista.isNotEmpty && adatLista.first is! String) {
       jsonLista = adatLista.map((item) => item.toJson()).toList();
     } else {
+      // Sima String lista (pl. Botok, Csalik)
       jsonLista = adatLista;
     }
     
@@ -86,6 +88,7 @@ class AdatTarolo {
   static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
   static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
 
+  // --- 12. PONT: Időjárás előtöltése az első indításkor ---
   static Future<void> idojarasMentes(List<String> adatok) async => await _mentes(_idojarasKulcs, adatok);
   static Future<List<String>> idojarasBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
@@ -105,8 +108,21 @@ class AdatTarolo {
     return List<String>.from(await _betoltes(_idojarasKulcs));
   }
 
+  // --- Hal sorsa törzsadat előtöltése az első indításkor ---
   static Future<void> sorsMentes(List<String> adatok) async => await _mentes(_sorsKulcs, adatok);
-  static Future<List<String>> sorsBetoltese() async => List<String>.from(await _betoltes(_sorsKulcs));
+  static Future<List<String>> sorsBetoltese() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool init = prefs.getBool('sors_init') ?? false;
+    
+    if (!init) {
+      List<String> alapSorsok = ['Visszaengedtem', 'Elvittem', 'Elpusztult'];
+      await sorsMentes(alapSorsok);
+      await prefs.setBool('sors_init', true);
+      return alapSorsok;
+    }
+    
+    return List<String>.from(await _betoltes(_sorsKulcs));
+  }
 
   // --- 9. PONT: TÖRZSDATOK VISSZAMENŐLEGES SZINKRONIZÁCIÓJA ---
   
