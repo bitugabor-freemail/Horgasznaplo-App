@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Helymeghatározás engedélyek -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- INTERNET ENGEDÉLY AZ IDŐJÁRÁS API-HOZ -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="Horgásznapló"
         android:name="${applicationName}"
@@ -25,7 +29,6 @@
             </intent-filter>
         </activity>
         
-        <!-- Ne töröld ezt a meta-datat, a Flutter használja! -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
