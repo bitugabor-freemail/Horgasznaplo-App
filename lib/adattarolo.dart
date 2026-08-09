@@ -24,11 +24,9 @@ class AdatTarolo {
     final prefs = await SharedPreferences.getInstance();
     List<dynamic> jsonLista = [];
     
-    // Ha összetett objektum (Halfaj, Helyszin, Tura, Fogas)
     if (adatLista.isNotEmpty && adatLista.first is! String) {
       jsonLista = adatLista.map((item) => item.toJson()).toList();
     } else {
-      // Sima String lista (pl. Botok, Csalik)
       jsonLista = adatLista;
     }
     
@@ -88,7 +86,6 @@ class AdatTarolo {
   static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
   static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
 
-  // --- 12. PONT: Időjárás előtöltése az első indításkor ---
   static Future<void> idojarasMentes(List<String> adatok) async => await _mentes(_idojarasKulcs, adatok);
   static Future<List<String>> idojarasBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
@@ -114,54 +111,111 @@ class AdatTarolo {
   // --- 9. PONT: TÖRZSDATOK VISSZAMENŐLEGES SZINKRONIZÁCIÓJA ---
   
   static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {
-    // 1. Túrák frissítése (csak Horgásztársak érinti)
+    // 1. Túrák frissítése
     if (kategoria == 'Horgásztársak') {
       final turak = await turakBetoltese();
       bool changed = false;
-      for (var t in turak) {
-        for (int i = 0; i < t.horgasztarsak.length; i++) {
-          if (t.horgasztarsak[i] == regiNev) {
-            t.horgasztarsak[i] = ujNev;
-            changed = true;
+      for (int i = 0; i < turak.length; i++) {
+        var t = turak[i];
+        if (t.horgasztarsak.contains(regiNev)) {
+          List<String> ujTarsak = List.from(t.horgasztarsak);
+          for (int j = 0; j < ujTarsak.length; j++) {
+            if (ujTarsak[j] == regiNev) ujTarsak[j] = ujNev;
           }
+          turak[i] = Tura(
+            id: t.id,
+            kezdoDatum: t.kezdoDatum,
+            befejezoDatum: t.befejezoDatum,
+            helyszinId: t.helyszinId,
+            horgaszhely: t.horgaszhely,
+            horgasztarsak: ujTarsak,
+            boritoKep: t.boritoKep,
+            megjegyzes: t.megjegyzes,
+          );
+          changed = true;
         }
       }
       if (changed) await turakMentes(turak);
     }
 
-    // 2. Fogások frissítése (minden más)
+    // 2. Fogások frissítése
     final fogasok = await fogasokBetoltese();
     bool fogasChanged = false;
-    for (var f in fogasok) {
-      if (kategoria == 'Halfaj' && f.halfaj == regiNev) { f.halfaj = ujNev; fogasChanged = true; } // Ha a halfaj nevét átírtuk
-      if (kategoria == 'Horgászbot' && f.bot == regiNev) { f.bot = ujNev; fogasChanged = true; }
-      if (kategoria == 'Módszer' && f.modszer == regiNev) { f.modszer = ujNev; fogasChanged = true; }
-      if (kategoria == 'Végszerelék' && f.vegszerelek == regiNev) { f.vegszerelek = ujNev; fogasChanged = true; }
-      if (kategoria == 'Időjárás' && f.idojaras == regiNev) { f.idojaras = ujNev; fogasChanged = true; }
-      if (kategoria == 'Hal sorsa' && f.sors == regiNev) { f.sors = ujNev; fogasChanged = true; }
+    for (int i = 0; i < fogasok.length; i++) {
+      var f = fogasok[i];
+      bool changed = false;
       
-      if (kategoria == 'Csali') {
-        for (int i = 0; i < f.csali.length; i++) {
-          if (f.csali[i] == regiNev) { f.csali[i] = ujNev; fogasChanged = true; }
-        }
+      String ujHalfaj = f.halfaj;
+      String? ujBot = f.bot;
+      String? ujModszer = f.modszer;
+      String? ujVegszerelek = f.vegszerelek;
+      String? ujIdojaras = f.idojaras;
+      String? ujSors = f.sors;
+      List<String> ujCsali = List.from(f.csali);
+      List<String> ujEtetoanyag = List.from(f.etetoanyag);
+
+      if (kategoria == 'Halfaj' && f.halfaj == regiNev) { ujHalfaj = ujNev; changed = true; }
+      if (kategoria == 'Horgászbot' && f.bot == regiNev) { ujBot = ujNev; changed = true; }
+      if (kategoria == 'Módszer' && f.modszer == regiNev) { ujModszer = ujNev; changed = true; }
+      if (kategoria == 'Végszerelék' && f.vegszerelek == regiNev) { ujVegszerelek = ujNev; changed = true; }
+      if (kategoria == 'Időjárás' && f.idojaras == regiNev) { ujIdojaras = ujNev; changed = true; }
+      if (kategoria == 'Hal sorsa' && f.sors == regiNev) { ujSors = ujNev; changed = true; }
+      
+      if (kategoria == 'Csali' && ujCsali.contains(regiNev)) {
+        for (int j = 0; j < ujCsali.length; j++) { if (ujCsali[j] == regiNev) ujCsali[j] = ujNev; }
+        changed = true;
       }
-      if (kategoria == 'Etetőanyag') {
-        for (int i = 0; i < f.etetoanyag.length; i++) {
-          if (f.etetoanyag[i] == regiNev) { f.etetoanyag[i] = ujNev; fogasChanged = true; }
-        }
+      if (kategoria == 'Etetőanyag' && ujEtetoanyag.contains(regiNev)) {
+        for (int j = 0; j < ujEtetoanyag.length; j++) { if (ujEtetoanyag[j] == regiNev) ujEtetoanyag[j] = ujNev; }
+        changed = true;
+      }
+
+      if (changed) {
+        fogasok[i] = FogasModel(
+          id: f.id,
+          turaId: f.turaId,
+          datum: f.datum,
+          idopont: f.idopont,
+          halfaj: ujHalfaj,
+          suly: f.suly,
+          hossz: f.hossz,
+          sors: ujSors,
+          csali: ujCsali,
+          etetoanyag: ujEtetoanyag,
+          etetesGyakorisaga: f.etetesGyakorisaga,
+          bot: ujBot,
+          modszer: ujModszer,
+          vegszerelek: ujVegszerelek,
+          idojaras: ujIdojaras,
+          homerseklet: f.homerseklet,
+          megjegyzes: f.megjegyzes,
+          fenykep: f.fenykep,
+          isKedvenc: f.isKedvenc,
+        );
+        fogasChanged = true;
       }
     }
     if (fogasChanged) await fogasokMentes(fogasok);
   }
 
   static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {
-    // 1. Helyszín törlés (Itt ID-t kapunk, és a Túrából kell kivenni)
+    // 1. Helyszín törlés
     if (kategoria == 'Helyszín') {
       final turak = await turakBetoltese();
       bool changed = false;
-      for (var t in turak) {
+      for (int i = 0; i < turak.length; i++) {
+        var t = turak[i];
         if (t.helyszinId == toroltNevVagyId) {
-          t.helyszinId = null;
+          turak[i] = Tura(
+            id: t.id,
+            kezdoDatum: t.kezdoDatum,
+            befejezoDatum: t.befejezoDatum,
+            helyszinId: null,
+            horgaszhely: t.horgaszhely,
+            horgasztarsak: t.horgasztarsak,
+            boritoKep: t.boritoKep,
+            megjegyzes: t.megjegyzes,
+          );
           changed = true;
         }
       }
@@ -169,13 +223,24 @@ class AdatTarolo {
       return;
     }
 
-    // 2. Horgásztárs törlés (Túrából kivenni)
+    // 2. Horgásztárs törlés
     if (kategoria == 'Horgásztársak') {
       final turak = await turakBetoltese();
       bool changed = false;
-      for (var t in turak) {
+      for (int i = 0; i < turak.length; i++) {
+        var t = turak[i];
         if (t.horgasztarsak.contains(toroltNevVagyId)) {
-          t.horgasztarsak.remove(toroltNevVagyId);
+          List<String> ujTarsak = List.from(t.horgasztarsak)..remove(toroltNevVagyId);
+          turak[i] = Tura(
+            id: t.id,
+            kezdoDatum: t.kezdoDatum,
+            befejezoDatum: t.befejezoDatum,
+            helyszinId: t.helyszinId,
+            horgaszhely: t.horgaszhely,
+            horgasztarsak: ujTarsak,
+            boritoKep: t.boritoKep,
+            megjegyzes: t.megjegyzes,
+          );
           changed = true;
         }
       }
@@ -185,16 +250,53 @@ class AdatTarolo {
     // 3. Fogások adatainak kiürítése
     final fogasok = await fogasokBetoltese();
     bool fogasChanged = false;
-    for (var f in fogasok) {
-      if (kategoria == 'Halfaj' && f.halfaj == toroltNevVagyId) { f.halfaj = ''; fogasChanged = true; } // Mivel String, üressé tesszük
-      if (kategoria == 'Horgászbot' && f.bot == toroltNevVagyId) { f.bot = null; fogasChanged = true; }
-      if (kategoria == 'Módszer' && f.modszer == toroltNevVagyId) { f.modszer = null; fogasChanged = true; }
-      if (kategoria == 'Végszerelék' && f.vegszerelek == toroltNevVagyId) { f.vegszerelek = null; fogasChanged = true; }
-      if (kategoria == 'Időjárás' && f.idojaras == toroltNevVagyId) { f.idojaras = null; fogasChanged = true; }
-      if (kategoria == 'Hal sorsa' && f.sors == toroltNevVagyId) { f.sors = null; fogasChanged = true; }
+    for (int i = 0; i < fogasok.length; i++) {
+      var f = fogasok[i];
+      bool changed = false;
       
-      if (kategoria == 'Csali' && f.csali.contains(toroltNevVagyId)) { f.csali.remove(toroltNevVagyId); fogasChanged = true; }
-      if (kategoria == 'Etetőanyag' && f.etetoanyag.contains(toroltNevVagyId)) { f.etetoanyag.remove(toroltNevVagyId); fogasChanged = true; }
+      String ujHalfaj = f.halfaj;
+      String? ujBot = f.bot;
+      String? ujModszer = f.modszer;
+      String? ujVegszerelek = f.vegszerelek;
+      String? ujIdojaras = f.idojaras;
+      String? ujSors = f.sors;
+      List<String> ujCsali = List.from(f.csali);
+      List<String> ujEtetoanyag = List.from(f.etetoanyag);
+
+      if (kategoria == 'Halfaj' && f.halfaj == toroltNevVagyId) { ujHalfaj = ''; changed = true; } 
+      if (kategoria == 'Horgászbot' && f.bot == toroltNevVagyId) { ujBot = null; changed = true; }
+      if (kategoria == 'Módszer' && f.modszer == toroltNevVagyId) { ujModszer = null; changed = true; }
+      if (kategoria == 'Végszerelék' && f.vegszerelek == toroltNevVagyId) { ujVegszerelek = null; changed = true; }
+      if (kategoria == 'Időjárás' && f.idojaras == toroltNevVagyId) { ujIdojaras = null; changed = true; }
+      if (kategoria == 'Hal sorsa' && f.sors == toroltNevVagyId) { ujSors = null; changed = true; }
+      
+      if (kategoria == 'Csali' && ujCsali.contains(toroltNevVagyId)) { ujCsali.remove(toroltNevVagyId); changed = true; }
+      if (kategoria == 'Etetőanyag' && ujEtetoanyag.contains(toroltNevVagyId)) { ujEtetoanyag.remove(toroltNevVagyId); changed = true; }
+
+      if (changed) {
+        fogasok[i] = FogasModel(
+          id: f.id,
+          turaId: f.turaId,
+          datum: f.datum,
+          idopont: f.idopont,
+          halfaj: ujHalfaj,
+          suly: f.suly,
+          hossz: f.hossz,
+          sors: ujSors,
+          csali: ujCsali,
+          etetoanyag: ujEtetoanyag,
+          etetesGyakorisaga: f.etetesGyakorisaga,
+          bot: ujBot,
+          modszer: ujModszer,
+          vegszerelek: ujVegszerelek,
+          idojaras: ujIdojaras,
+          homerseklet: f.homerseklet,
+          megjegyzes: f.megjegyzes,
+          fenykep: f.fenykep,
+          isKedvenc: f.isKedvenc,
+        );
+        fogasChanged = true;
+      }
     }
     if (fogasChanged) await fogasokMentes(fogasok);
   }
