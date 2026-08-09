@@ -88,11 +88,114 @@ class AdatTarolo {
   static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
   static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
 
+  // --- 12. PONT: Időjárás előtöltése az első indításkor ---
   static Future<void> idojarasMentes(List<String> adatok) async => await _mentes(_idojarasKulcs, adatok);
-  static Future<List<String>> idojarasBetoltese() async => List<String>.from(await _betoltes(_idojarasKulcs));
+  static Future<List<String>> idojarasBetoltese() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool init = prefs.getBool('idojaras_init') ?? false;
+    
+    if (!init) {
+      List<String> alapIdojarasok = [
+        'Napsütés', 'Közepesen felhős', 'Erősen felhős', 'Borult', 
+        'Szemerkélő eső', 'Eső', 'Zápor', 'Erős szél', 'Vihar', 
+        'Zivatar', 'Jégeső', 'Havazás', 'Havaseső', 'Köd'
+      ];
+      await idojarasMentes(alapIdojarasok);
+      await prefs.setBool('idojaras_init', true);
+      return alapIdojarasok;
+    }
+    
+    return List<String>.from(await _betoltes(_idojarasKulcs));
+  }
 
   static Future<void> sorsMentes(List<String> adatok) async => await _mentes(_sorsKulcs, adatok);
   static Future<List<String>> sorsBetoltese() async => List<String>.from(await _betoltes(_sorsKulcs));
 
-  // Később ide jön a JSON Export/Import logika...
+  // --- 9. PONT: TÖRZSDATOK VISSZAMENŐLEGES SZINKRONIZÁCIÓJA ---
+  
+  static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {
+    // 1. Túrák frissítése (csak Horgásztársak érinti)
+    if (kategoria == 'Horgásztársak') {
+      final turak = await turakBetoltese();
+      bool changed = false;
+      for (var t in turak) {
+        for (int i = 0; i < t.horgasztarsak.length; i++) {
+          if (t.horgasztarsak[i] == regiNev) {
+            t.horgasztarsak[i] = ujNev;
+            changed = true;
+          }
+        }
+      }
+      if (changed) await turakMentes(turak);
+    }
+
+    // 2. Fogások frissítése (minden más)
+    final fogasok = await fogasokBetoltese();
+    bool fogasChanged = false;
+    for (var f in fogasok) {
+      if (kategoria == 'Halfaj' && f.halfaj == regiNev) { f.halfaj = ujNev; fogasChanged = true; } // Ha a halfaj nevét átírtuk
+      if (kategoria == 'Horgászbot' && f.bot == regiNev) { f.bot = ujNev; fogasChanged = true; }
+      if (kategoria == 'Módszer' && f.modszer == regiNev) { f.modszer = ujNev; fogasChanged = true; }
+      if (kategoria == 'Végszerelék' && f.vegszerelek == regiNev) { f.vegszerelek = ujNev; fogasChanged = true; }
+      if (kategoria == 'Időjárás' && f.idojaras == regiNev) { f.idojaras = ujNev; fogasChanged = true; }
+      if (kategoria == 'Hal sorsa' && f.sors == regiNev) { f.sors = ujNev; fogasChanged = true; }
+      
+      if (kategoria == 'Csali') {
+        for (int i = 0; i < f.csali.length; i++) {
+          if (f.csali[i] == regiNev) { f.csali[i] = ujNev; fogasChanged = true; }
+        }
+      }
+      if (kategoria == 'Etetőanyag') {
+        for (int i = 0; i < f.etetoanyag.length; i++) {
+          if (f.etetoanyag[i] == regiNev) { f.etetoanyag[i] = ujNev; fogasChanged = true; }
+        }
+      }
+    }
+    if (fogasChanged) await fogasokMentes(fogasok);
+  }
+
+  static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {
+    // 1. Helyszín törlés (Itt ID-t kapunk, és a Túrából kell kivenni)
+    if (kategoria == 'Helyszín') {
+      final turak = await turakBetoltese();
+      bool changed = false;
+      for (var t in turak) {
+        if (t.helyszinId == toroltNevVagyId) {
+          t.helyszinId = null;
+          changed = true;
+        }
+      }
+      if (changed) await turakMentes(turak);
+      return;
+    }
+
+    // 2. Horgásztárs törlés (Túrából kivenni)
+    if (kategoria == 'Horgásztársak') {
+      final turak = await turakBetoltese();
+      bool changed = false;
+      for (var t in turak) {
+        if (t.horgasztarsak.contains(toroltNevVagyId)) {
+          t.horgasztarsak.remove(toroltNevVagyId);
+          changed = true;
+        }
+      }
+      if (changed) await turakMentes(turak);
+    }
+
+    // 3. Fogások adatainak kiürítése
+    final fogasok = await fogasokBetoltese();
+    bool fogasChanged = false;
+    for (var f in fogasok) {
+      if (kategoria == 'Halfaj' && f.halfaj == toroltNevVagyId) { f.halfaj = ''; fogasChanged = true; } // Mivel String, üressé tesszük
+      if (kategoria == 'Horgászbot' && f.bot == toroltNevVagyId) { f.bot = null; fogasChanged = true; }
+      if (kategoria == 'Módszer' && f.modszer == toroltNevVagyId) { f.modszer = null; fogasChanged = true; }
+      if (kategoria == 'Végszerelék' && f.vegszerelek == toroltNevVagyId) { f.vegszerelek = null; fogasChanged = true; }
+      if (kategoria == 'Időjárás' && f.idojaras == toroltNevVagyId) { f.idojaras = null; fogasChanged = true; }
+      if (kategoria == 'Hal sorsa' && f.sors == toroltNevVagyId) { f.sors = null; fogasChanged = true; }
+      
+      if (kategoria == 'Csali' && f.csali.contains(toroltNevVagyId)) { f.csali.remove(toroltNevVagyId); fogasChanged = true; }
+      if (kategoria == 'Etetőanyag' && f.etetoanyag.contains(toroltNevVagyId)) { f.etetoanyag.remove(toroltNevVagyId); fogasChanged = true; }
+    }
+    if (fogasChanged) await fogasokMentes(fogasok);
+  }
 }
