@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 
-// --- 1. A HIÁNYZÓ FŐKÉPERNYŐ (Kategóriák listázása és kezelése) ---
 class TorzsadatokScreen extends StatefulWidget {
   const TorzsadatokScreen({super.key});
 
@@ -83,12 +82,18 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
             onPressed: () async {
               if (ctrl.text.trim().isNotEmpty) {
-                final nev = ctrl.text.trim();
+                final ujNev = ctrl.text.trim();
+                
                 if (regiNev == null) {
-                  _simaLista.add(nev);
+                  _simaLista.add(ujNev);
                 } else if (index != null) {
-                  _simaLista[index] = nev;
+                  _simaLista[index] = ujNev;
+                  // --- 9. PONT: Visszamenőleges frissítés (Szinkronizáció) ---
+                  if (regiNev != ujNev) {
+                    await AdatTarolo.torzsadatNevFrissites(_kivKategoria, regiNev, ujNev);
+                  }
                 }
+                
                 await _simaAdatMentes();
                 setState(() {});
                 if (mounted) Navigator.pop(context);
@@ -128,11 +133,14 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                   nev: nevCtrl.text.trim(),
                   vizterKod: kodCtrl.text.trim(),
                 );
+                
                 if (regiHelyszin == null) {
                   _helyszinek.add(ujHelyszin);
                 } else if (index != null) {
                   _helyszinek[index] = ujHelyszin;
+                  // (A Helyszíneket ID alapján kötjük a túrákhoz, így a név átírása automatikusan érvényesül mindenhol, nem kell külön szinkronizálni!)
                 }
+                
                 await AdatTarolo.helyszinekMentes(_helyszinek);
                 setState(() {});
                 if (mounted) Navigator.pop(context);
@@ -157,16 +165,27 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
             onPressed: () async {
+              
+              // --- 9. PONT: Visszamenőleges törlés (Szinkronizáció) ---
               if (_kivKategoria == 'Halfaj') {
+                String toroltNev = _halfajok[index].nev;
                 _halfajok.removeAt(index);
                 await AdatTarolo.halfajokMentes(_halfajok);
+                await AdatTarolo.torzsadatTorles(_kivKategoria, toroltNev);
+                
               } else if (_kivKategoria == 'Helyszín') {
+                String toroltId = _helyszinek[index].id;
                 _helyszinek.removeAt(index);
                 await AdatTarolo.helyszinekMentes(_helyszinek);
+                await AdatTarolo.torzsadatTorles(_kivKategoria, toroltId); // Itt az ID-t adjuk át
+                
               } else {
+                String toroltNev = _simaLista[index];
                 _simaLista.removeAt(index);
                 await _simaAdatMentes();
+                await AdatTarolo.torzsadatTorles(_kivKategoria, toroltNev);
               }
+              
               setState(() {});
               if (mounted) Navigator.pop(context);
             },
@@ -236,8 +255,16 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => HalfajSzerkesztoScreen(
                                 szerkeszthetoHalfaj: _halfajok[index],
                                 mentesCallback: (modositottHal) async {
+                                  // Névváltozás követése a szinkronizációhoz
+                                  String regiNev = _halfajok[index].nev;
+                                  
                                   _halfajok[index] = modositottHal;
                                   await AdatTarolo.halfajokMentes(_halfajok);
+                                  
+                                  if (regiNev != modositottHal.nev) {
+                                    await AdatTarolo.torzsadatNevFrissites('Halfaj', regiNev, modositottHal.nev);
+                                  }
+                                  
                                   setState(() {});
                                 },
                               )));
@@ -284,7 +311,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   }
 }
 
-// --- 2. A TE EREDETI ŰRLAPOD (Felokosítva a szerkesztéshez) ---
 class HalfajSzerkesztoScreen extends StatefulWidget {
   final Halfaj? szerkeszthetoHalfaj;
   final Function(Halfaj) mentesCallback;
@@ -312,7 +338,6 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
   @override
   void initState() {
     super.initState();
-    // Ha szerkesztünk egy meglévő halat, itt betöltjük az adatait
     if (widget.szerkeszthetoHalfaj != null) {
       final h = widget.szerkeszthetoHalfaj!;
       _nevCtrl.text = h.nev;
