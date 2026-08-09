@@ -138,11 +138,59 @@ class _TurakScreenState extends State<TurakScreen> {
     final turaFogasai = _fogasok.where((f) => f.turaId == turaId).toList();
     int darab = turaFogasai.length;
     double osszsuly = 0;
+    
+    FogasModel? legnagyobbHal;
+
     for (var f in turaFogasai) {
-      if (f.suly != null) osszsuly += f.suly!;
+      if (f.suly != null) {
+        osszsuly += f.suly!;
+        if (legnagyobbHal == null || (legnagyobbHal.suly ?? 0) < f.suly!) {
+          legnagyobbHal = f;
+        }
+      }
     }
     double atlag = darab > 0 ? osszsuly / darab : 0;
-    return {'darab': darab, 'osszsuly': osszsuly, 'atlag': atlag};
+    
+    return {
+      'darab': darab, 
+      'osszsuly': osszsuly, 
+      'atlag': atlag,
+      'bigFishNev': legnagyobbHal?.halfaj,
+      'bigFishSuly': legnagyobbHal?.suly
+    };
+  }
+
+  // --- 6. PONT: TELJES KÉPERNYŐS ZOOMOLHATÓ KÉP ---
+  void _teljesKepernyosKep(BuildContext context, String kepUtvonal) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.download, color: Colors.white),
+                onPressed: () {
+                  // TODO: Ide jön a vízjeles képmentés
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Kép mentése vízjellel hamarosan!')),
+                  );
+                },
+              ),
+            ],
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.file(File(kepUtvonal)),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -192,7 +240,6 @@ class _TurakScreenState extends State<TurakScreen> {
                       final helyszinNev = _getHelyszinNeve(tura.helyszinId);
                       final vanMegjegyzes = tura.megjegyzes.isNotEmpty;
 
-                      // Napok számolása a kezdő és végdátum között
                       final kezdo = DateTime(tura.kezdoDatum.year, tura.kezdoDatum.month, tura.kezdoDatum.day);
                       final befejezo = DateTime(tura.befejezoDatum.year, tura.befejezoDatum.month, tura.befejezoDatum.day);
                       final int diffDays = befejezo.difference(kezdo).inDays;
@@ -207,7 +254,6 @@ class _TurakScreenState extends State<TurakScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Megújult Fejléc
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -223,8 +269,12 @@ class _TurakScreenState extends State<TurakScreen> {
                               ),
                             ),
                             
+                            // Borítókép (Most már kattintható!)
                             if (tura.boritoKep != null && File(tura.boritoKep!).existsSync())
-                              Image.file(File(tura.boritoKep!), height: 180, width: double.infinity, fit: BoxFit.cover),
+                              GestureDetector(
+                                onTap: () => _teljesKepernyosKep(context, tura.boritoKep!),
+                                child: Image.file(File(tura.boritoKep!), height: 180, width: double.infinity, fit: BoxFit.cover),
+                              ),
 
                             Padding(
                               padding: const EdgeInsets.all(12.0),
@@ -247,8 +297,26 @@ class _TurakScreenState extends State<TurakScreen> {
                                     ],
                                   ),
                                   
+                                  const SizedBox(height: 12),
+                                  
+                                  // --- 4. PONT: BIG FISH KIEMELÉS ---
+                                  if (stat['bigFishNev'] != null) ...[
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.workspace_premium, size: 18, color: Colors.amber),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            'Big Fish: ${stat['bigFishNev']} (${stat['bigFishSuly']} kg)',
+                                            style: const TextStyle(fontSize: 16, color: Colors.amber, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ],
+
                                   if (tura.horgasztarsak.isNotEmpty) ...[
-                                    const SizedBox(height: 12),
                                     Row(
                                       children: [
                                         const Icon(Icons.people, size: 18, color: Colors.greenAccent),
