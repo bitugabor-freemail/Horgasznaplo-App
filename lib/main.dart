@@ -5,7 +5,7 @@ import 'kedvencek.dart';
 import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
-import 'torzsadatok.dart'; // <-- Bizonyosodj meg róla, hogy ez az import sor itt van!
+import 'torzsadatok.dart';
 
 void main() {
   runApp(const HorgaszNaploApp());
@@ -127,13 +127,13 @@ class _FomenuScreenState extends State<FomenuScreen> {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: Colors.green[900]?.withOpacity(0.5)),
-              child: Column(
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('Verzió 2.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
+                  Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 4),
+                  Text('Verzió 1.0.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
                 ],
               ),
             ),
@@ -162,10 +162,10 @@ class _FomenuScreenState extends State<FomenuScreen> {
               leading: const Icon(Icons.category, color: Colors.greenAccent),
               title: const Text('5. Törzsadatok'),
               onTap: () {
-                Navigator.pop(context); // Bezárja a drawer-t
+                Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const TorzsadatokScreen()), // Megnyitja a törzsadatokat
+                  MaterialPageRoute(builder: (context) => const TorzsadatokScreen()),
                 );
               },
             ),
@@ -183,11 +183,27 @@ class _FomenuScreenState extends State<FomenuScreen> {
               title: const Text('7. Névjegy'),
               onTap: () {
                 Navigator.pop(context);
-                showAboutDialog(
+                showDialog(
                   context: context,
-                  applicationName: 'Horgásznapló',
-                  applicationVersion: '2.0',
-                  applicationLegalese: 'Minden jog fenntartva.',
+                  builder: (context) => AlertDialog(
+                    backgroundColor: const Color(0xFF1E1E1E),
+                    title: const Text('Névjegy', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                    content: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Készítette: Google Gemini & B2', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        SizedBox(height: 8),
+                        Text('Verzió: 1.0.0', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Bezár', style: TextStyle(color: Colors.greenAccent)),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
