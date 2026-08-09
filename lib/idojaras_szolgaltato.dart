@@ -3,7 +3,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
 class IdojarasSzolgaltato {
-  // Ide kell majd beilleszteni az ingyenes OpenWeatherMap API kulcsodat
   static const String _apiKey = '53806ac9c451601b112061b1c699fc0f';
 
   static Future<double?> getAktualisHomerseklet() async {
@@ -11,7 +10,7 @@ class IdojarasSzolgaltato {
       // 1. Ellenőrizzük, hogy be van-e kapcsolva a GPS a telefonon
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        return null; // GPS ki van kapcsolva
+        return null;
       }
 
       // 2. Engedélyek ellenőrzése és kérése
@@ -19,31 +18,36 @@ class IdojarasSzolgaltato {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          return null; // Felhasználó elutasította az engedélyt
+          return null; 
         }
       }
       
       if (permission == LocationPermission.deniedForever) {
-        return null; // Véglegesen elutasítva
+        return null; 
       }
 
-      // 3. Jelenlegi koordináták lekérése (magas pontossággal)
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high
+      // 3. Gyors lekérés: megpróbáljuk a legutolsó ismert helyzetet használni
+      Position? position = await Geolocator.getLastKnownPosition();
+
+      // Ha nincs korábbi ismert helyzet, kérünk egy újat, de 10 másodperces időkorláttal!
+      position ??= await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 10),
       );
 
-      // 4. Időjárás lekérése a koordináták alapján (metric = Celsius fok)
+      // 4. Időjárás lekérése
       final url = Uri.parse(
         'https://api.openweathermap.org/data/2.5/weather?lat=${position.latitude}&lon=${position.longitude}&units=metric&appid=$_apiKey'
       );
       
-      final response = await http.get(url);
+      // Időkorlátot teszünk a hálózati kérésre is
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['main']['temp'].toDouble();
       } else {
-        return null; // Hiba a hálózatban vagy rossz kulcs
+        return null;
       }
     } catch (e) {
       print('Hiba a hőmérséklet lekérésekor: $e');
