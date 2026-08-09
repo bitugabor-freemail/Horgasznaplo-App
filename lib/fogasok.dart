@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'idojaras_szolgaltato.dart';
+import 'torzsadatok.dart'; // <--- EZT HOZZÁADTUK!
 
 class FogasokScreen extends StatefulWidget {
   final Tura tura;
@@ -119,7 +120,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
                   color: _getKartyaszin(fogas.sors ?? ''),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   margin: const EdgeInsets.only(bottom: 12),
-                  // --- 5. PONT: EGÉSZ KÁRTYÁS KATTINTÁS ---
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () {
@@ -222,7 +222,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
   }
 }
 
-// --- FOGÁS SZERKESZTŐ / RÖGZÍTŐ ŰRLAP ---
 class FogasSzerkesztoScreen extends StatefulWidget {
   final String turaId;
   final FogasModel? szerkeszthetoFogas;
@@ -277,7 +276,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       final tParts = f.idopont.split(':');
       if (tParts.length == 2) _idopont = TimeOfDay(hour: int.parse(tParts[0]), minute: int.parse(tParts[1]));
       
-      _kivalasztottHalfaj = f.halfaj.isEmpty ? null : f.halfaj; // Üres string kezelése
+      _kivalasztottHalfaj = f.halfaj.isEmpty ? null : f.halfaj; 
       if (f.suly != null) _sulyCtrl.text = f.suly.toString();
       if (f.hossz != null) _hosszCtrl.text = f.hossz.toString();
       if (f.sors != null && f.sors!.isNotEmpty) _sors = f.sors!;
@@ -380,7 +379,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  // --- 11. PONT: EGYSÉGES TÖBBES KIVÁLASZTÓ DIZÁJN (Társak mintájára) ---
   Widget _buildTobbesKivalaszto({
     required String label,
     required List<String> elerhetoElemek,
@@ -447,13 +445,12 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   }
 
   void _mentes() async {
-    // --- 2. PONT: A halfaj többé nem kötelező, eltávolítva a blokkolás! ---
     final ujFogas = FogasModel(
       id: widget.szerkeszthetoFogas?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       turaId: widget.turaId,
       datum: _datum,
       idopont: '${_idopont.hour.toString().padLeft(2, '0')}:${_idopont.minute.toString().padLeft(2, '0')}',
-      halfaj: _kivalasztottHalfaj ?? '', // Ha nincs kiválasztva, üres string lesz
+      halfaj: _kivalasztottHalfaj ?? '', 
       suly: double.tryParse(_sulyCtrl.text.replaceAll(',', '.')),
       hossz: double.tryParse(_hosszCtrl.text),
       sors: _sors,
@@ -501,17 +498,36 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
+            // --- 3. PONT: TELJES ÉRTÉKŰ HALFAJ ŰRLAP BEKÖTÉSE ---
             DropdownButtonFormField<String?>(
               value: _kivalasztottHalfaj,
               isExpanded: true,
-              // Csillag levéve
               decoration: const InputDecoration(labelText: 'Halfaj', border: OutlineInputBorder()),
               items: [
                 const DropdownMenuItem<String?>(value: null, child: Text('-- Válassz halfajt --')),
                 ..._elerhetoHalfajok.map((h) => DropdownMenuItem<String?>(value: h.nev, child: Text(h.nev))),
-                // Később ide kötjük be a teljes értékű hozzáadást a 3. ponthoz!
+                const DropdownMenuItem<String?>(value: 'UJ_HALFAJ', child: Text('➕ Új halfaj hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold))),
               ],
-              onChanged: (val) => setState(() => _kivalasztottHalfaj = val),
+              onChanged: (val) {
+                if (val == 'UJ_HALFAJ') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HalfajSzerkesztoScreen(
+                        mentesCallback: (ujHal) async {
+                          _elerhetoHalfajok.add(ujHal);
+                          await AdatTarolo.halfajokMentes(_elerhetoHalfajok);
+                          setState(() {
+                            _kivalasztottHalfaj = ujHal.nev;
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                } else {
+                  setState(() => _kivalasztottHalfaj = val);
+                }
+              },
             ),
             const SizedBox(height: 16),
 
@@ -527,7 +543,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             _buildDropdown(label: 'Hal sorsa', value: _sors, items: _elerhetoSorsok, allowNew: false, onChanged: (val) { if (val != null) setState(() => _sors = val); }),
             const Divider(height: 32, color: Colors.white24),
 
-            // --- 11. PONT: Új dizájnú kiválasztók alkalmazása ---
             _buildTobbesKivalaszto(label: 'Csali', elerhetoElemek: _elerhetoCsalik, kivalasztottElemek: _kivalasztottCsalik),
             const SizedBox(height: 16),
             _buildTobbesKivalaszto(label: 'Etetőanyag', elerhetoElemek: _elerhetoEtetoanyagok, kivalasztottElemek: _kivalasztottEtetoanyagok),
@@ -594,7 +609,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   }
 }
 
-// ---- FOGÁS RÉSZLETES NÉZETE ----
 class FogasReszletekScreen extends StatelessWidget {
   final FogasModel fogas;
   final String helyszinNev;
