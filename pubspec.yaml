@@ -15,6 +15,7 @@ dependencies:
   intl: ^0.19.0
   geolocator: ^11.0.0
   http: ^1.2.1
+  cached_network_image: ^3.3.1
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +32,6 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png"
+  image_path: "assets/small_logo.png"
   adaptive_icon_background: "#161616"
-  adaptive_icon_foreground: "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png"
+  adaptive_icon_foreground: "assets/small_logo.png"
