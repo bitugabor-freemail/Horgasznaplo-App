@@ -91,7 +91,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                   _simaLista.add(ujNev);
                 } else if (index != null) {
                   _simaLista[index] = ujNev;
-                  // --- 9. PONT: Visszamenőleges frissítés (Szinkronizáció) ---
                   if (regiNev != ujNev) {
                     await AdatTarolo.torzsadatNevFrissites(_kivKategoria, regiNev, ujNev);
                   }
@@ -141,7 +140,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                   _helyszinek.add(ujHelyszin);
                 } else if (index != null) {
                   _helyszinek[index] = ujHelyszin;
-                  // (A Helyszíneket ID alapján kötjük a túrákhoz, így a név átírása automatikusan érvényesül mindenhol, nem kell külön szinkronizálni!)
                 }
                 
                 await AdatTarolo.helyszinekMentes(_helyszinek);
@@ -168,8 +166,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
             onPressed: () async {
-              
-              // --- 9. PONT: Visszamenőleges törlés (Szinkronizáció) ---
               if (_kivKategoria == 'Halfaj') {
                 String toroltNev = _halfajok[index].nev;
                 _halfajok.removeAt(index);
@@ -180,7 +176,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 String toroltId = _helyszinek[index].id;
                 _helyszinek.removeAt(index);
                 await AdatTarolo.helyszinekMentes(_helyszinek);
-                await AdatTarolo.torzsadatTorles(_kivKategoria, toroltId); // Itt az ID-t adjuk át
+                await AdatTarolo.torzsadatTorles(_kivKategoria, toroltId); 
                 
               } else {
                 String toroltNev = _simaLista[index];
@@ -258,16 +254,13 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => HalfajSzerkesztoScreen(
                                 szerkeszthetoHalfaj: _halfajok[index],
                                 mentesCallback: (modositottHal) async {
-                                  // Névváltozás követése a szinkronizációhoz
                                   String regiNev = _halfajok[index].nev;
-                                  
                                   _halfajok[index] = modositottHal;
                                   await AdatTarolo.halfajokMentes(_halfajok);
                                   
                                   if (regiNev != modositottHal.nev) {
                                     await AdatTarolo.torzsadatNevFrissites('Halfaj', regiNev, modositottHal.nev);
                                   }
-                                  
                                   setState(() {});
                                 },
                               )));
@@ -314,7 +307,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   }
 }
 
-// --- FOGÁS SZERKESZTŐ KIBŐVÍTVE KÉPGALÉRIÁVAL ---
 class HalfajSzerkesztoScreen extends StatefulWidget {
   final Halfaj? szerkeszthetoHalfaj;
   final Function(Halfaj) mentesCallback;
@@ -339,7 +331,9 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
   List<String> _kepek = []; 
 
   final List<String> _kategoriak = ['Békés', 'Ragadozó'];
-  final List<String> _statuszok = ['Fogható', 'Nem fogható', 'Védett', 'Inváziós'];
+  
+  // ITT JAVÍTVA LETT A LISTA 5 ELEMRE!
+  final List<String> _statuszok = ['Fogható', 'Fogható (Idegenhonos)', 'Nem fogható', 'Védett', 'Inváziós'];
 
   @override
   void initState() {
@@ -371,6 +365,56 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
         _kepek.add(image.path);
       });
     }
+  }
+
+  void _mutassStatuszInfot() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Státuszok Jelentése', style: TextStyle(color: Colors.greenAccent)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoSor(Colors.green, 'Fogható', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
+              _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
+              _buildInfoSor(Colors.blue, 'Védett', 'Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
+              _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
+              _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem védett és nem inváziós, de jogszabály alapján nem tartható meg; kifogása esetén vissza kell engedni.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Bezárás', style: TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoSor(Color szin, String cim, String leiras) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 14, height: 14, decoration: BoxDecoration(color: szin, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text(cim, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(leiras, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.3)),
+        ],
+      ),
+    );
   }
 
   void _mentes() {
@@ -480,16 +524,30 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
               onChanged: (val) => setState(() => _kivalasztottKategoria = val),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _kivalasztottStatusz,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Státusz', border: OutlineInputBorder()),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('-- Válassz státuszt --')),
-                ..._statuszok.map((s) => DropdownMenuItem(value: s, child: Text(s))),
+            
+            // --- STÁTUSZ VÁLASZTÓ ÉS INFÓ GOMB ---
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _kivalasztottStatusz,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Státusz', border: OutlineInputBorder()),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('-- Válassz státuszt --')),
+                      ..._statuszok.map((s) => DropdownMenuItem(value: s, child: Text(s))),
+                    ],
+                    onChanged: (val) => setState(() => _kivalasztottStatusz = val),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: Colors.greenAccent, size: 28),
+                  onPressed: _mutassStatuszInfot,
+                ),
               ],
-              onChanged: (val) => setState(() => _kivalasztottStatusz = val),
             ),
+            
             const SizedBox(height: 16),
             Row(
               children: [
