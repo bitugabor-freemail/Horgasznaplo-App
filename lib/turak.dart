@@ -360,7 +360,7 @@ class _TurakScreenState extends State<TurakScreen> {
                                       ),
                                       ElevatedButton.icon(
                                         style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
-                                        icon: const Icon(Icons.visibility, color: Colors.white, size: 18),
+                                        icon: const Icon(Icons.phishing, color: Colors.white, size: 18),
                                         label: const Text('FOGÁSOK', style: TextStyle(color: Colors.white)),
                                         onPressed: () {
                                           Navigator.push(
