@@ -41,8 +41,27 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   Future<void> _adatokBetoltese() async {
     if (_kivKategoria == 'Halfaj') {
       _halfajok = await AdatTarolo.halfajokBetoltese();
+      
+      // SÚLYOZÓ FÜGGVÉNY BELSŐ HASZNÁLATRA
+      int getSuly(String s) {
+        if (s == 'Fogható' || s == 'Fogható (Őshonos)') return 1;
+        if (s == 'Fogható (Idegenhonos)') return 2;
+        if (s == 'Inváziós') return 3;
+        if (s == 'Nem fogható') return 4;
+        if (s == 'Védett') return 5;
+        return 6;
+      }
+      
+      // KETTŐS RENDEZÉS A TÖRZSDATOKNÁL IS
+      _halfajok.sort((a, b) {
+        int cmp = getSuly(a.statusz).compareTo(getSuly(b.statusz));
+        if (cmp != 0) return cmp;
+        return a.nev.compareTo(b.nev);
+      });
+
     } else if (_kivKategoria == 'Helyszín') {
       _helyszinek = await AdatTarolo.helyszinekBetoltese();
+      _helyszinek.sort((a, b) => a.nev.compareTo(b.nev)); 
     } else {
       switch (_kivKategoria) {
         case 'Horgászbot': _simaLista = await AdatTarolo.botokBetoltese(); break;
@@ -54,6 +73,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
         case 'Időjárás': _simaLista = await AdatTarolo.idojarasBetoltese(); break;
         case 'Hal sorsa': _simaLista = await AdatTarolo.sorsBetoltese(); break;
       }
+      _simaLista.sort(); 
     }
     setState(() {});
   }
@@ -97,7 +117,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 }
                 
                 await _simaAdatMentes();
-                setState(() {});
+                _adatokBetoltese(); // Újrarendezés mentés után
                 if (mounted) Navigator.pop(context);
               }
             },
@@ -143,7 +163,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 }
                 
                 await AdatTarolo.helyszinekMentes(_helyszinek);
-                setState(() {});
+                _adatokBetoltese(); // Újrarendezés mentés után
                 if (mounted) Navigator.pop(context);
               }
             },
@@ -261,7 +281,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                                   if (regiNev != modositottHal.nev) {
                                     await AdatTarolo.torzsadatNevFrissites('Halfaj', regiNev, modositottHal.nev);
                                   }
-                                  setState(() {});
+                                  _adatokBetoltese(); // Újrarendezés
                                 },
                               )));
                             } else if (_kivKategoria == 'Helyszín') {
@@ -293,7 +313,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
               mentesCallback: (ujHal) async {
                 _halfajok.add(ujHal);
                 await AdatTarolo.halfajokMentes(_halfajok);
-                setState(() {});
+                _adatokBetoltese(); // Újrarendezés
               },
             )));
           } else if (_kivKategoria == 'Helyszín') {
@@ -343,7 +363,6 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
       _kivalasztottKategoria = h.kategoria.isNotEmpty ? h.kategoria : null;
       _kivalasztottStatusz = h.statusz.isNotEmpty ? h.statusz : null;
       
-      // HA A RÉGI DATBÁZISBAN "FOGHATÓ" VAN, ITT ÁTÍRJUK HOGY NE FAGYJON LE
       if (_kivalasztottStatusz == 'Fogható') {
         _kivalasztottStatusz = 'Fogható (Őshonos)';
       }
