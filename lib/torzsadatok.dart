@@ -332,8 +332,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
 
   final List<String> _kategoriak = ['Békés', 'Ragadozó'];
   
-  // ITT JAVÍTVA LETT A LISTA 5 ELEMRE!
-  final List<String> _statuszok = ['Fogható', 'Fogható (Idegenhonos)', 'Nem fogható', 'Védett', 'Inváziós'];
+  final List<String> _statuszok = ['Fogható (Őshonos)', 'Fogható (Idegenhonos)', 'Nem fogható', 'Védett', 'Inváziós'];
 
   @override
   void initState() {
@@ -343,6 +342,12 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
       _nevCtrl.text = h.nev;
       _kivalasztottKategoria = h.kategoria.isNotEmpty ? h.kategoria : null;
       _kivalasztottStatusz = h.statusz.isNotEmpty ? h.statusz : null;
+      
+      // HA A RÉGI DATBÁZISBAN "FOGHATÓ" VAN, ITT ÁTÍRJUK HOGY NE FAGYJON LE
+      if (_kivalasztottStatusz == 'Fogható') {
+        _kivalasztottStatusz = 'Fogható (Őshonos)';
+      }
+
       _meretCtrl.text = h.meretKorlatozas;
       _darabCtrl.text = h.darabKorlatozas;
       _tilalomCtrl.text = h.tilalmiIdoszak;
@@ -379,7 +384,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildInfoSor(Colors.green, 'Fogható', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
+              _buildInfoSor(Colors.green, 'Fogható (Őshonos)', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
               _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
               _buildInfoSor(Colors.blue, 'Védett', 'Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
               _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
@@ -452,7 +457,6 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             TextField(controller: _nevCtrl, autofocus: widget.szerkeszthetoHalfaj == null, decoration: const InputDecoration(labelText: 'Halfaj neve *', border: OutlineInputBorder())),
             const SizedBox(height: 16),
             
-            // --- KÉPGALÉRIA ---
             const Text('Fényképek (Maximum 5 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             Wrap(
@@ -525,7 +529,6 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
             
-            // --- STÁTUSZ VÁLASZTÓ ÉS INFÓ GOMB ---
             Row(
               children: [
                 Expanded(
