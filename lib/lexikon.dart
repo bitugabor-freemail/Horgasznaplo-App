@@ -154,12 +154,18 @@ class _LexikonScreenState extends State<LexikonScreen> {
                             child: ListTile(
                               leading: kepIkon,
                               title: Text(hal.nev, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Row(
-                                children: [
-                                  Text(hal.kategoria, style: const TextStyle(color: Colors.white70)),
-                                  const Text(' • '),
-                                  Text(hal.statusz, style: TextStyle(color: _getStatuszSzin(hal.statusz), fontWeight: FontWeight.bold)),
-                                ],
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      // Kategória normál (14-es) betűmérettel
+                                      TextSpan(text: '${hal.kategoria} • ', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                                      // Státusz kisebb (12-es) betűmérettel, hogy biztosan kiférjen
+                                      TextSpan(text: hal.statusz, style: TextStyle(color: _getStatuszSzin(hal.statusz), fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
                               ),
                               trailing: const Icon(Icons.chevron_right, color: Colors.white54),
                               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => HalReszletekScreen(hal: hal))),
