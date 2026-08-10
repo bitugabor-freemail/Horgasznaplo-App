@@ -42,7 +42,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     if (_kivKategoria == 'Halfaj') {
       _halfajok = await AdatTarolo.halfajokBetoltese();
       
-      // SÚLYOZÓ FÜGGVÉNY BELSŐ HASZNÁLATRA
       int getSuly(String s) {
         if (s == 'Fogható' || s == 'Fogható (Őshonos)') return 1;
         if (s == 'Fogható (Idegenhonos)') return 2;
@@ -52,7 +51,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
         return 6;
       }
       
-      // KETTŐS RENDEZÉS A TÖRZSDATOKNÁL IS
       _halfajok.sort((a, b) {
         int cmp = getSuly(a.statusz).compareTo(getSuly(b.statusz));
         if (cmp != 0) return cmp;
@@ -117,7 +115,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 }
                 
                 await _simaAdatMentes();
-                _adatokBetoltese(); // Újrarendezés mentés után
+                _adatokBetoltese(); 
                 if (mounted) Navigator.pop(context);
               }
             },
@@ -163,7 +161,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 }
                 
                 await AdatTarolo.helyszinekMentes(_helyszinek);
-                _adatokBetoltese(); // Újrarendezés mentés után
+                _adatokBetoltese(); 
                 if (mounted) Navigator.pop(context);
               }
             },
@@ -281,7 +279,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                                   if (regiNev != modositottHal.nev) {
                                     await AdatTarolo.torzsadatNevFrissites('Halfaj', regiNev, modositottHal.nev);
                                   }
-                                  _adatokBetoltese(); // Újrarendezés
+                                  _adatokBetoltese(); 
                                 },
                               )));
                             } else if (_kivKategoria == 'Helyszín') {
@@ -313,7 +311,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
               mentesCallback: (ujHal) async {
                 _halfajok.add(ujHal);
                 await AdatTarolo.halfajokMentes(_halfajok);
-                _adatokBetoltese(); // Újrarendezés
+                _adatokBetoltese(); 
               },
             )));
           } else if (_kivKategoria == 'Helyszín') {
@@ -405,9 +403,9 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             children: [
               _buildInfoSor(Colors.green, 'Fogható (Őshonos)', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
               _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
-              _buildInfoSor(Colors.blue, 'Védett', 'Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
+              _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem állnak szigorú természetvédelmi oltalom alatt, de a halgazdálkodási törvény (és a MOHOSZ Országos Horgászrendje) állományvédelmi okokból tiltja a kifogásukat és az elvitelüket. Kifogásuk esetén ugyanúgy azonnal és kíméletesen vissza kell őket engedni a vízbe.'),
+              _buildInfoSor(Colors.blue, 'Védett', 'A természetvédelmi törvény hatálya alá tartoznak. Ezeknek a halaknak hivatalos, pénzben kifejezett természetvédelmi (eszmei) értékük van (pl. 10 000 Ft-tól akár 250 000 Ft-ig). Kifejezetten ritka, veszélyeztetett, vagy bennszülött (endemikus) fajok. Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
               _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
-              _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem védett és nem inváziós, de jogszabály alapján nem tartható meg; kifogása esetén vissza kell engedni.'),
             ],
           ),
         ),
@@ -431,7 +429,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             children: [
               Container(width: 14, height: 14, decoration: BoxDecoration(color: szin, shape: BoxShape.circle)),
               const SizedBox(width: 8),
-              Text(cim, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              Expanded(child: Text(cim, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
             ],
           ),
           const SizedBox(height: 4),
