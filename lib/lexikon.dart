@@ -80,7 +80,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
   }
 
   Color _getStatuszSzin(String statusz) {
-    // A régi "Fogható" is zöld marad, amíg át nem írod a szerkesztőben
     if (statusz == 'Fogható' || statusz == 'Fogható (Őshonos)') return Colors.green;
     if (statusz == 'Fogható (Idegenhonos)') return Colors.lightGreenAccent; 
     if (statusz == 'Védett') return Colors.blue;
