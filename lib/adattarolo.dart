@@ -63,7 +63,6 @@ class AdatTarolo {
     final adatok = await _betoltes(_halfajokKulcs);
     List<Halfaj> betoltott = adatok.map((e) => Halfaj.fromJson(e)).toList();
 
-    // --- AUTOMATIKUS MIGRÁCIÓ: A meglévő adatbázisban átírja a régi státuszt ---
     bool valtozott = false;
     for (int i = 0; i < betoltott.length; i++) {
       if (betoltott[i].statusz == 'Fogható') {
@@ -392,10 +391,10 @@ class AdatTarolo {
         kepek: [_ph('Afrikai harcsa 1'), _ph('Afrikai harcsa 2'), _ph('Afrikai harcsa 3')],
       ),
       Halfaj(
-        id: 'hal_23', nev: 'Tokhal (Vágó és hibridek)', kategoria: 'Ragadozó', statusz: 'Fogható (Idegenhonos)',
+        id: 'hal_23', nev: 'Tokhal (Hibridek)', kategoria: 'Ragadozó', statusz: 'Fogható (Idegenhonos)',
         meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
         megjegyzes: 'Ősi, cápaszerű megjelenés, csontvértek, alsó állású száj. Fenékről porszívózza a táplálékot. Halibut pelletekkel fogható intenzíven telepített tavakon.',
-        kepek: [_ph('Tokhal 1'), _ph('Tokhal 2'), _ph('Tokhal 3')],
+        kepek: [_ph('Tokhal (Hibrid) 1'), _ph('Tokhal 2'), _ph('Tokhal 3')],
       ),
       Halfaj(
         id: 'hal_24', nev: 'Fekete amur', kategoria: 'Békés', statusz: 'Fogható (Idegenhonos)',
@@ -476,9 +475,9 @@ class AdatTarolo {
         kepek: ['https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Hypophthalmichthys_nobilis.jpg/800px-Hypophthalmichthys_nobilis.jpg', _ph('Busa 2'), _ph('Busa 3')],
       ),
       Halfaj(
-        id: 'hal_37', nev: 'Kecsege', kategoria: 'Békés', statusz: 'Védett',
+        id: 'hal_37', nev: 'Kecsege', kategoria: 'Békés', statusz: 'Nem fogható',
         meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
-        megjegyzes: 'Pikkelytelen dunai tokféle, hátán csontos vértekkel, felkunkorodó orral. Horgászata és megtartása szigorúan tilos (kivéve éves, személyre szóló eseti engedéllyel).',
+        megjegyzes: 'Pikkelytelen dunai tokféle, hátán csontos vértekkel, felkunkorodó orral. Horgászata és megtartása tilos (kivéve éves, személyre szóló eseti engedéllyel).',
         kepek: ['https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Acipenser_ruthenus.jpg/800px-Acipenser_ruthenus.jpg', _ph('Kecsege 2'), _ph('Kecsege 3')],
       ),
       Halfaj(
@@ -498,6 +497,102 @@ class AdatTarolo {
         meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
         megjegyzes: 'A ponty tógazdasági, vagy kerti-tavi színmutációja (általában fehér-piros-fekete foltos). Táplálkozása és horgászata teljesen megegyezik a pontyéval (bojli, pelletek, kukorica).',
         kepek: [_ph('Koi ponty 1'), _ph('Koi ponty 2'), _ph('Koi ponty 3')],
+      ),
+      Halfaj(
+        id: 'hal_41', nev: 'Magyar bucó', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Megnyúlt, hengeres testű, sárgás-barnás csíkos hal. Teljesen a mederfenékre lapulva él a gyors folyókban. Védett!',
+        kepek: [_ph('Magyar bucó 1'), _ph('Magyar bucó 2'), _ph('Magyar bucó 3')],
+      ),
+      Halfaj(
+        id: 'hal_42', nev: 'Német bucó', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'A magyar bucóhoz hasonló, fenéklakó folyóvízi hal. Szigorúan védett!',
+        kepek: [_ph('Német bucó 1'), _ph('Német bucó 2'), _ph('Német bucó 3')],
+      ),
+      Halfaj(
+        id: 'hal_43', nev: 'Tarka géb', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Őshonos és védett gébféle (csövesorrú géb). Nagyon hasonlít az inváziós rokonaira, de orrnyílásaiból kis csövecskék állnak ki.',
+        kepek: [_ph('Tarka géb 1'), _ph('Tarka géb 2'), _ph('Tarka géb 3')],
+      ),
+      Halfaj(
+        id: 'hal_44', nev: 'Réti csík', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Kígyószerű, csúszós testű hal bajuszszálakkal. Iszapos, mocsaras holtágakban él. Szigorúan védett!',
+        kepek: [_ph('Réti csík 1'), _ph('Réti csík 2'), _ph('Réti csík 3')],
+      ),
+      Halfaj(
+        id: 'hal_45', nev: 'Vágó csík', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'A réti csíkhoz hasonló, lapítottabb testű, fenéklakó hal. Védett faj!',
+        kepek: [_ph('Vágó csík 1'), _ph('Vágó csík 2'), _ph('Vágó csík 3')],
+      ),
+      Halfaj(
+        id: 'hal_46', nev: 'Pénzes pér', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Hatalmas, vitorlaszerű, színpompás hátúszója van. Hegyi folyókban, patakokban él. Szigorúan védett!',
+        kepek: [_ph('Pénzes pér 1'), _ph('Pénzes pér 2'), _ph('Pénzes pér 3')],
+      ),
+      Halfaj(
+        id: 'hal_47', nev: 'Lápi póc', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Apró, barna, kerekded uszonyú halacska. Kisebb, növényzettel benőtt csatornákban él. Fokozottan védett, endemikus fajunk!',
+        kepek: [_ph('Lápi póc 1'), _ph('Lápi póc 2'), _ph('Lápi póc 3')],
+      ),
+      Halfaj(
+        id: 'hal_48', nev: 'Viza', kategoria: 'Ragadozó', statusz: 'Nem fogható',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'A tokfélék egykori óriása, hatalmasra növő porcos hal. Ma már extrém ritka, megtartása szigorúan tilos!',
+        kepek: [_ph('Viza 1'), _ph('Viza 2'), _ph('Viza 3')],
+      ),
+      Halfaj(
+        id: 'hal_49', nev: 'Vágó tok', kategoria: 'Békés', statusz: 'Nem fogható',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Őshonos, a Dunában és Tiszában élő tokféle. A hibrid tokhalakkal ellentétben a természetes vizekben nem fogható!',
+        kepek: [_ph('Vágó tok 1'), _ph('Vágó tok 2'), _ph('Vágó tok 3')],
+      ),
+      Halfaj(
+        id: 'hal_50', nev: 'Sima tok', kategoria: 'Békés', statusz: 'Nem fogható',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Ritka, őshonos tokfélénk. Természetes vizeinkben tilos megtartani.',
+        kepek: [_ph('Sima tok 1'), _ph('Sima tok 2'), _ph('Sima tok 3')],
+      ),
+      Halfaj(
+        id: 'hal_51', nev: 'Sőregtok', kategoria: 'Ragadozó', statusz: 'Nem fogható',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Ritka, őshonos dunai tokféle. Kifogása esetén azonnal vissza kell engedni.',
+        kepek: [_ph('Sőregtok 1'), _ph('Sőregtok 2'), _ph('Sőregtok 3')],
+      ),
+      Halfaj(
+        id: 'hal_52', nev: 'Vágó durbincs', kategoria: 'Ragadozó', statusz: 'Nem fogható',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Apró, a sügérfélékhez tartozó tüskés hal. Folyókon gilisztás fenekezésnél gyakori. Megtartani és csalihalként használni tilos!',
+        kepek: [_ph('Vágó durbincs 1'), _ph('Vágó durbincs 2'), _ph('Vágó durbincs 3')],
+      ),
+      Halfaj(
+        id: 'hal_53', nev: 'Selymes durbincs', kategoria: 'Ragadozó', statusz: 'Nem fogható',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'A vágó durbinchoz hasonló apró folyóvízi hal. Állományvédelmi okokból nem fogható.',
+        kepek: [_ph('Selymes durbincs 1'), _ph('Selymes durbincs 2'), _ph('Selymes durbincs 3')],
+      ),
+      Halfaj(
+        id: 'hal_54', nev: 'Feketeszájú géb', kategoria: 'Ragadozó', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Kisméretű, kártékony betelepült hal. Nevét a hímek fekete szájáról kapta. Visszaengedni tilos!',
+        kepek: [_ph('Feketeszájú géb 1'), _ph('Feketeszájú géb 2'), _ph('Feketeszájú géb 3')],
+      ),
+      Halfaj(
+        id: 'hal_55', nev: 'Csupasztorkú géb', kategoria: 'Ragadozó', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Apró inváziós gébféle. Hazai halaink ikráit pusztítja, visszaengedni tilos!',
+        kepek: [_ph('Csupasztorkú géb 1'), _ph('Csupasztorkú géb 2'), _ph('Csupasztorkú géb 3')],
+      ),
+      Halfaj(
+        id: 'hal_56', nev: 'Kessler-géb', kategoria: 'Ragadozó', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'A legnagyobb méretű inváziós gébféle hazánkban. Lapos fej és nagy száj jellemzi. Visszaengedni tilos!',
+        kepek: [_ph('Kessler-géb 1'), _ph('Kessler-géb 2'), _ph('Kessler-géb 3')],
       ),
     ];
   }
