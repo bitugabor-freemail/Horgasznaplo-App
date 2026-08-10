@@ -87,6 +87,16 @@ class _LexikonScreenState extends State<LexikonScreen> {
     return Colors.white70; 
   }
 
+  // SÚLYOZÓ FÜGGVÉNY A RENDEZÉSHEZ
+  int _getStatuszSuly(String statusz) {
+    if (statusz == 'Fogható' || statusz == 'Fogható (Őshonos)') return 1;
+    if (statusz == 'Fogható (Idegenhonos)') return 2;
+    if (statusz == 'Inváziós') return 3;
+    if (statusz == 'Nem fogható') return 4;
+    if (statusz == 'Védett') return 5;
+    return 6;
+  }
+
   @override
   Widget build(BuildContext context) {
     final szurtLista = _osszesHal.where((h) {
@@ -94,6 +104,18 @@ class _LexikonScreenState extends State<LexikonScreen> {
              h.kategoria.toLowerCase().contains(_keresesSzoveg.toLowerCase()) ||
              h.statusz.toLowerCase().contains(_keresesSzoveg.toLowerCase());
     }).toList();
+
+    // --- KETTŐS RENDEZÉS: ELŐSZÖR STÁTUSZ, AZTÁN ABC ---
+    szurtLista.sort((a, b) {
+      int sulyA = _getStatuszSuly(a.statusz);
+      int sulyB = _getStatuszSuly(b.statusz);
+      
+      if (sulyA != sulyB) {
+        return sulyA.compareTo(sulyB); // Státusz szerinti sorrend
+      } else {
+        return a.nev.compareTo(b.nev); // Ha egyezik a státusz, jön az ABC sorrend
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
