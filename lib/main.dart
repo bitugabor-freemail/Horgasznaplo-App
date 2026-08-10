@@ -138,7 +138,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.sailing, color: Colors.greenAccent),
+              leading: const Icon(Icons.map_outlined, color: Colors.greenAccent),
               title: const Text('1. Horgásztúráim'),
               onTap: () { setState(() => _currentIndex = 0); Navigator.pop(context); },
             ),
@@ -148,7 +148,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
               onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
             ),
             ListTile(
-              leading: const Icon(Icons.book, color: Colors.greenAccent),
+              leading: const Icon(Icons.library_books_outlined, color: Colors.greenAccent),
               title: const Text('3. Halfajok'),
               onTap: () { setState(() => _currentIndex = 2); Navigator.pop(context); },
             ),
@@ -219,9 +219,9 @@ class _FomenuScreenState extends State<FomenuScreen> {
         selectedItemColor: Colors.greenAccent,
         unselectedItemColor: Colors.white54,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.sailing), label: 'Túrák'),
+          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Túrák'),
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Kedvencek'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Halfajok'),
+          BottomNavigationBarItem(icon: Icon(Icons.library_books_outlined), label: 'Halfajok'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Statisztika'),
         ],
       ),
