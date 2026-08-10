@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 
@@ -311,6 +314,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   }
 }
 
+// --- FOGÁS SZERKESZTŐ KIBŐVÍTVE KÉPGALÉRIÁVAL ---
 class HalfajSzerkesztoScreen extends StatefulWidget {
   final Halfaj? szerkeszthetoHalfaj;
   final Function(Halfaj) mentesCallback;
@@ -331,6 +335,8 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
 
   String? _kivalasztottKategoria;
   String? _kivalasztottStatusz;
+  
+  List<String> _kepek = []; 
 
   final List<String> _kategoriak = ['Békés', 'Ragadozó'];
   final List<String> _statuszok = ['Fogható', 'Nem fogható', 'Védett', 'Inváziós'];
@@ -348,6 +354,22 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
       _tilalomCtrl.text = h.tilalmiIdoszak;
       _evCtrl.text = h.szabalyozasEve;
       _megjegyzesCtrl.text = h.megjegyzes;
+      _kepek = List.from(h.kepek);
+    }
+  }
+
+  Future<void> _kepHozzaadasa() async {
+    if (_kepek.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 képet adhatsz hozzá!')));
+      return;
+    }
+    
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _kepek.add(image.path);
+      });
     }
   }
 
@@ -367,7 +389,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
       tilalmiIdoszak: _tilalomCtrl.text.trim(),
       szabalyozasEve: _evCtrl.text.trim(),
       megjegyzes: _megjegyzesCtrl.text.trim(),
-      kepek: widget.szerkeszthetoHalfaj?.kepek ?? [],
+      kepek: _kepek, 
     );
 
     widget.mentesCallback(ujHalfaj);
@@ -385,6 +407,68 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
           children: [
             TextField(controller: _nevCtrl, autofocus: widget.szerkeszthetoHalfaj == null, decoration: const InputDecoration(labelText: 'Halfaj neve *', border: OutlineInputBorder())),
             const SizedBox(height: 16),
+            
+            // --- KÉPGALÉRIA ---
+            const Text('Fényképek (Maximum 5 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                ..._kepek.asMap().entries.map((entry) {
+                  int idx = entry.key;
+                  String utvonal = entry.value;
+                  return Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: utvonal.startsWith('http')
+                            ? CachedNetworkImage(
+                                imageUrl: utvonal,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.white24),
+                              )
+                            : Image.file(File(utvonal), fit: BoxFit.cover),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() => _kepek.removeAt(idx)),
+                        child: Container(
+                          margin: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                          child: const Icon(Icons.close, color: Colors.redAccent, size: 24),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+                if (_kepek.length < 5)
+                  GestureDetector(
+                    onTap: _kepHozzaadasa,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.greenAccent, width: 2, style: BorderStyle.solid),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.add_a_photo, color: Colors.greenAccent, size: 30),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
             DropdownButtonFormField<String>(
               value: _kivalasztottKategoria,
               isExpanded: true,
@@ -419,13 +503,14 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             const SizedBox(height: 16),
             TextField(controller: _evCtrl, decoration: const InputDecoration(labelText: 'Szabályozás éve', border: OutlineInputBorder())),
             const SizedBox(height: 16),
-            TextField(controller: _megjegyzesCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Leírás / Megjegyzés', border: OutlineInputBorder())),
+            TextField(controller: _megjegyzesCtrl, maxLines: 5, decoration: const InputDecoration(labelText: 'Leírás / Megjegyzés', border: OutlineInputBorder())),
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], padding: const EdgeInsets.symmetric(vertical: 16)),
               onPressed: _mentes,
               child: const Text('HALFAJ MENTÉSE', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
             ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
