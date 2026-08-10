@@ -41,7 +41,7 @@ class _LexikonScreenState extends State<LexikonScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildInfoSor(Colors.green, 'Fogható', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
+              _buildInfoSor(Colors.green, 'Fogható (Őshonos)', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
               _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
               _buildInfoSor(Colors.blue, 'Védett', 'Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
               _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
@@ -80,7 +80,8 @@ class _LexikonScreenState extends State<LexikonScreen> {
   }
 
   Color _getStatuszSzin(String statusz) {
-    if (statusz == 'Fogható') return Colors.green;
+    // A régi "Fogható" is zöld marad, amíg át nem írod a szerkesztőben
+    if (statusz == 'Fogható' || statusz == 'Fogható (Őshonos)') return Colors.green;
     if (statusz == 'Fogható (Idegenhonos)') return Colors.lightGreenAccent; 
     if (statusz == 'Védett') return Colors.blue;
     if (statusz == 'Inváziós') return Colors.red;
@@ -130,7 +131,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
                           
                           Widget kepIkon = const Icon(Icons.set_meal, size: 40, color: Colors.white24);
                           
-                          // OKOS KÉP MEGJELENÍTÉS (Helyi vagy Webes)
                           if (hal.kepek.isNotEmpty) {
                             String utvonal = hal.kepek.first;
                             kepIkon = ClipRRect(
@@ -159,9 +159,7 @@ class _LexikonScreenState extends State<LexikonScreen> {
                                 child: Text.rich(
                                   TextSpan(
                                     children: [
-                                      // Kategória normál (14-es) betűmérettel
                                       TextSpan(text: '${hal.kategoria} • ', style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                                      // Státusz kisebb (12-es) betűmérettel, hogy biztosan kiférjen
                                       TextSpan(text: hal.statusz, style: TextStyle(color: _getStatuszSzin(hal.statusz), fontWeight: FontWeight.bold, fontSize: 12)),
                                     ],
                                   ),
@@ -180,7 +178,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
   }
 }
 
-// ---- RÉSZLETES HAL ADATLAP ----
 class HalReszletekScreen extends StatelessWidget {
   final Halfaj hal;
 
@@ -201,7 +198,7 @@ class HalReszletekScreen extends StatelessWidget {
   }
 
   Color _getStatuszSzin(String statusz) {
-    if (statusz == 'Fogható') return Colors.green;
+    if (statusz == 'Fogható' || statusz == 'Fogható (Őshonos)') return Colors.green;
     if (statusz == 'Fogható (Idegenhonos)') return Colors.lightGreenAccent; 
     if (statusz == 'Védett') return Colors.blue;
     if (statusz == 'Inváziós') return Colors.red;
@@ -217,7 +214,6 @@ class HalReszletekScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Képek lapozható megjelenítése (PageView) OKOSÍTVA
             if (hal.kepek.isNotEmpty) ...[
               SizedBox(
                 height: 250,
@@ -278,8 +274,8 @@ class HalReszletekScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   
                   _buildSor('Kategória', hal.kategoria),
-                  _buildSor('Méretkorlátozás', hal.meretKorlatozas.isNotEmpty ? '${hal.meretKorlatozas}' : '-'),
-                  _buildSor('Napi darabszám', hal.darabKorlatozas.isNotEmpty ? '${hal.darabKorlatozas}' : '-'),
+                  _buildSor('Méretkorlátozás', hal.meretKorlatozas.isNotEmpty ? hal.meretKorlatozas : '-'),
+                  _buildSor('Napi darabszám', hal.darabKorlatozas.isNotEmpty ? hal.darabKorlatozas : '-'),
                   _buildSor('Tilalmi időszak', hal.tilalmiIdoszak.isNotEmpty ? hal.tilalmiIdoszak : '-'),
                   _buildSor('Szabályozás éve', hal.szabalyozasEve.isNotEmpty ? hal.szabalyozasEve : '-'),
                   
@@ -299,7 +295,6 @@ class HalReszletekScreen extends StatelessWidget {
   }
 }
 
-// ---- KVÍZ MODUL ----
 class KvizScreen extends StatefulWidget {
   const KvizScreen({super.key});
 
@@ -333,7 +328,6 @@ class _KvizScreenState extends State<KvizScreen> {
     
     List<Halfaj> elerhetoHalak = _osszesHal;
     if (_kepesMod) {
-      // Okosított képellenőrzés (Webes linket is elfogad!)
       elerhetoHalak = _osszesHal.where((h) => h.kepek.isNotEmpty && (h.kepek.first.startsWith('http') || File(h.kepek.first).existsSync())).toList();
     }
 
@@ -425,7 +419,6 @@ class _KvizScreenState extends State<KvizScreen> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // FELADVÁNY (Kép vagy Szöveg)
                   Expanded(
                     flex: 2,
                     child: Container(
@@ -460,7 +453,6 @@ class _KvizScreenState extends State<KvizScreen> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // VÁLASZGOMBOK
                   Expanded(
                     flex: 3,
                     child: ListView.builder(
