@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 
@@ -33,32 +34,57 @@ class _LexikonScreenState extends State<LexikonScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Státuszok Jelentése', style: TextStyle(color: Colors.greenAccent)),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('🟢 Fogható\nMegtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.\n'),
-            Text('🔵 Védett\nNem tartható meg, azonnal és kíméletesen vissza kell engedni.\n'),
-            Text('🔴 Inváziós\nNem szabad visszaengedni, el kell távolítani a víztérből.\n'),
-            Text('⚪ Nem fogható\nNem védett és nem inváziós, de jogszabály alapján nem tartható meg; kifogása esetén vissza kell engedni.'),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoSor(Colors.green, 'Fogható', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
+              _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
+              _buildInfoSor(Colors.blue, 'Védett', 'Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
+              _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
+              _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem védett és nem inváziós, de jogszabály alapján nem tartható meg; kifogása esetén vissza kell engedni.'),
+            ],
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Bezárás', style: TextStyle(color: Colors.white))),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Bezárás', style: TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoSor(Color szin, String cim, String leiras) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 14, height: 14, decoration: BoxDecoration(color: szin, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text(cim, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(leiras, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.3)),
         ],
       ),
     );
   }
 
   Color _getStatuszSzin(String statusz) {
-    switch (statusz) {
-      case 'Fogható': return Colors.greenAccent;
-      case 'Védett': return Colors.blueAccent;
-      case 'Inváziós': return Colors.redAccent;
-      case 'Nem fogható': return Colors.white;
-      default: return Colors.grey;
-    }
+    if (statusz == 'Fogható') return Colors.green;
+    if (statusz == 'Fogható (Idegenhonos)') return Colors.lightGreenAccent; 
+    if (statusz == 'Védett') return Colors.blue;
+    if (statusz == 'Inváziós') return Colors.red;
+    return Colors.white70; 
   }
 
   @override
@@ -103,10 +129,22 @@ class _LexikonScreenState extends State<LexikonScreen> {
                           final hal = szurtLista[index];
                           
                           Widget kepIkon = const Icon(Icons.set_meal, size: 40, color: Colors.white24);
-                          if (hal.kepek.isNotEmpty && File(hal.kepek.first).existsSync()) {
+                          
+                          // OKOS KÉP MEGJELENÍTÉS (Helyi vagy Webes)
+                          if (hal.kepek.isNotEmpty) {
+                            String utvonal = hal.kepek.first;
                             kepIkon = ClipRRect(
                               borderRadius: BorderRadius.circular(6),
-                              child: Image.file(File(hal.kepek.first), width: 50, height: 50, fit: BoxFit.cover),
+                              child: utvonal.startsWith('http')
+                                ? CachedNetworkImage(
+                                    imageUrl: utvonal,
+                                    width: 50, height: 50, fit: BoxFit.cover,
+                                    placeholder: (context, url) => const SizedBox(width: 50, height: 50, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2))),
+                                    errorWidget: (context, url, error) => const Icon(Icons.set_meal, size: 40, color: Colors.white24),
+                                  )
+                                : (File(utvonal).existsSync() 
+                                    ? Image.file(File(utvonal), width: 50, height: 50, fit: BoxFit.cover)
+                                    : const Icon(Icons.set_meal, size: 40, color: Colors.white24)),
                             );
                           }
 
@@ -157,13 +195,11 @@ class HalReszletekScreen extends StatelessWidget {
   }
 
   Color _getStatuszSzin(String statusz) {
-    switch (statusz) {
-      case 'Fogható': return Colors.green;
-      case 'Védett': return Colors.blue;
-      case 'Inváziós': return Colors.red;
-      case 'Nem fogható': return Colors.grey;
-      default: return Colors.transparent;
-    }
+    if (statusz == 'Fogható') return Colors.green;
+    if (statusz == 'Fogható (Idegenhonos)') return Colors.lightGreenAccent; 
+    if (statusz == 'Védett') return Colors.blue;
+    if (statusz == 'Inváziós') return Colors.red;
+    return Colors.grey; 
   }
 
   @override
@@ -175,7 +211,7 @@ class HalReszletekScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Képek lapozható megjelenítése (PageView)
+            // Képek lapozható megjelenítése (PageView) OKOSÍTVA
             if (hal.kepek.isNotEmpty) ...[
               SizedBox(
                 height: 250,
@@ -183,12 +219,26 @@ class HalReszletekScreen extends StatelessWidget {
                   itemCount: hal.kepek.length,
                   itemBuilder: (context, i) {
                     final utvonal = hal.kepek[i];
-                    if (!File(utvonal).existsSync()) return const Center(child: Icon(Icons.error));
+                    Widget megjelenito;
+                    
+                    if (utvonal.startsWith('http')) {
+                      megjelenito = CachedNetworkImage(
+                        imageUrl: utvonal,
+                        fit: BoxFit.cover, width: double.infinity,
+                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.white24)),
+                      );
+                    } else if (File(utvonal).existsSync()) {
+                      megjelenito = Image.file(File(utvonal), fit: BoxFit.cover, width: double.infinity);
+                    } else {
+                      return const Center(child: Icon(Icons.error));
+                    }
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.file(File(utvonal), fit: BoxFit.cover, width: double.infinity),
+                        child: megjelenito,
                       ),
                     );
                   },
@@ -209,19 +259,21 @@ class HalReszletekScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(hal.nev, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                      Expanded(
+                        child: Text(hal.nev, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.greenAccent), overflow: TextOverflow.ellipsis),
+                      ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(color: _getStatuszSzin(hal.statusz), borderRadius: BorderRadius.circular(20)),
-                        child: Text(hal.statusz, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: Text(hal.statusz, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
                   
                   _buildSor('Kategória', hal.kategoria),
-                  _buildSor('Méretkorlátozás', hal.meretKorlatozas.isNotEmpty ? '${hal.meretKorlatozas} cm' : '-'),
-                  _buildSor('Napi darabszám', hal.darabKorlatozas.isNotEmpty ? '${hal.darabKorlatozas} db' : '-'),
+                  _buildSor('Méretkorlátozás', hal.meretKorlatozas.isNotEmpty ? '${hal.meretKorlatozas}' : '-'),
+                  _buildSor('Napi darabszám', hal.darabKorlatozas.isNotEmpty ? '${hal.darabKorlatozas}' : '-'),
                   _buildSor('Tilalmi időszak', hal.tilalmiIdoszak.isNotEmpty ? hal.tilalmiIdoszak : '-'),
                   _buildSor('Szabályozás éve', hal.szabalyozasEve.isNotEmpty ? hal.szabalyozasEve : '-'),
                   
@@ -275,7 +327,8 @@ class _KvizScreenState extends State<KvizScreen> {
     
     List<Halfaj> elerhetoHalak = _osszesHal;
     if (_kepesMod) {
-      elerhetoHalak = _osszesHal.where((h) => h.kepek.isNotEmpty && File(h.kepek.first).existsSync()).toList();
+      // Okosított képellenőrzés (Webes linket is elfogad!)
+      elerhetoHalak = _osszesHal.where((h) => h.kepek.isNotEmpty && (h.kepek.first.startsWith('http') || File(h.kepek.first).existsSync())).toList();
     }
 
     if (elerhetoHalak.isEmpty) {
@@ -379,7 +432,14 @@ class _KvizScreenState extends State<KvizScreen> {
                         child: _kepesMod
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(15),
-                                child: Image.file(File(_aktualisKerdes.kepek.first), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                                child: _aktualisKerdes.kepek.first.startsWith('http')
+                                    ? CachedNetworkImage(
+                                        imageUrl: _aktualisKerdes.kepek.first,
+                                        fit: BoxFit.cover, width: double.infinity, height: double.infinity,
+                                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                                        errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50, color: Colors.white24),
+                                      )
+                                    : Image.file(File(_aktualisKerdes.kepek.first), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
                               )
                             : Padding(
                                 padding: const EdgeInsets.all(16.0),
