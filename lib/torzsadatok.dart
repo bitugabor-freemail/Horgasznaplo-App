@@ -245,7 +245,8 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
           ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(12),
+              // ITT A JAVÍTÁS: A lista aljára 80 pixelnyi üres helyet tettünk, hogy a gomb ne takarja ki az utolsó elemet!
+              padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 80),
               itemCount: _kivKategoria == 'Halfaj' ? _halfajok.length : (_kivKategoria == 'Helyszín' ? _helyszinek.length : _simaLista.length),
               itemBuilder: (context, index) {
                 String megjelenitettNev = '';
