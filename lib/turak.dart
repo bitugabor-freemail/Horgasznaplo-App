@@ -160,7 +160,6 @@ class _TurakScreenState extends State<TurakScreen> {
     };
   }
 
-  // --- 6. PONT: TELJES KÉPERNYŐS ZOOMOLHATÓ KÉP ---
   void _teljesKepernyosKep(BuildContext context, String kepUtvonal) {
     Navigator.push(
       context,
@@ -173,7 +172,6 @@ class _TurakScreenState extends State<TurakScreen> {
               IconButton(
                 icon: const Icon(Icons.download, color: Colors.white),
                 onPressed: () {
-                  // TODO: Ide jön a vízjeles képmentés
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Kép mentése vízjellel hamarosan!')),
                   );
@@ -269,7 +267,6 @@ class _TurakScreenState extends State<TurakScreen> {
                               ),
                             ),
                             
-                            // Borítókép (Most már kattintható!)
                             if (tura.boritoKep != null && File(tura.boritoKep!).existsSync())
                               GestureDetector(
                                 onTap: () => _teljesKepernyosKep(context, tura.boritoKep!),
@@ -299,7 +296,6 @@ class _TurakScreenState extends State<TurakScreen> {
                                   
                                   const SizedBox(height: 12),
                                   
-                                  // --- 4. PONT: BIG FISH KIEMELÉS ---
                                   if (stat['bigFishNev'] != null) ...[
                                     Row(
                                       children: [
@@ -358,16 +354,23 @@ class _TurakScreenState extends State<TurakScreen> {
                                           ),
                                         ],
                                       ),
-                                      ElevatedButton.icon(
+                                      // ITT A JAVÍTÁS: Szöveg, majd az Ikon
+                                      ElevatedButton(
                                         style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
-                                        icon: const Icon(Icons.phishing, color: Colors.white, size: 18),
-                                        label: const Text('FOGÁSOK', style: TextStyle(color: Colors.white)),
                                         onPressed: () {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(builder: (context) => FogasokScreen(tura: tura)),
                                           ).then((_) => _adatokBetoltese());
                                         },
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Text('FOGÁSOK', style: TextStyle(color: Colors.white)),
+                                            SizedBox(width: 8),
+                                            Icon(Icons.phishing, color: Colors.white, size: 18),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
