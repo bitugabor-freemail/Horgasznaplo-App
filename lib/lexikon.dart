@@ -30,7 +30,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
   }
 
   void _mutassInfot() {
-    // Saját ScrollController a mindig látható görgetősávhoz
     final ScrollController scrollController = ScrollController();
     
     showDialog(
@@ -43,7 +42,7 @@ class _LexikonScreenState extends State<LexikonScreen> {
           width: double.maxFinite,
           child: Scrollbar(
             controller: scrollController,
-            thumbVisibility: true, // Mindig látszik a görgetősáv
+            thumbVisibility: true,
             thickness: 4,
             radius: const Radius.circular(8),
             child: SingleChildScrollView(
@@ -76,7 +75,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
   }
 
   Widget _buildInfoSor(Color szin, String cim, String leiras) {
-    // 16.0 helyett 12.0 a bottom padding, így kevesebb helyet foglal
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Column(
@@ -363,8 +361,12 @@ class _KvizScreenState extends State<KvizScreen> {
     final random = Random();
     
     List<Halfaj> elerhetoHalak = _osszesHal;
+    
+    // Okos Képes Kvíz védelem: Csak azok a halak jöhetnek, amiknek van fizikailag is létező (vagy weben lévő) fotójuk.
     if (_kepesMod) {
-      elerhetoHalak = _osszesHal.where((h) => h.kepek.isNotEmpty && (h.kepek.first.startsWith('http') || File(h.kepek.first).existsSync())).toList();
+      elerhetoHalak = _osszesHal.where((h) {
+        return h.kepek.any((kep) => kep.startsWith('http') || File(kep).existsSync());
+      }).toList();
     }
 
     if (elerhetoHalak.isEmpty) {
@@ -465,23 +467,42 @@ class _KvizScreenState extends State<KvizScreen> {
                       ),
                       child: Center(
                         child: _kepesMod
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(15),
-                                child: _aktualisKerdes.kepek.first.startsWith('http')
-                                    ? CachedNetworkImage(
-                                        imageUrl: _aktualisKerdes.kepek.first,
-                                        fit: BoxFit.cover, width: double.infinity, height: double.infinity,
-                                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                                        errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50, color: Colors.white24),
-                                      )
-                                    : Image.file(File(_aktualisKerdes.kepek.first), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                            ? Builder(
+                                builder: (context) {
+                                  // Képes mód: Véletlenszerűen választunk egy fotót a meglévő érvényesek közül
+                                  List<String> validKepek = _aktualisKerdes.kepek.where((kep) => kep.startsWith('http') || File(kep).existsSync()).toList();
+                                  validKepek.shuffle();
+                                  String kivalasztottKep = validKepek.first;
+                                  
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: kivalasztottKep.startsWith('http')
+                                        ? CachedNetworkImage(
+                                            imageUrl: kivalasztottKep,
+                                            fit: BoxFit.cover, width: double.infinity, height: double.infinity,
+                                            placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                                            errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50, color: Colors.white24),
+                                          )
+                                        : Image.file(File(kivalasztottKep), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                                  );
+                                },
                               )
                             : Padding(
                                 padding: const EdgeInsets.all(16.0),
-                                child: Text(
-                                  'Státusz: ${_aktualisKerdes.statusz}\n\nKategória: ${_aktualisKerdes.kategoria}\n\n${_aktualisKerdes.megjegyzes}',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.white),
+                                child: Builder(
+                                  builder: (context) {
+                                    // Szöveges mód: Kicenzúrázzuk a hal nevét (teljes név és az esetleges zárójel nélküli alapnév alapján is)
+                                    String alapNev = _aktualisKerdes.nev.split(' (').first;
+                                    String cenzurazottLeiras = _aktualisKerdes.megjegyzes
+                                        .replaceAll(RegExp(RegExp.escape(_aktualisKerdes.nev), caseSensitive: false), '[***]')
+                                        .replaceAll(RegExp(RegExp.escape(alapNev), caseSensitive: false), '[***]');
+                                    
+                                    return Text(
+                                      'Státusz: ${_aktualisKerdes.statusz}\n\nKategória: ${_aktualisKerdes.kategoria}\n\n$cenzurazottLeiras',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.white),
+                                    );
+                                  }
                                 ),
                               ),
                       ),
