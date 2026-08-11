@@ -49,6 +49,7 @@ class AdatTarolo {
   }
 
   static Future<void> halfajokMentes(List<Halfaj> halfajok) async => await _mentes(_halfajokKulcs, halfajok);
+  
   static Future<List<Halfaj>> halfajokBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
     bool init = prefs.getBool('halfaj_init') ?? false;
@@ -62,22 +63,39 @@ class AdatTarolo {
 
     final adatok = await _betoltes(_halfajokKulcs);
     List<Halfaj> betoltott = adatok.map((e) => Halfaj.fromJson(e)).toList();
-
     bool valtozott = false;
+
+    // 1. Régi "Fogható" státusz javítása
     for (int i = 0; i < betoltott.length; i++) {
       if (betoltott[i].statusz == 'Fogható') {
         betoltott[i] = Halfaj(
-          id: betoltott[i].id,
-          nev: betoltott[i].nev,
-          kategoria: betoltott[i].kategoria,
-          statusz: 'Fogható (Őshonos)',
-          meretKorlatozas: betoltott[i].meretKorlatozas,
-          darabKorlatozas: betoltott[i].darabKorlatozas,
-          tilalmiIdoszak: betoltott[i].tilalmiIdoszak,
-          szabalyozasEve: betoltott[i].szabalyozasEve,
-          megjegyzes: betoltott[i].megjegyzes,
-          kepek: betoltott[i].kepek,
+          id: betoltott[i].id, nev: betoltott[i].nev, kategoria: betoltott[i].kategoria,
+          statusz: 'Fogható (Őshonos)', meretKorlatozas: betoltott[i].meretKorlatozas,
+          darabKorlatozas: betoltott[i].darabKorlatozas, tilalmiIdoszak: betoltott[i].tilalmiIdoszak,
+          szabalyozasEve: betoltott[i].szabalyozasEve, megjegyzes: betoltott[i].megjegyzes, kepek: betoltott[i].kepek,
         );
+        valtozott = true;
+      }
+    }
+
+    // 2. Buffalo átnevezése (ha még a régi névvel van bent)
+    for (int i = 0; i < betoltott.length; i++) {
+      if (betoltott[i].id == 'hal_25' && betoltott[i].nev == 'Buffalo') {
+        betoltott[i] = Halfaj(
+          id: betoltott[i].id, nev: 'Buffalo (Nagyszájú buffalo)', kategoria: betoltott[i].kategoria,
+          statusz: betoltott[i].statusz, meretKorlatozas: betoltott[i].meretKorlatozas,
+          darabKorlatozas: betoltott[i].darabKorlatozas, tilalmiIdoszak: betoltott[i].tilalmiIdoszak,
+          szabalyozasEve: betoltott[i].szabalyozasEve, megjegyzes: betoltott[i].megjegyzes, kepek: betoltott[i].kepek,
+        );
+        valtozott = true;
+      }
+    }
+
+    // 3. Új halak automatikus hozzáadása (ha nincsenek még a mentett adatbázisban)
+    List<Halfaj> frissFauna = _getMagyarHalFauna();
+    for (var frissHal in frissFauna) {
+      if (!betoltott.any((b) => b.id == frissHal.id)) {
+        betoltott.add(frissHal);
         valtozott = true;
       }
     }
@@ -403,7 +421,7 @@ class AdatTarolo {
         kepek: [_ph('Fekete amur 1'), _ph('Fekete amur 2'), _ph('Fekete amur 3')],
       ),
       Halfaj(
-        id: 'hal_25', nev: 'Buffalo', kategoria: 'Békés', statusz: 'Fogható (Idegenhonos)',
+        id: 'hal_25', nev: 'Buffalo (Nagyszájú buffalo)', kategoria: 'Békés', statusz: 'Fogható (Idegenhonos)',
         meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
         megjegyzes: 'Amerikai pontyféle, a kárász és a busa keverékére emlékeztet. Fenékközelben zooplanktont eszik. Édes bojlival pontyozás közben akad horogra.',
         kepek: [_ph('Buffalo 1'), _ph('Buffalo 2'), _ph('Buffalo 3')],
@@ -665,6 +683,96 @@ class AdatTarolo {
         meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
         megjegyzes: 'Kövek alatt rejtőző, hegyi vizekben élő fenéklakó ragadozó apróhal. Védett!',
         kepek: [_ph('Botos kölönte 1'), _ph('Botos kölönte 2'), _ph('Botos kölönte 3')],
+      ),
+      Halfaj(
+        id: 'hal_69', nev: 'Fekete törpeharcsa', kategoria: 'Ragadozó', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Észak-amerikai eredetű inváziós faj. Hasonlít a törpeharcsára, de sötétebb, feketés színezetű. Ikrapusztító, visszaengedni tilos!',
+        kepek: [_ph('Fekete törpeharcsa 1'), _ph('Fekete törpeharcsa 2'), _ph('Fekete törpeharcsa 3')],
+      ),
+      Halfaj(
+        id: 'hal_70', nev: 'Pataki szajbling', kategoria: 'Ragadozó', statusz: 'Fogható (Idegenhonos)',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Észak-amerikai pisztrángféle. Hideg, tiszta vizű hegyi patakokban él. Pergetve vagy műléggyel fogható.',
+        kepek: [_ph('Pataki szajbling 1'), _ph('Pataki szajbling 2'), _ph('Pataki szajbling 3')],
+      ),
+      Halfaj(
+        id: 'hal_71', nev: 'Tüskés pikó', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Apró, védett halacska, hátán 3-4 jellegzetes tüskével. Ikrarabló, de őshonos ritkaság lévén védett.',
+        kepek: [_ph('Tüskés pikó 1'), _ph('Tüskés pikó 2'), _ph('Tüskés pikó 3')],
+      ),
+      Halfaj(
+        id: 'hal_72', nev: 'Folyami géb', kategoria: 'Ragadozó', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Kártékony, inváziós gébféle. Folyóvizeink kövezésein tömegesen fordul elő. Visszaengedni tilos!',
+        kepek: [_ph('Folyami géb 1'), _ph('Folyami géb 2'), _ph('Folyami géb 3')],
+      ),
+      Halfaj(
+        id: 'hal_73', nev: 'Kaukázusi törpegéb', kategoria: 'Ragadozó', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Apró méretű, nagyon szapora inváziós gébféle. Kiszorítja az őshonos halakat, visszaengedni tilos!',
+        kepek: [_ph('Kaukázusi törpegéb 1'), _ph('Kaukázusi törpegéb 2'), _ph('Kaukázusi törpegéb 3')],
+      ),
+      Halfaj(
+        id: 'hal_74', nev: 'Gyöngyös koncér', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Közepes méretű, áramlatkedvelő pontyféle. Sötét pikkelyszélei hálózatos mintát adnak. Védett folyóvízi hal!',
+        kepek: [_ph('Gyöngyös koncér 1'), _ph('Gyöngyös koncér 2'), _ph('Gyöngyös koncér 3')],
+      ),
+      Halfaj(
+        id: 'hal_75', nev: 'Nyúldomolykó', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'A domolykóhoz hasonló, de nyúlánkabb testű, kisebb szájú folyóvízi hal. Szigorúan védett!',
+        kepek: [_ph('Nyúldomolykó 1'), _ph('Nyúldomolykó 2'), _ph('Nyúldomolykó 3')],
+      ),
+      Halfaj(
+        id: 'hal_76', nev: 'Petényi-márna', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Kisméretű, patakokban élő márnaféle. Nevét Petényi Salamon Jánosról kapta. Fokozottan védett!',
+        kepek: [_ph('Petényi-márna 1'), _ph('Petényi-márna 2'), _ph('Petényi-márna 3')],
+      ),
+      Halfaj(
+        id: 'hal_77', nev: 'Kurta baing', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'A balinhoz hasonló, kisméretű, felszínközeli ragadozó. Védett faj, azonnal vissza kell engedni!',
+        kepek: [_ph('Kurta baing 1'), _ph('Kurta baing 2'), _ph('Kurta baing 3')],
+      ),
+      Halfaj(
+        id: 'hal_78', nev: 'Sujtásos küsz', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'A szélhajtó küsz rokona, testén sötét, sujtásszerű sáv fut végig. Tiszta folyókban él, védett faj!',
+        kepek: [_ph('Sujtásos küsz 1'), _ph('Sujtásos küsz 2'), _ph('Sujtásos küsz 3')],
+      ),
+      Halfaj(
+        id: 'hal_79', nev: 'Vaskos csabak', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Zömök testű, ezüstös-sárgás folyóvízi hal. Hegyi és dombvidéki patakokban él. Védett!',
+        kepek: [_ph('Vaskos csabak 1'), _ph('Vaskos csabak 2'), _ph('Vaskos csabak 3')],
+      ),
+      Halfaj(
+        id: 'hal_80', nev: 'Dunai nagyhering', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Tengerből a Dunába felúszó, heringalakú hal. Valaha hatalmas csapatokban vándorolt, ma rendkívül ritka és védett!',
+        kepek: [_ph('Dunai nagyhering 1'), _ph('Dunai nagyhering 2'), _ph('Dunai nagyhering 3')],
+      ),
+      Halfaj(
+        id: 'hal_81', nev: 'Széles durbincs', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Magas hátú, a vágó durbinccsal rokon, sügérféle apróhal. Folyók mélyebb részein él, védett faj!',
+        kepek: [_ph('Széles durbincs 1'), _ph('Széles durbincs 2'), _ph('Széles durbincs 3')],
+      ),
+      Halfaj(
+        id: 'hal_82', nev: 'Halványfoltú küllő', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Apró, fenéklakó hal, testén halvány foltokkal. Homokos, kavicsos medrű folyókban él. Védett!',
+        kepek: [_ph('Halványfoltú küllő 1'), _ph('Halványfoltú küllő 2'), _ph('Halványfoltú küllő 3')],
+      ),
+      Halfaj(
+        id: 'hal_83', nev: 'Lénai tok', kategoria: 'Ragadozó', statusz: 'Fogható (Idegenhonos)',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Szibériából származó, tógazdaságokban és horgásztavakban gyakori tokféle. Intenzív tavakon pellettel fogható.',
+        kepek: [_ph('Lénai tok 1'), _ph('Lénai tok 2'), _ph('Lénai tok 3')],
       ),
     ];
   }
