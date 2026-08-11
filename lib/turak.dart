@@ -354,7 +354,6 @@ class _TurakScreenState extends State<TurakScreen> {
                                           ),
                                         ],
                                       ),
-                                      // ITT A JAVÍTÁS: Szöveg, majd az Ikon
                                       ElevatedButton(
                                         style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
                                         onPressed: () {
@@ -672,7 +671,11 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
               onPressed: () async {
                 final picker = ImagePicker();
                 final image = await picker.pickImage(source: ImageSource.gallery);
-                if (image != null) setState(() => _boritokepUtvonal = image.path);
+                if (image != null) {
+                  // ITT TÖRTÉNIK A VARÁZSLAT: Biztonságos másolás
+                  String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
+                  setState(() => _boritokepUtvonal = biztonsagosUtvonal);
+                }
               },
             ),
             if (_boritokepUtvonal != null) ...[
