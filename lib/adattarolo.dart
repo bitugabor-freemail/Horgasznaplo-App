@@ -594,6 +594,78 @@ class AdatTarolo {
         megjegyzes: 'A legnagyobb méretű inváziós gébféle hazánkban. Lapos fej és nagy száj jellemzi. Visszaengedni tilos!',
         kepek: [_ph('Kessler-géb 1'), _ph('Kessler-géb 2'), _ph('Kessler-géb 3')],
       ),
+      Halfaj(
+        id: 'hal_57', nev: 'Szélhajtó küsz (Sneci)', kategoria: 'Békés', statusz: 'Fogható (Őshonos)',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs (egyéb hal)', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Leggyakoribb felszíni apróhalunk, népszerű csalihal süllőzéshez és balinozáshoz.',
+        kepek: [_ph('Szélhajtó küsz 1'), _ph('Szélhajtó küsz 2'), _ph('Szélhajtó küsz 3')],
+      ),
+      Halfaj(
+        id: 'hal_58', nev: 'Bagolykeszeg', kategoria: 'Békés', statusz: 'Fogható (Őshonos)',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs (egyéb hal)', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Nyúlánkabb, nagypikkelyű keszegféle, gyakran a dévérrel együtt fogható folyóvizeken.',
+        kepek: [_ph('Bagolykeszeg 1'), _ph('Bagolykeszeg 2'), _ph('Bagolykeszeg 3')],
+      ),
+      Halfaj(
+        id: 'hal_59', nev: 'Lánykeszeg', kategoria: 'Békés', statusz: 'Fogható (Őshonos)',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs (egyéb hal)', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Folyóvízi keszegféle, paduccal és szilvaorrúval egy áramlatban úszik.',
+        kepek: [_ph('Lánykeszeg 1'), _ph('Lánykeszeg 2'), _ph('Lánykeszeg 3')],
+      ),
+      Halfaj(
+        id: 'hal_60', nev: 'Naphal', kategoria: 'Ragadozó', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Korong alakú, színpompás amerikai apróhal, kopoltyúján fekete-piros folttal ("füllel"). Kártékony ikrapusztító, visszaengedni tilos!',
+        kepek: [_ph('Naphal 1'), _ph('Naphal 2'), _ph('Naphal 3')],
+      ),
+      Halfaj(
+        id: 'hal_61', nev: 'Kínai razbóra', kategoria: 'Békés', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Apró, ezüstös-barnás betelepült hal. Csalitolvaj apróhal, melyet szigorúan tilos visszaengedni!',
+        kepek: [_ph('Kínai razbóra 1'), _ph('Kínai razbóra 2'), _ph('Kínai razbóra 3')],
+      ),
+      Halfaj(
+        id: 'hal_62', nev: 'Amurgéb', kategoria: 'Ragadozó', statusz: 'Inváziós',
+        meretKorlatozas: 'Nincs', darabKorlatozas: 'Nincs', tilalmiIdoszak: 'Nincs', szabalyozasEve: '2024',
+        megjegyzes: 'Távol-Keletről származó, rendkívül kártékony, ragadozó életmódú apróhal. Visszaengedni tilos!',
+        kepek: [_ph('Amurgéb 1'), _ph('Amurgéb 2'), _ph('Amurgéb 3')],
+      ),
+      Halfaj(
+        id: 'hal_63', nev: 'Szivárványos ökle', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Kékes-lilás apróhal, a szaporodásához elengedhetetlen a tavi kagyló (abba rakja ikráit). Szigorúan védett!',
+        kepek: [_ph('Szivárványos ökle 1'), _ph('Szivárványos ökle 2'), _ph('Szivárványos ökle 3')],
+      ),
+      Halfaj(
+        id: 'hal_64', nev: 'Galóca', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Hazánk legnagyobb méretű lazacféléje a hegyi folyókban. Hatalmas ragadozó, de megtartani tilos, védett!',
+        kepek: [_ph('Galóca 1'), _ph('Galóca 2'), _ph('Galóca 3')],
+      ),
+      Halfaj(
+        id: 'hal_65', nev: 'Fenékjáró küllő', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Apró, márnához hasonló, pettyes fenéklakó hal. Védett faj, azonnal vissza kell engedni.',
+        kepek: [_ph('Fenékjáró küllő 1'), _ph('Fenékjáró küllő 2'), _ph('Fenékjáró küllő 3')],
+      ),
+      Halfaj(
+        id: 'hal_66', nev: 'Kövi csík', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Köves, hegyvidéki patakokban előforduló védett csíkféle.',
+        kepek: [_ph('Kövi csík 1'), _ph('Kövi csík 2'), _ph('Kövi csík 3')],
+      ),
+      Halfaj(
+        id: 'hal_67', nev: 'Fürge cselle', kategoria: 'Békés', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Hűvös patakokban élő apró, áramlatkedvelő védett halfaj.',
+        kepek: [_ph('Fürge cselle 1'), _ph('Fürge cselle 2'), _ph('Fürge cselle 3')],
+      ),
+      Halfaj(
+        id: 'hal_68', nev: 'Botos kölönte', kategoria: 'Ragadozó', statusz: 'Védett',
+        meretKorlatozas: '-', darabKorlatozas: '-', tilalmiIdoszak: 'Egész évben', szabalyozasEve: '2024',
+        megjegyzes: 'Kövek alatt rejtőző, hegyi vizekben élő fenéklakó ragadozó apróhal. Védett!',
+        kepek: [_ph('Botos kölönte 1'), _ph('Botos kölönte 2'), _ph('Botos kölönte 3')],
+      ),
     ];
   }
 }
