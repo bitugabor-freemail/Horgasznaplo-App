@@ -9,10 +9,10 @@ class FelszerelesScreen extends StatefulWidget {
   const FelszerelesScreen({super.key});
 
   @override
-  State<FelszerelesScreen> createState() => _FelszerelesScreenState();
+  State<FelszerelesScreen> createState() => FelszerelesScreenState();
 }
 
-class _FelszerelesScreenState extends State<FelszerelesScreen> {
+class FelszerelesScreenState extends State<FelszerelesScreen> {
   List<FelszerelesKategoria> _kategoriak = [];
   List<FelszerelesTetel> _tetelek = [];
   String? _kivalasztottKategoriaId;
@@ -20,10 +20,10 @@ class _FelszerelesScreenState extends State<FelszerelesScreen> {
   @override
   void initState() {
     super.initState();
-    _adatokBetoltese();
+    adatokBetoltese();
   }
 
-  Future<void> _adatokBetoltese() async {
+  Future<void> adatokBetoltese() async {
     final kat = await AdatTarolo.felszerelesKategoriakBetoltese();
     final tet = await AdatTarolo.felszerelesTetelekBetoltese();
     
@@ -44,7 +44,7 @@ class _FelszerelesScreenState extends State<FelszerelesScreen> {
           kategoriak: _kategoriak,
           alapertelmezettKategoriaId: _kivalasztottKategoriaId,
           szerkeszthetoTetel: tetel,
-          mentesCallback: () => _adatokBetoltese(),
+          mentesCallback: () => adatokBetoltese(),
         ),
       ),
     );
@@ -65,7 +65,7 @@ class _FelszerelesScreenState extends State<FelszerelesScreen> {
               _tetelek.removeWhere((t) => t.id == tetel.id);
               await AdatTarolo.felszerelesTetelekMentes(_tetelek);
               if (mounted) Navigator.pop(context);
-              _adatokBetoltese();
+              adatokBetoltese();
             },
             child: const Text('Törlés', style: TextStyle(color: Colors.white)),
           ),
@@ -96,37 +96,9 @@ class _FelszerelesScreenState extends State<FelszerelesScreen> {
     final mutathatoTetelek = _getSzurtEsRendezettTetelek();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Felszerelés'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.greenAccent),
-            color: const Color(0xFF1E1E1E),
-            onSelected: (value) {
-              if (value == 'kategoriak') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => KategoriakSzerkesztoScreen(
-                      kategoriak: _kategoriak,
-                      mentesCallback: () => _adatokBetoltese(),
-                    ),
-                  ),
-                );
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'kategoriak',
-                child: Text('Kategóriák szerkesztése'),
-              ),
-            ],
-          )
-        ],
-      ),
+      // Belső AppBar törölve, hogy ne duplázódjon a fejléc!
       body: Column(
         children: [
-          // CSÚSZTATHATÓ KATEGÓRIA SÁV
           Container(
             height: 50,
             color: const Color(0xFF161616),
@@ -166,7 +138,6 @@ class _FelszerelesScreenState extends State<FelszerelesScreen> {
             ),
           ),
           
-          // KÁRTYÁK LISTÁJA
           Expanded(
             child: _kategoriak.isEmpty
               ? const Center(child: Text('Nincsenek kategóriák. Hozz létre egyet!'))
@@ -191,69 +162,71 @@ class _FelszerelesScreenState extends State<FelszerelesScreen> {
                               MaterialPageRoute(builder: (context) => TetelReszletekScreen(tetel: tetel)),
                             );
                           },
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Stack(
                             children: [
-                              // INDEX KÉP
-                              Container(
-                                width: 80,
-                                height: 80,
-                                margin: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.black26,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: tetel.kepek.isNotEmpty && File(tetel.kepek.first).existsSync()
-                                    ? Image.file(File(tetel.kepek.first), fit: BoxFit.cover)
-                                    : const Icon(Icons.image_not_supported, color: Colors.white24, size: 30),
-                              ),
-                              
-                              // ADATOK
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 12, bottom: 12),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(markaNev, style: const TextStyle(fontSize: 12, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                                      const SizedBox(height: 4),
-                                      Text(tetel.nev, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                                      if (tetel.jellemzo.isNotEmpty) ...[
-                                        const SizedBox(height: 4),
-                                        Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              
-                              // MENNYISÉG ÉS 3 PONTOS MENÜ
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert, color: Colors.white54),
-                                    color: const Color(0xFF1E1E1E),
-                                    onSelected: (value) {
-                                      if (value == 'edit') _tetelSzerkesztokMegnyitasa(tetel);
-                                      if (value == 'delete') _tetelTorlese(tetel);
-                                    },
-                                    itemBuilder: (context) => [
-                                      const PopupMenuItem(value: 'edit', child: Text('Szerkesztés')),
-                                      const PopupMenuItem(value: 'delete', child: Text('Törlés', style: TextStyle(color: Colors.redAccent))),
-                                    ],
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    margin: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black26,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: tetel.kepek.isNotEmpty && File(tetel.kepek.first).existsSync()
+                                        ? Image.file(File(tetel.kepek.first), fit: BoxFit.cover)
+                                        : const Icon(Icons.image_not_supported, color: Colors.white24, size: 30),
                                   ),
-                                  if (tetel.mennyiseg != null || tetel.mertekegyseg.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 12, bottom: 12),
-                                      child: Text(
-                                        '${tetel.mennyiseg != null ? tetel.mennyiseg!.toString().replaceAll('.0', '') : ''} ${tetel.mertekegyseg}'.trim(),
-                                        style: const TextStyle(fontSize: 13, color: Colors.white54),
+                                  Expanded(
+                                    child: Padding(
+                                      // Jobb oldal és alja szabadon hagyva a fix gomboknak
+                                      padding: const EdgeInsets.only(top: 12, bottom: 32, right: 40),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(markaNev, style: const TextStyle(fontSize: 12, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
+                                          Text(tetel.nev, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                          if (tetel.jellemzo.isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
+                                          ],
+                                        ],
                                       ),
                                     ),
+                                  ),
                                 ],
                               ),
+                              // 3 pontos menü szigorúan a jobb felső sarokban
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                  color: const Color(0xFF1E1E1E),
+                                  onSelected: (value) {
+                                    if (value == 'edit') _tetelSzerkesztokMegnyitasa(tetel);
+                                    if (value == 'delete') _tetelTorlese(tetel);
+                                  },
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(value: 'edit', child: Text('Szerkesztés')),
+                                    const PopupMenuItem(value: 'delete', child: Text('Törlés', style: TextStyle(color: Colors.redAccent))),
+                                  ],
+                                ),
+                              ),
+                              // Mennyiség fixen a jobb alsó sarokban
+                              if (tetel.mennyiseg != null || tetel.mertekegyseg.isNotEmpty)
+                                Positioned(
+                                  bottom: 12,
+                                  right: 12,
+                                  child: Text(
+                                    '${tetel.mennyiseg != null ? tetel.mennyiseg!.toString().replaceAll('.0', '') : ''} ${tetel.mertekegyseg}'.trim(),
+                                    style: const TextStyle(fontSize: 13, color: Colors.white54),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -272,7 +245,6 @@ class _FelszerelesScreenState extends State<FelszerelesScreen> {
   }
 }
 
-// --- RÉSZLETEK KÉPERNYŐ ---
 class TetelReszletekScreen extends StatelessWidget {
   final FelszerelesTetel tetel;
 
@@ -370,7 +342,6 @@ class TetelReszletekScreen extends StatelessWidget {
   }
 }
 
-// --- TÉTEL SZERKESZTŐ ---
 class TetelSzerkesztoScreen extends StatefulWidget {
   final List<FelszerelesKategoria> kategoriak;
   final String? alapertelmezettKategoriaId;
@@ -428,7 +399,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      // Azonnal áthelyezzük a biztonságos, rejtett mappába
       String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
       setState(() {
         _kepek.add(biztonsagosUtvonal);
@@ -567,7 +537,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
   }
 }
 
-// --- KATEGÓRIÁK SZERKESZTÉSE (SORREND ÉS NÉV) ---
 class KategoriakSzerkesztoScreen extends StatefulWidget {
   final List<FelszerelesKategoria> kategoriak;
   final VoidCallback mentesCallback;
