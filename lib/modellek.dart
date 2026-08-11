@@ -205,3 +205,75 @@ class Halfaj {
     kepek: List<String>.from(json['kepek'] ?? []),
   );
 }
+
+class FelszerelesKategoria {
+  final String id;
+  final String nev;
+  int sorrend;
+
+  FelszerelesKategoria({
+    required this.id,
+    required this.nev,
+    this.sorrend = 0,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'nev': nev,
+    'sorrend': sorrend,
+  };
+
+  factory FelszerelesKategoria.fromJson(Map<String, dynamic> json) => FelszerelesKategoria(
+    id: json['id'],
+    nev: json['nev'],
+    sorrend: json['sorrend'] ?? 0,
+  );
+}
+
+class FelszerelesTetel {
+  final String id;
+  final String kategoriaId;
+  final String marka; // Ha üres, a UI fogja "[N/A] - No Name"-ként mutatni
+  final String nev;
+  final String jellemzo;
+  final double? mennyiseg;
+  final String mertekegyseg;
+  final String leiras;
+  final List<String> kepek;
+
+  FelszerelesTetel({
+    required this.id,
+    required this.kategoriaId,
+    this.marka = '',
+    required this.nev,
+    this.jellemzo = '',
+    this.mennyiseg,
+    this.mertekegyseg = '',
+    this.leiras = '',
+    this.kepek = const [],
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'kategoriaId': kategoriaId,
+    'marka': marka,
+    'nev': nev,
+    'jellemzo': jellemzo,
+    'mennyiseg': mennyiseg,
+    'mertekegyseg': mertekegyseg,
+    'leiras': leiras,
+    'kepek': kepek,
+  };
+
+  factory FelszerelesTetel.fromJson(Map<String, dynamic> json) => FelszerelesTetel(
+    id: json['id'],
+    kategoriaId: json['kategoriaId'],
+    marka: json['marka'] ?? '',
+    nev: json['nev'],
+    jellemzo: json['jellemzo'] ?? '',
+    mennyiseg: json['mennyiseg']?.toDouble(),
+    mertekegyseg: json['mertekegyseg'] ?? '',
+    leiras: json['leiras'] ?? '',
+    kepek: List<String>.from(json['kepek'] ?? []),
+  );
+}
