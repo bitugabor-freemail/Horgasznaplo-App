@@ -294,10 +294,42 @@ class _KvizScreenState extends State<KvizScreen> {
     if (_osszesHal.length >= 2) _ujKerdes();
   }
 
-  // Szigorított képellenőrzés
+  // SZIGORÚ ELLENŐRZÉS: Csak a tényleges, fizikai képeket engedjük a Képes módba!
   bool _ervenyestKep(String kep) {
     if (kep.isEmpty) return false;
-    return (kep.startsWith('http') && !kep.contains('placehold.co')) || File(kep).existsSync();
+    // Letiltjuk a webes linkeket a kvíznél (hogy ne lehessen halott linkekkel elindítani)
+    if (kep.startsWith('http')) return false; 
+    
+    // Csak a valóban létező fizikai fájlokat engedjük át
+    return File(kep).existsSync();
+  }
+
+  // Ez a függvény fut le, amikor átpöccinted a "Képes" kapcsolót
+  void _onKepesModValtas(bool ujErtek) {
+    if (ujErtek) {
+      // Megszámoljuk, hány halnak van TÉNYLEGESEN érvényes fizikai képe
+      int kepesHalakSzama = _osszesHal.where((h) => h.kepek.any((k) => _ervenyestKep(k))).length;
+      
+      if (kepesHalakSzama < 4) {
+        // Ha nincs elég kép, kiírjuk a hibaüzenetet, és visszadobjuk a kapcsolót!
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nincs elég fotóval rendelkező halfaj (min. 4 kell)! Kérlek, tölts fel saját képeket a Törzsadatoknál!'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        setState(() { _kepesMod = false; });
+        return;
+      }
+    }
+    
+    // Ha van elég kép, engedjük az átváltást
+    setState(() { 
+      _kepesMod = ujErtek; 
+      _pontszam = 0; 
+    });
+    _ujKerdes();
   }
 
   void _ujKerdes() {
@@ -371,10 +403,7 @@ class _KvizScreenState extends State<KvizScreen> {
               Switch(
                 value: _kepesMod,
                 activeColor: Colors.greenAccent,
-                onChanged: (val) {
-                  setState(() { _kepesMod = val; _pontszam = 0; });
-                  _ujKerdes();
-                },
+                onChanged: _onKepesModValtas, // <--- Itt hívjuk meg a védett kapcsolót
               ),
             ],
           )
@@ -413,36 +442,35 @@ class _KvizScreenState extends State<KvizScreen> {
                                 builder: (context) {
                                   List<String> validKepek = _aktualisKerdes.kepek.where((kep) => _ervenyestKep(kep)).toList();
                                   validKepek.shuffle();
+                                  
+                                  // Biztonsági ellenőrzés
+                                  if (validKepek.isEmpty) {
+                                     return const Icon(Icons.error, color: Colors.red, size: 50);
+                                  }
+
                                   String kivalasztottKep = validKepek.first;
                                   
                                   return ClipRRect(
                                     borderRadius: BorderRadius.circular(15),
-                                    child: kivalasztottKep.startsWith('http')
-                                        ? CachedNetworkImage(
-                                            imageUrl: kivalasztottKep,
-                                            fit: BoxFit.cover, width: double.infinity, height: double.infinity,
-                                            placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                                            errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50, color: Colors.white24),
-                                          )
-                                        : Image.file(
-                                            File(kivalasztottKep), 
-                                            fit: BoxFit.cover, 
-                                            width: double.infinity, 
-                                            height: double.infinity,
-                                            // VÉDELEM: Ha a fájl megsérült vagy eltűnt
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return const Center(
-                                                child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Icon(Icons.phishing, size: 64, color: Colors.grey),
-                                                    SizedBox(height: 8),
-                                                    Text('Kép nem található', style: TextStyle(color: Colors.grey)),
-                                                  ],
-                                                ),
-                                              );
-                                            },
+                                    child: Image.file(
+                                      File(kivalasztottKep), 
+                                      fit: BoxFit.cover, 
+                                      width: double.infinity, 
+                                      height: double.infinity,
+                                      // Golyóálló védelem, ha a fájl az utolsó pillanatban tűnne el:
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return const Center(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.phishing, size: 64, color: Colors.grey),
+                                              SizedBox(height: 8),
+                                              Text('Kép nem található', style: TextStyle(color: Colors.grey)),
+                                            ],
                                           ),
+                                        );
+                                      },
+                                    ),
                                   );
                                 },
                               )
