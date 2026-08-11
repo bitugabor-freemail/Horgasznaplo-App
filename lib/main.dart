@@ -65,29 +65,12 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/2825.png', 
-              height: 360, // A logó mérete duplázva
-              fit: BoxFit.contain
-            ),
-            const SizedBox(height: 28),
-            const Text(
-              'Horgásznapló',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 36, // A betűméret megnövelve
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-                color: Colors.tealAccent, // Zöldeskék árnyalat a kék logó és a zöld app közé
-              ),
-            ),
-            const SizedBox(height: 40),
-            const CircularProgressIndicator(color: Colors.greenAccent),
-          ],
+      // A SizedBox.expand kitölti a rendelkezésre álló teljes képernyőt
+      body: SizedBox.expand(
+        child: Image.asset(
+          'assets/2825.png',
+          // A BoxFit.cover gondoskodik róla, hogy a kép arányosan kitöltse a kijelzőt
+          fit: BoxFit.cover,
         ),
       ),
     );
