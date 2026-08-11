@@ -241,7 +241,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   final _sulyCtrl = TextEditingController();
   final _hosszCtrl = TextEditingController();
   
-  String? _sors; // Dinamikussá tettük a fagyás elkerülése miatt!
+  String? _sors; 
   String? _kivalasztottBot;
   String? _kivalasztottModszer;
   String? _kivalasztottVegszerelek;
@@ -308,7 +308,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     List<String> mentettSorsok = await AdatTarolo.sorsBetoltese();
     _elerhetoSorsok = mentettSorsok;
     
-    // FAGYÁSVÉDELEM: Ha a korábban beállított sors már nincs a listában, töröljük a kiválasztást
     if (_sors != null && !_elerhetoSorsok.contains(_sors)) {
       _sors = null;
     }
@@ -584,7 +583,11 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
               onPressed: () async {
                 final picker = ImagePicker();
                 final image = await picker.pickImage(source: ImageSource.gallery);
-                if (image != null) setState(() => _fenykepUtvonal = image.path);
+                if (image != null) {
+                  // ITT TÖRTÉNIK A VARÁZSLAT: Biztonságos másolás
+                  String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
+                  setState(() => _fenykepUtvonal = biztonsagosUtvonal);
+                }
               },
             ),
             if (_fenykepUtvonal != null) ...[
