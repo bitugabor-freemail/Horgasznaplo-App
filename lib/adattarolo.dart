@@ -1,5 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'modellek.dart';
 
 class AdatTarolo {
@@ -15,11 +19,38 @@ class AdatTarolo {
   static const String _tarsakKulcs = 'torzs_tarsak';
   static const String _idojarasKulcs = 'torzs_idojaras';
   static const String _sorsKulcs = 'torzs_sors';
+  static const String _felszerelesKategoriakKulcs = 'felszereles_kategoriak';
+  static const String _felszerelesTetelekKulcs = 'felszereles_tetelek';
 
+  // --- BIZTONSÁGOS KÉPKEZELÉS ---
+  static Future<String> biztonsagosKepMasolas(String eredetiUtvonal, {String? egyediNev}) async {
+    if (eredetiUtvonal.startsWith('http')) return eredetiUtvonal; // Webes linkeket békén hagyjuk
+    
+    final eredetiFajl = File(eredetiUtvonal);
+    if (!await eredetiFajl.exists()) return eredetiUtvonal;
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final kepekMappa = Directory('${appDir.path}/kepek');
+    if (!await kepekMappa.exists()) {
+      await kepekMappa.create(recursive: true);
+    }
+
+    final fajlNev = egyediNev ?? '${DateTime.now().millisecondsSinceEpoch}_${eredetiUtvonal.split('/').last}';
+    final ujUtvonal = '${kepekMappa.path}/$fajlNev';
+
+    // Ha még nincs ott a fájl, bemásoljuk (ez védi a már rejtett mappában lévő képeket az újra-másolástól)
+    if (eredetiUtvonal != ujUtvonal) {
+      await eredetiFajl.copy(ujUtvonal);
+    }
+    
+    return ujUtvonal;
+  }
+
+  // --- ALAPVETŐ MENTÉS ÉS BETÖLTÉS LOKÁLISAN ---
   static Future<void> _mentes(String kulcs, List<dynamic> adatLista) async {
     final prefs = await SharedPreferences.getInstance();
     List<dynamic> jsonLista = [];
-    if (adatLista.isNotEmpty && adatLista.first is! String) {
+    if (adatLista.isNotEmpty && (adatLista.first is! String && adatLista.first is! num && adatLista.first is! bool)) {
       jsonLista = adatLista.map((item) => item.toJson()).toList();
     } else {
       jsonLista = adatLista;
@@ -36,6 +67,7 @@ class AdatTarolo {
     return [];
   }
 
+  // --- TÚRÁK ÉS FOGÁSOK ---
   static Future<void> turakMentes(List<Tura> turak) async => await _mentes(_turakKulcs, turak);
   static Future<List<Tura>> turakBetoltese() async {
     final adatok = await _betoltes(_turakKulcs);
@@ -48,8 +80,118 @@ class AdatTarolo {
     return adatok.map((e) => FogasModel.fromJson(e)).toList();
   }
 
+  // --- HELYSZÍNEK ---
+  static Future<void> helyszinekMentes(List<Helyszin> helyszinek) async => await _mentes(_helyszinekKulcs, helyszinek);
+  static Future<List<Helyszin>> helyszinekBetoltese() async {
+    final adatok = await _betoltes(_helyszinekKulcs);
+    return adatok.map((e) => Helyszin.fromJson(e)).toList();
+  }
+
+  // --- FELSZERELÉSEK ---
+  static Future<void> felszerelesKategoriakMentes(List<FelszerelesKategoria> kategoriak) async => await _mentes(_felszerelesKategoriakKulcs, kategoriak);
+  static Future<List<FelszerelesKategoria>> felszerelesKategoriakBetoltese() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool init = prefs.getBool('felszereles_init') ?? false;
+    
+    if (!init) {
+      List<FelszerelesKategoria> alap = [
+        FelszerelesKategoria(id: 'kat_1', nev: 'Botok', sorrend: 1),
+        FelszerelesKategoria(id: 'kat_2', nev: 'Orsók', sorrend: 2),
+        FelszerelesKategoria(id: 'kat_3', nev: 'Zsinórok', sorrend: 3),
+        FelszerelesKategoria(id: 'kat_4', nev: 'Szerelékek', sorrend: 4),
+        FelszerelesKategoria(id: 'kat_5', nev: 'Csalik', sorrend: 5),
+        FelszerelesKategoria(id: 'kat_6', nev: 'Egyéb', sorrend: 6),
+      ];
+      await felszerelesKategoriakMentes(alap);
+      await prefs.setBool('felszereles_init', true);
+      return alap;
+    }
+    
+    final adatok = await _betoltes(_felszerelesKategoriakKulcs);
+    List<FelszerelesKategoria> list = adatok.map((e) => FelszerelesKategoria.fromJson(e)).toList();
+    list.sort((a, b) => a.sorrend.compareTo(b.sorrend));
+    return list;
+  }
+
+  static Future<void> felszerelesTetelekMentes(List<FelszerelesTetel> tetelek) async => await _mentes(_felszerelesTetelekKulcs, tetelek);
+  static Future<List<FelszerelesTetel>> felszerelesTetelekBetoltese() async {
+    final adatok = await _betoltes(_felszerelesTetelekKulcs);
+    return adatok.map((e) => FelszerelesTetel.fromJson(e)).toList();
+  }
+
+  // --- TÖRZSDATOK (EGYSZERŰ LISTÁK) ---
+  static Future<void> botokMentes(List<String> adatok) async => await _mentes(_botokKulcs, adatok);
+  static Future<List<String>> botokBetoltese() async => List<String>.from(await _betoltes(_botokKulcs));
+  static Future<void> modszerekMentes(List<String> adatok) async => await _mentes(_modszerekKulcs, adatok);
+  static Future<List<String>> modszerekBetoltese() async => List<String>.from(await _betoltes(_modszerekKulcs));
+  static Future<void> szerelekekMentes(List<String> adatok) async => await _mentes(_szerelekekKulcs, adatok);
+  static Future<List<String>> szerelekekBetoltese() async => List<String>.from(await _betoltes(_szerelekekKulcs));
+  static Future<void> csalikMentes(List<String> adatok) async => await _mentes(_csalikKulcs, adatok);
+  static Future<List<String>> csalikBetoltese() async => List<String>.from(await _betoltes(_csalikKulcs));
+  static Future<void> etetoanyagokMentes(List<String> adatok) async => await _mentes(_etetoanyagokKulcs, adatok);
+  static Future<List<String>> etetoanyagokBetoltese() async => List<String>.from(await _betoltes(_etetoanyagokKulcs));
+  static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
+  static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
+
+  // --- OKOS VISSZAÁLLÍTÁSOK (B OPCIÓ) ---
+  static Future<void> idojarasMentes(List<String> adatok) async => await _mentes(_idojarasKulcs, adatok);
+  static Future<List<String>> idojarasBetoltese() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool init = prefs.getBool('idojaras_init') ?? false;
+    if (!init) {
+      await gyariIdojarasVisszaallitas();
+      await prefs.setBool('idojaras_init', true);
+    }
+    return List<String>.from(await _betoltes(_idojarasKulcs));
+  }
+  static Future<void> gyariIdojarasVisszaallitas() async {
+    List<String> gyari = ['Napsütés', 'Közepesen felhős', 'Erősen felhős', 'Borult', 'Szemerkélő eső', 'Eső', 'Zápor', 'Erős szél', 'Vihar', 'Zivatar', 'Jégeső', 'Havazás', 'Havaseső', 'Köd'];
+    List<String> jelenlegi = List<String>.from(await _betoltes(_idojarasKulcs));
+    for (String g in gyari) { if (!jelenlegi.contains(g)) jelenlegi.add(g); }
+    await idojarasMentes(jelenlegi);
+  }
+
+  static Future<void> sorsMentes(List<String> adatok) async => await _mentes(_sorsKulcs, adatok);
+  static Future<List<String>> sorsBetoltese() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool init = prefs.getBool('sors_init') ?? false;
+    if (!init) {
+      await gyariSorsVisszaallitas();
+      await prefs.setBool('sors_init', true);
+    }
+    return List<String>.from(await _betoltes(_sorsKulcs));
+  }
+  static Future<void> gyariSorsVisszaallitas() async {
+    List<String> gyari = ['Visszaengedtem', 'Elvittem', 'Elpusztult'];
+    List<String> jelenlegi = List<String>.from(await _betoltes(_sorsKulcs));
+    for (String g in gyari) { if (!jelenlegi.contains(g)) jelenlegi.add(g); }
+    await sorsMentes(jelenlegi);
+  }
+
+  static Future<void> gyariFelszerelesKategoriakVisszaallitas() async {
+    List<FelszerelesKategoria> gyari = [
+      FelszerelesKategoria(id: 'kat_1', nev: 'Botok', sorrend: 1),
+      FelszerelesKategoria(id: 'kat_2', nev: 'Orsók', sorrend: 2),
+      FelszerelesKategoria(id: 'kat_3', nev: 'Zsinórok', sorrend: 3),
+      FelszerelesKategoria(id: 'kat_4', nev: 'Szerelékek', sorrend: 4),
+      FelszerelesKategoria(id: 'kat_5', nev: 'Csalik', sorrend: 5),
+      FelszerelesKategoria(id: 'kat_6', nev: 'Egyéb', sorrend: 6),
+    ];
+    List<FelszerelesKategoria> jelenlegi = await felszerelesKategoriakBetoltese();
+    for (var g in gyari) {
+      if (!jelenlegi.any((k) => k.id == g.id)) {
+        jelenlegi.add(g);
+      } else {
+        // Frissítjük a gyári nevét és sorrendjét, ha visszaállítás történt
+        final idx = jelenlegi.indexWhere((k) => k.id == g.id);
+        jelenlegi[idx] = g;
+      }
+    }
+    await felszerelesKategoriakMentes(jelenlegi);
+  }
+
+  // --- HALFAJOK (Okos visszaállítás beépítve) ---
   static Future<void> halfajokMentes(List<Halfaj> halfajok) async => await _mentes(_halfajokKulcs, halfajok);
-  
   static Future<List<Halfaj>> halfajokBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
     bool init = prefs.getBool('halfaj_init') ?? false;
@@ -61,111 +203,260 @@ class AdatTarolo {
       return alapHalfajok;
     }
 
-    final adatok = await _betoltes(_halfajokKulcs);
-    List<Halfaj> betoltott = adatok.map((e) => Halfaj.fromJson(e)).toList();
-    bool valtozott = false;
+    return (await _betoltes(_halfajokKulcs)).map((e) => Halfaj.fromJson(e)).toList();
+  }
 
-    // 1. Régi "Fogható" státusz javítása
-    for (int i = 0; i < betoltott.length; i++) {
-      if (betoltott[i].statusz == 'Fogható') {
-        betoltott[i] = Halfaj(
-          id: betoltott[i].id, nev: betoltott[i].nev, kategoria: betoltott[i].kategoria,
-          statusz: 'Fogható (Őshonos)', meretKorlatozas: betoltott[i].meretKorlatozas,
-          darabKorlatozas: betoltott[i].darabKorlatozas, tilalmiIdoszak: betoltott[i].tilalmiIdoszak,
-          szabalyozasEve: betoltott[i].szabalyozasEve, megjegyzes: betoltott[i].megjegyzes, kepek: betoltott[i].kepek,
+  static Future<void> gyariHalfajokVisszaallitas() async {
+    List<Halfaj> jelenlegi = await halfajokBetoltese();
+    List<Halfaj> gyari = _getMagyarHalFauna();
+
+    for (var gyHal in gyari) {
+      int idx = jelenlegi.indexWhere((h) => h.id == gyHal.id);
+      if (idx == -1) {
+        // Nincs benne, hozzáadjuk a gyárit
+        jelenlegi.add(gyHal);
+      } else {
+        // Benne van, frissítjük a szöveges adatokat, de a KÉPEKET okosan összefűzzük
+        List<String> meglevoKepek = jelenlegi[idx].kepek;
+        List<String> ujKepek = List.from(meglevoKepek);
+
+        // Hozzáadjuk az 1, 2, 3 gyári képeket, ha a helyük szabad (max 5 képes limitet betartva)
+        for (var gyKep in gyHal.kepek) {
+          if (!ujKepek.contains(gyKep) && ujKepek.length < 5) {
+            ujKepek.add(gyKep);
+          }
+        }
+
+        jelenlegi[idx] = Halfaj(
+          id: gyHal.id,
+          nev: gyHal.nev,
+          kategoria: gyHal.kategoria,
+          statusz: gyHal.statusz,
+          meretKorlatozas: gyHal.meretKorlatozas,
+          darabKorlatozas: gyHal.darabKorlatozas,
+          tilalmiIdoszak: gyHal.tilalmiIdoszak,
+          szabalyozasEve: gyHal.szabalyozasEve,
+          megjegyzes: gyHal.megjegyzes,
+          kepek: ujKepek, // Az okosan összefűzött képlista
         );
-        valtozott = true;
+      }
+    }
+    await halfajokMentes(jelenlegi);
+  }
+
+  // --- EXPORT / IMPORT (ZIP & JSON) ---
+  static Future<String> letrehozExportJson() async {
+    Map<String, dynamic> exportData = {
+      'verzio': 1,
+      'turak': await _betoltes(_turakKulcs),
+      'fogasok': await _betoltes(_fogasokKulcs),
+      'halfajok': await _betoltes(_halfajokKulcs),
+      'helyszinek': await _betoltes(_helyszinekKulcs),
+      'felszerelesKategoriak': await _betoltes(_felszerelesKategoriakKulcs),
+      'felszerelesTetelek': await _betoltes(_felszerelesTetelekKulcs),
+      'botok': await _betoltes(_botokKulcs),
+      'modszerek': await _betoltes(_modszerekKulcs),
+      'szerelekek': await _betoltes(_szerelekekKulcs),
+      'csalik': await _betoltes(_csalikKulcs),
+      'etetoanyagok': await _betoltes(_etetoanyagokKulcs),
+      'tarsak': await _betoltes(_tarsakKulcs),
+      'idojaras': await _betoltes(_idojarasKulcs),
+      'sors': await _betoltes(_sorsKulcs),
+    };
+    return jsonEncode(exportData);
+  }
+
+  static Future<String> letrehozGyorsExportJSONFajl() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final jsonStr = await letrehozExportJson();
+    final fajlNev = 'horgasznaplo_gyors_mentes_${DateTime.now().millisecondsSinceEpoch}.json';
+    final path = '${appDir.path}/$fajlNev';
+    final file = File(path);
+    await file.writeAsString(jsonStr);
+    return path;
+  }
+
+  static Future<String> letrehozTeljesExportZIPFajl() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final archive = Archive();
+
+    // 1. JSON mentés a zipbe
+    final jsonStr = await letrehozExportJson();
+    final jsonData = utf8.encode(jsonStr);
+    archive.addFile(ArchiveFile('adatbazeis.json', jsonData.length, jsonData));
+
+    // 2. Képek keresése és becsomagolása
+    final kepekMappa = Directory('${appDir.path}/kepek');
+    if (await kepekMappa.exists()) {
+      final kepek = kepekMappa.listSync();
+      for (var f in kepek) {
+        if (f is File) {
+          final nev = f.path.split('/').last;
+          final bytok = await f.readAsBytes();
+          archive.addFile(ArchiveFile('kepek/$nev', bytok.length, bytok));
+        }
       }
     }
 
-    // 2. Buffalo átnevezése (ha még a régi névvel van bent)
-    for (int i = 0; i < betoltott.length; i++) {
-      if (betoltott[i].id == 'hal_25' && betoltott[i].nev == 'Buffalo') {
-        betoltott[i] = Halfaj(
-          id: betoltott[i].id, nev: 'Buffalo (Nagyszájú buffalo)', kategoria: betoltott[i].kategoria,
-          statusz: betoltott[i].statusz, meretKorlatozas: betoltott[i].meretKorlatozas,
-          darabKorlatozas: betoltott[i].darabKorlatozas, tilalmiIdoszak: betoltott[i].tilalmiIdoszak,
-          szabalyozasEve: betoltott[i].szabalyozasEve, megjegyzes: betoltott[i].megjegyzes, kepek: betoltott[i].kepek,
-        );
-        valtozott = true;
-      }
-    }
-
-    // 3. Új halak automatikus hozzáadása (ha nincsenek még a mentett adatbázisban)
-    List<Halfaj> frissFauna = _getMagyarHalFauna();
-    for (var frissHal in frissFauna) {
-      if (!betoltott.any((b) => b.id == frissHal.id)) {
-        betoltott.add(frissHal);
-        valtozott = true;
-      }
-    }
+    // 3. ZIP generálása
+    final zipEncoder = ZipEncoder();
+    final zipAdat = zipEncoder.encode(archive);
     
-    if (valtozott) {
-      await halfajokMentes(betoltott);
-    }
-
-    return betoltott;
+    final fajlNev = 'horgasznaplo_teljes_mentes_${DateTime.now().millisecondsSinceEpoch}.zip';
+    final path = '${appDir.path}/$fajlNev';
+    final fajl = File(path);
+    await fajl.writeAsBytes(zipAdat!);
+    
+    return path;
   }
 
-  static Future<void> helyszinekMentes(List<Helyszin> helyszinek) async => await _mentes(_helyszinekKulcs, helyszinek);
-  static Future<List<Helyszin>> helyszinekBetoltese() async {
-    final adatok = await _betoltes(_helyszinekKulcs);
-    return adatok.map((e) => Helyszin.fromJson(e)).toList();
-  }
-
-  static Future<void> botokMentes(List<String> adatok) async => await _mentes(_botokKulcs, adatok);
-  static Future<List<String>> botokBetoltese() async => List<String>.from(await _betoltes(_botokKulcs));
-
-  static Future<void> modszerekMentes(List<String> adatok) async => await _mentes(_modszerekKulcs, adatok);
-  static Future<List<String>> modszerekBetoltese() async => List<String>.from(await _betoltes(_modszerekKulcs));
-
-  static Future<void> szerelekekMentes(List<String> adatok) async => await _mentes(_szerelekekKulcs, adatok);
-  static Future<List<String>> szerelekekBetoltese() async => List<String>.from(await _betoltes(_szerelekekKulcs));
-
-  static Future<void> csalikMentes(List<String> adatok) async => await _mentes(_csalikKulcs, adatok);
-  static Future<List<String>> csalikBetoltese() async => List<String>.from(await _betoltes(_csalikKulcs));
-
-  static Future<void> etetoanyagokMentes(List<String> adatok) async => await _mentes(_etetoanyagokKulcs, adatok);
-  static Future<List<String>> etetoanyagokBetoltese() async => List<String>.from(await _betoltes(_etetoanyagokKulcs));
-
-  static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
-  static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
-
-  static Future<void> idojarasMentes(List<String> adatok) async => await _mentes(_idojarasKulcs, adatok);
-  static Future<List<String>> idojarasBetoltese() async {
+  static Future<void> importalas(String fajlUtvonal) async {
     final prefs = await SharedPreferences.getInstance();
-    bool init = prefs.getBool('idojaras_init') ?? false;
-    
-    if (!init) {
-      List<String> alapIdojarasok = [
-        'Napsütés', 'Közepesen felhős', 'Erősen felhős', 'Borult', 
-        'Szemerkélő eső', 'Eső', 'Zápor', 'Erős szél', 'Vihar', 
-        'Zivatar', 'Jégeső', 'Havazás', 'Havaseső', 'Köd'
-      ];
-      await idojarasMentes(alapIdojarasok);
-      await prefs.setBool('idojaras_init', true);
-      return alapIdojarasok;
+    String jsonTartalom = '';
+
+    if (fajlUtvonal.toLowerCase().endsWith('.zip')) {
+      // ZIP kicsomagolása
+      final bytes = await File(fajlUtvonal).readAsBytes();
+      final archive = ZipDecoder().decodeBytes(bytes);
+      final appDir = await getApplicationDocumentsDirectory();
+      final kepekMappa = Directory('${appDir.path}/kepek');
+      if (!await kepekMappa.exists()) await kepekMappa.create(recursive: true);
+
+      for (final file in archive) {
+        if (file.isFile) {
+          if (file.name == 'adatbazeis.json') {
+            jsonTartalom = utf8.decode(file.content as List<int>);
+          } else if (file.name.startsWith('kepek/')) {
+            final fileNev = file.name.replaceFirst('kepek/', '');
+            final outFile = File('${kepekMappa.path}/$fileNev');
+            await outFile.writeAsBytes(file.content as List<int>);
+          }
+        }
+      }
+    } else if (fajlUtvonal.toLowerCase().endsWith('.json')) {
+      // Sima JSON
+      jsonTartalom = await File(fajlUtvonal).readAsString();
+    } else {
+      throw Exception('Nem támogatott fájlformátum!');
     }
-    
-    return List<String>.from(await _betoltes(_idojarasKulcs));
+
+    if (jsonTartalom.isEmpty) throw Exception('Érvénytelen vagy üres mentésfájl!');
+
+    final Map<String, dynamic> data = jsonDecode(jsonTartalom);
+
+    // Kíméletlen felülírás
+    if (data.containsKey('turak')) await prefs.setString(_turakKulcs, jsonEncode(data['turak']));
+    if (data.containsKey('fogasok')) await prefs.setString(_fogasokKulcs, jsonEncode(data['fogasok']));
+    if (data.containsKey('halfajok')) await prefs.setString(_halfajokKulcs, jsonEncode(data['halfajok']));
+    if (data.containsKey('helyszinek')) await prefs.setString(_helyszinekKulcs, jsonEncode(data['helyszinek']));
+    if (data.containsKey('felszerelesKategoriak')) await prefs.setString(_felszerelesKategoriakKulcs, jsonEncode(data['felszerelesKategoriak']));
+    if (data.containsKey('felszerelesTetelek')) await prefs.setString(_felszerelesTetelekKulcs, jsonEncode(data['felszerelesTetelek']));
+    if (data.containsKey('botok')) await prefs.setString(_botokKulcs, jsonEncode(data['botok']));
+    if (data.containsKey('modszerek')) await prefs.setString(_modszerekKulcs, jsonEncode(data['modszerek']));
+    if (data.containsKey('szerelekek')) await prefs.setString(_szerelekekKulcs, jsonEncode(data['szerelekek']));
+    if (data.containsKey('csalik')) await prefs.setString(_csalikKulcs, jsonEncode(data['csalik']));
+    if (data.containsKey('etetoanyagok')) await prefs.setString(_etetoanyagokKulcs, jsonEncode(data['etetoanyagok']));
+    if (data.containsKey('tarsak')) await prefs.setString(_tarsakKulcs, jsonEncode(data['tarsak']));
+    if (data.containsKey('idojaras')) await prefs.setString(_idojarasKulcs, jsonEncode(data['idojaras']));
+    if (data.containsKey('sors')) await prefs.setString(_sorsKulcs, jsonEncode(data['sors']));
   }
 
-  static Future<void> sorsMentes(List<String> adatok) async => await _mentes(_sorsKulcs, adatok);
-  static Future<List<String>> sorsBetoltese() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool init = prefs.getBool('sors_init') ?? false;
+  // --- DLC KÉPCSOMAG (ZIP) FELTÖLTÉSE ---
+  static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {
+    final Map<String, String> idMapper = _getDlcAzonositoMap();
+    final bytes = await File(zipPath).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
     
-    if (!init) {
-      List<String> alapSorsok = ['Visszaengedtem', 'Elvittem', 'Elpusztult'];
-      await sorsMentes(alapSorsok);
-      await prefs.setBool('sors_init', true);
-      return alapSorsok;
+    final halfajok = await halfajokBetoltese();
+    bool tortentValtozas = false;
+
+    for (final file in archive) {
+      if (file.isFile) {
+        final nev = file.name.split('/').last.toLowerCase();
+        
+        // Csak a _1.jpg, _2.jpg, _3.jpg fájlokat engedjük be
+        final match = RegExp(r'^([a-z_]+)_(1|2|3)\.jpg$').firstMatch(nev);
+        if (match != null) {
+          final dlcId = match.group(1)!;
+          final sorszam = match.group(2)!;
+          final belsoHalId = idMapper[dlcId];
+          
+          if (belsoHalId != null) {
+            final halIndex = halfajok.indexWhere((h) => h.id == belsoHalId);
+            if (halIndex != -1) {
+              // Bemásoljuk a képet a rejtett könyvtárba egy fix, felismerhető DLC névvel
+              final ujUtvonal = await biztonsagosKepMasolas(
+                '', // Nincs eredeti útvonal, mi írjuk ki a byte-okat
+                egyediNev: 'dlc_${belsoHalId}_$sorszam.jpg'
+              );
+              
+              // Kiírjuk a fájlt a kicsomagolt tartalommal
+              await File(ujUtvonal).writeAsBytes(file.content as List<int>);
+
+              List<String> ujKepek = List.from(halfajok[halIndex].kepek);
+              
+              // Megnézzük, van-e már a sloton (1, 2, 3) DLC kép. Ha igen, eltávolítjuk a listából.
+              ujKepek.removeWhere((k) => k.endsWith('dlc_${belsoHalId}_$sorszam.jpg'));
+              
+              // Hozzáadjuk az újat, ha belefér a limitbe
+              if (ujKepek.length < 5) {
+                ujKepek.add(ujUtvonal);
+              }
+              
+              halfajok[halIndex] = Halfaj(
+                id: halfajok[halIndex].id, nev: halfajok[halIndex].nev, kategoria: halfajok[halIndex].kategoria,
+                statusz: halfajok[halIndex].statusz, meretKorlatozas: halfajok[halIndex].meretKorlatozas,
+                darabKorlatozas: halfajok[halIndex].darabKorlatozas, tilalmiIdoszak: halfajok[halIndex].tilalmiIdoszak,
+                szabalyozasEve: halfajok[halIndex].szabalyozasEve, megjegyzes: halfajok[halIndex].megjegyzes, 
+                kepek: ujKepek,
+              );
+              tortentValtozas = true;
+            }
+          }
+        }
+      }
     }
     
-    return List<String>.from(await _betoltes(_sorsKulcs));
+    if (tortentValtozas) {
+      await halfajokMentes(halfajok);
+    }
   }
 
+  static Map<String, String> _getDlcAzonositoMap() {
+    return {
+      'ponty': 'hal_01', 'compo': 'hal_02', 'marna': 'hal_03', 'paduc': 'hal_04',
+      'deverkeszeg': 'hal_05', 'bodorka': 'hal_06', 'vorosszarnyu_keszeg': 'hal_07',
+      'karikakeszeg': 'hal_08', 'jaszkeszeg': 'hal_09', 'laposkeszeg': 'hal_10',
+      'szilvaorru_keszeg': 'hal_11', 'domolyko': 'hal_12', 'garda': 'hal_13',
+      'csuka': 'hal_14', 'sullo': 'hal_15', 'kosullo': 'hal_16', 'harcsa': 'hal_17',
+      'balin': 'hal_18', 'suger': 'hal_19', 'menyhal': 'hal_20', 'amur': 'hal_21',
+      'afrikai_harcsa': 'hal_22', 'tokhal': 'hal_23', 'fekete_amur': 'hal_24',
+      'buffalo': 'hal_25', 'sebes_pisztrang': 'hal_26', 'szivarvanyos_pisztrang': 'hal_27',
+      'feketesuger': 'hal_28', 'pettyes_harcsa': 'hal_29', 'csikos_suger': 'hal_30',
+      'lapatorru_tok': 'hal_31', 'aranyhal': 'hal_32', 'angolna': 'hal_33',
+      'torpeharcsa': 'hal_34', 'ezustkarasz': 'hal_35', 'busa': 'hal_36',
+      'kecsege': 'hal_37', 'szeles_karasz': 'hal_38', 'leanykoncer': 'hal_39',
+      'koi_ponty': 'hal_40', 'magyar_buco': 'hal_41', 'nemet_buco': 'hal_42',
+      'tarka_geb': 'hal_43', 'reti_csik': 'hal_44', 'vago_csik': 'hal_45',
+      'penzes_per': 'hal_46', 'lapi_poc': 'hal_47', 'viza': 'hal_48',
+      'vago_tok': 'hal_49', 'sima_tok': 'hal_50', 'soregtok': 'hal_51',
+      'vago_durbincs': 'hal_52', 'selymes_durbincs': 'hal_53', 'feketeszaju_geb': 'hal_54',
+      'csupasztorku_geb': 'hal_55', 'kessler_geb': 'hal_56', 'sneci': 'hal_57',
+      'bagolykeszeg': 'hal_58', 'lanykeszeg': 'hal_59', 'naphal': 'hal_60',
+      'kinai_razbora': 'hal_61', 'amurgeb': 'hal_62', 'szivarvanyos_okle': 'hal_63',
+      'galoca': 'hal_64', 'fenekjaro_kullo': 'hal_65', 'kovi_csik': 'hal_66',
+      'furge_cselle': 'hal_67', 'botos_kolonte': 'hal_68', 'fekete_torpeharcsa': 'hal_69',
+      'pataki_szajbling': 'hal_70', 'tuskes_piko': 'hal_71', 'folyami_geb': 'hal_72',
+      'kaukazusi_torpegeb': 'hal_73', 'gyongyos_koncer': 'hal_74', 'nyuldomolyko': 'hal_75',
+      'petenyi_marna': 'hal_76', 'kurta_baing': 'hal_77', 'sujtasos_kusz': 'hal_78',
+      'vaskos_csabak': 'hal_79', 'dunai_nagyhering': 'hal_80', 'szeles_durbincs': 'hal_81',
+      'halvanyfoltu_kullo': 'hal_82', 'lenai_tok': 'hal_83'
+    };
+  }
+
+  // --- TÖRZSDAT TÖRLÉSEK ÉS NÉV FRISSÍTÉSEK LOGIKÁJA ---
   static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {
+    // EREDETI LOGIKA ÉRINTETLENÜL HAGYVA (csak a fogasok, túrák neveit írja át)
     if (kategoria == 'Horgásztársak') {
       final turak = await turakBetoltese();
       bool changed = false;
@@ -217,6 +508,7 @@ class AdatTarolo {
   }
 
   static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {
+    // EREDETI LOGIKA ÉRINTETLENÜL HAGYVA
     if (kategoria == 'Helyszín') {
       final turak = await turakBetoltese();
       bool changed = false;
