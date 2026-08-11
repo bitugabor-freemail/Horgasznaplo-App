@@ -16,6 +16,10 @@ dependencies:
   geolocator: ^11.0.0
   http: ^1.2.1
   cached_network_image: ^3.3.1
+  path_provider: ^2.1.2
+  archive: ^3.4.10
+  file_picker: ^6.1.1
+  share_plus: ^7.2.1
 
 dev_dependencies:
   flutter_test:
