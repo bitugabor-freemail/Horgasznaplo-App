@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
-import 'felszereles.dart'; // A Felszerelés tételek szerkesztéséhez
+import 'felszereles.dart';
 
 class TorzsadatokScreen extends StatefulWidget {
   const TorzsadatokScreen({super.key});
@@ -72,7 +72,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     } else if (_kivKategoria == 'Felszerelés Tétel') {
       _felszTetelek = await AdatTarolo.felszerelesTetelekBetoltese();
       _felszTetelek.sort((a, b) => a.nev.compareTo(b.nev));
-      _felszKategoriak = await AdatTarolo.felszerelesKategoriakBetoltese(); // Kell a kategória nevéhez
+      _felszKategoriak = await AdatTarolo.felszerelesKategoriakBetoltese(); 
     } else {
       switch (_kivKategoria) {
         case 'Horgászbot': _simaLista = await AdatTarolo.botokBetoltese(); break;
@@ -277,7 +277,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     );
   }
 
-  // --- OKOS MENÜ (FOGASKERÉK) ---
   void _mutassOkosMenut() {
     showModalBottomSheet(
       context: context,
@@ -366,12 +365,15 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Lehetőséged van képcsomagot feltölteni a halfajtákhoz. Az alábbi listában lévő elnevezéseket használd, és a feltöltést .zip fájlformátumba becsomagolva tudod megtenni.', style: TextStyle(fontSize: 14)),
+              Text('Tölts fel egy .zip fájlt a hivatalos képekkel. Fontos, hogy a képek fájlnevei szigorúan a lenti szabályokat kövessék!', style: TextStyle(fontSize: 14)),
               SizedBox(height: 12),
-              Text('Halfajtánként pontosan 3 képet tartalmazhat a csomag ([azonosito]_1.jpg, [azonosito]_2.jpg, [azonosito]_3.jpg). Az ennél több (pl. _4.jpg) fájlt a program figyelmen kívül hagyja.', style: TextStyle(fontSize: 14, color: Colors.orangeAccent)),
+              Text('Névadási szabályok:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+              Text('• Csak az angol ábécé kisbetűi (ékezetek nélkül)\n• Szóközök helyett alsóvonal (_)\n• A zárójeleket és a bennük lévő szöveget hagyd el!', style: TextStyle(fontSize: 14)),
               SizedBox(height: 12),
-              Text('Példa nevek:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('Ponty -> ponty\nCsuka -> csuka\nSzivárványos pisztráng -> szivarvanyos_pisztrang\nStb...', style: TextStyle(color: Colors.white70)),
+              Text('A fájl végén ott kell lennie a kép sorszámának (_1, _2 vagy _3). Pl.: ponty_1.jpg. Ha egy fajhoz ennél több képet csomagolsz be, a program figyelmen kívül hagyja őket.', style: TextStyle(fontSize: 13, color: Colors.orangeAccent)),
+              SizedBox(height: 12),
+              Text('Gyakori példák:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Ponty -> ponty_1.jpg\nSzivárványos pisztráng -> szivarvanyos_pisztrang_1.jpg\nSüllő (Fogas) -> sullo_1.jpg\nBuffalo (Nagyszájú buffalo) -> buffalo_1.jpg', style: TextStyle(color: Colors.white70)),
             ],
           ),
         ),
@@ -560,8 +562,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   }
 }
 
-// ... AZ ALATTA LÉVŐ RÉSZ (_HalfajSzerkesztoScreen) TELJESEN MEGEGYEZIK A RÉGIVEL, de a biztonság kedvéért itt van: ...
-
+// ... _HalfajSzerkesztoScreen LOGIKÁJA ...
 class HalfajSzerkesztoScreen extends StatefulWidget {
   final Halfaj? szerkeszthetoHalfaj;
   final Function(Halfaj) mentesCallback;
