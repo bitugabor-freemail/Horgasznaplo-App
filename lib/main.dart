@@ -53,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigalas() async {
-    await Future.delayed(const Duration(seconds: 4));
+    await Future.delayed(const Duration(seconds: 5));
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
