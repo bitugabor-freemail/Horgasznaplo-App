@@ -1,8 +1,9 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'adattarolo.dart'; // A kategóriák betöltéséhez
 import 'turak.dart';
 import 'kedvencek.dart';
-import 'felszereles.dart'; // Új menüpont importálása
+import 'felszereles.dart'; 
 import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
@@ -99,22 +100,135 @@ class FomenuScreen extends StatefulWidget {
 
 class _FomenuScreenState extends State<FomenuScreen> {
   int _currentIndex = 0;
+  final GlobalKey<FelszerelesScreenState> _felszerelesKey = GlobalKey<FelszerelesScreenState>();
+  late final List<Widget> _kepernyok;
 
-  final List<Widget> _kepernyok = [
-    const TurakScreen(),
-    const KedvencekScreen(),
-    const FelszerelesScreen(), // Új képernyő a 2. indexen
-    const LexikonScreen(),
-    const StatisztikaScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _kepernyok = [
+      const TurakScreen(),
+      const KedvencekScreen(),
+      FelszerelesScreen(key: _felszerelesKey),
+      const LexikonScreen(),
+      const StatisztikaScreen(),
+    ];
+  }
 
   final List<String> _cimek = [
     'Horgásztúráim',
     'Kedvenc fogások',
-    'Felszerelés', // Új cím
+    'Felszerelés', 
     'Halfajok / Lexikon',
     'Statisztika',
   ];
+
+  void _mutassHalStatuszInfot() {
+    final ScrollController scrollController = ScrollController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Státuszok Jelentése', style: TextStyle(color: Colors.greenAccent)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Scrollbar(
+            controller: scrollController,
+            thumbVisibility: true,
+            thickness: 4,
+            radius: const Radius.circular(8),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildInfoSor(Colors.green, 'Fogható (Őshonos)', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
+                    _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
+                    _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem állnak szigorú természetvédelmi oltalom alatt, de a halgazdálkodási törvény (és a MOHOSZ Országos Horgászrendje) állományvédelmi okokból tiltja a kifogásukat és az elvitelüket. Kifogásuk esetén ugyanúgy azonnal és kíméletesen vissza kell őket engedni a vízbe.'),
+                    _buildInfoSor(Colors.blue, 'Védett', 'A természetvédelmi törvény hatálya alá tartoznak. Ezeknek a halaknak hivatalos, pénzben kifejezett természetvédelmi (eszmei) értékük van (pl. 10 000 Ft-tól akár 250 000 Ft-ig). Kifejezetten ritka, veszélyeztetett, vagy bennszülött (endemikus) fajok. Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
+                    _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Bezárás', style: TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoSor(Color szin, String cim, String leiras) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 14, height: 14, decoration: BoxDecoration(color: szin, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Expanded(child: Text(cim, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(leiras, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.3)),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildAppBarActions() {
+    if (_currentIndex == 2) {
+      return [
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert, color: Colors.greenAccent),
+          color: const Color(0xFF1E1E1E),
+          onSelected: (value) async {
+            if (value == 'kategoriak') {
+              final kategoriak = await AdatTarolo.felszerelesKategoriakBetoltese();
+              if (!mounted) return;
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => KategoriakSzerkesztoScreen(
+                    kategoriak: kategoriak,
+                    mentesCallback: () {
+                      setState(() {});
+                    },
+                  ),
+                ),
+              );
+              _felszerelesKey.currentState?.adatokBetoltese();
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'kategoriak',
+              child: Text('Kategóriák szerkesztése'),
+            ),
+          ],
+        )
+      ];
+    } else if (_currentIndex == 3) {
+      return [
+        IconButton(
+          icon: const Icon(Icons.info_outline, color: Colors.greenAccent),
+          onPressed: _mutassHalStatuszInfot,
+        ),
+      ];
+    }
+    return [];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +236,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF161616),
         title: Text(_cimek[_currentIndex], style: const TextStyle(fontWeight: FontWeight.bold)),
+        actions: _buildAppBarActions(),
       ),
       drawer: Drawer(
         backgroundColor: const Color(0xFF161616),
@@ -151,7 +266,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
               onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
             ),
             ListTile(
-              leading: const Icon(Icons.backpack_outlined, color: Colors.greenAccent), // Felszerelés ikon
+              leading: const Icon(Icons.backpack_outlined, color: Colors.greenAccent),
               title: const Text('3. Felszerelés'),
               onTap: () { setState(() => _currentIndex = 2); Navigator.pop(context); },
             ),
@@ -220,7 +335,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
       ),
       body: _kepernyok[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex > 4 ? 0 : _currentIndex, // Frissítve 4-re a max index miatt
+        currentIndex: _currentIndex > 4 ? 0 : _currentIndex, 
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF161616),
