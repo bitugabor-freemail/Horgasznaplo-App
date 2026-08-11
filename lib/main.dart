@@ -1,6 +1,6 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'adattarolo.dart'; // A kategóriák betöltéséhez
+import 'adattarolo.dart'; 
 import 'turak.dart';
 import 'kedvencek.dart';
 import 'felszereles.dart'; 
@@ -78,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 2,
-                color: Colors.greenAccent,
+                color: Colors.tealAccent, // Zöldeskék árnyalat a kék logó és a zöld app közé
               ),
             ),
             const SizedBox(height: 40),
