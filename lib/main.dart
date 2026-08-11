@@ -69,13 +69,17 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/2825.png', height: 180, fit: BoxFit.contain),
+            Image.asset(
+              'assets/2825.png', 
+              height: 360, // A logó mérete duplázva
+              fit: BoxFit.contain
+            ),
             const SizedBox(height: 28),
             const Text(
               'Horgásznapló',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 36, // A betűméret megnövelve
                 fontWeight: FontWeight.bold,
                 letterSpacing: 2,
                 color: Colors.tealAccent, // Zöldeskék árnyalat a kék logó és a zöld app közé
