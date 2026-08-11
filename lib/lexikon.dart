@@ -66,7 +66,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
     });
 
     return Scaffold(
-      // Belső AppBar törölve a duplázódás elkerülése miatt!
       body: Column(
         children: [
           Padding(
@@ -138,7 +137,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
           ),
         ],
       ),
-      // Óriási Kvíz gomb a jobb alsó sarokban
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.orange[800],
         icon: const Icon(Icons.sports_esports, color: Colors.white),
@@ -296,20 +294,26 @@ class _KvizScreenState extends State<KvizScreen> {
     if (_osszesHal.length >= 2) _ujKerdes();
   }
 
+  // Ez a függvény szűri ki a gyári "helykitöltő" képeket a Képes Kvízhez
+  bool _ervenyestKep(String kep) {
+    return (kep.startsWith('http') && !kep.contains('placehold.co')) || File(kep).existsSync();
+  }
+
   void _ujKerdes() {
     final random = Random();
     
-    List<Halfaj> elerhetoHalak = _osszesHal;
+    // IMPORTANT: Létrehozunk egy MÁSOLATOT a listáról, hogy a shuffle ne rontsa el az eredetit!
+    List<Halfaj> elerhetoHalak = List.from(_osszesHal);
     
-    // Okos Képes Kvíz védelem: Csak azok a halak jöhetnek, amiknek van fizikailag is létező (vagy weben lévő) fotójuk.
+    // Képes mód ellenőrzése
     if (_kepesMod) {
-      elerhetoHalak = _osszesHal.where((h) {
-        return h.kepek.any((kep) => kep.startsWith('http') || File(kep).existsSync());
+      elerhetoHalak = elerhetoHalak.where((h) {
+        return h.kepek.any((kep) => _ervenyestKep(kep));
       }).toList();
     }
 
     if (elerhetoHalak.isEmpty) {
-      setState(() => _valaszolva = true);
+      setState(() => _valaszolva = true); // Ez megakadályozza a UI összeomlását és megjeleníti az üzenetet
       return;
     }
 
@@ -380,7 +384,7 @@ class _KvizScreenState extends State<KvizScreen> {
       body: _valaszolva && _opciok.isEmpty
           ? const Center(child: Padding(
               padding: EdgeInsets.all(16.0),
-              child: Text('Nincs elég olyan halfajod, amelyikhez feltöltöttél volna képet! Válts vissza szöveges módra.', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.orangeAccent)),
+              child: Text('Nincs elég olyan halfajod, amelyikhez hivatalos vagy saját képet töltöttél volna fel! Válts vissza szöveges módra.', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.orangeAccent)),
             ))
           : Padding(
               padding: const EdgeInsets.all(16.0),
@@ -408,8 +412,7 @@ class _KvizScreenState extends State<KvizScreen> {
                         child: _kepesMod
                             ? Builder(
                                 builder: (context) {
-                                  // Képes mód: Véletlenszerűen választunk egy fotót a meglévő érvényesek közül
-                                  List<String> validKepek = _aktualisKerdes.kepek.where((kep) => kep.startsWith('http') || File(kep).existsSync()).toList();
+                                  List<String> validKepek = _aktualisKerdes.kepek.where((kep) => _ervenyestKep(kep)).toList();
                                   validKepek.shuffle();
                                   String kivalasztottKep = validKepek.first;
                                   
@@ -430,7 +433,6 @@ class _KvizScreenState extends State<KvizScreen> {
                                 padding: const EdgeInsets.all(16.0),
                                 child: Builder(
                                   builder: (context) {
-                                    // Szöveges mód: Kicenzúrázzuk a hal nevét (teljes név és az esetleges zárójel nélküli alapnév alapján is)
                                     String alapNev = _aktualisKerdes.nev.split(' (').first;
                                     String cenzurazottLeiras = _aktualisKerdes.megjegyzes
                                         .replaceAll(RegExp(RegExp.escape(_aktualisKerdes.nev), caseSensitive: false), '[***]')
