@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'turak.dart';
 import 'kedvencek.dart';
+import 'felszereles.dart'; // Új menüpont importálása
 import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
@@ -102,6 +103,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
   final List<Widget> _kepernyok = [
     const TurakScreen(),
     const KedvencekScreen(),
+    const FelszerelesScreen(), // Új képernyő a 2. indexen
     const LexikonScreen(),
     const StatisztikaScreen(),
   ];
@@ -109,6 +111,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
   final List<String> _cimek = [
     'Horgásztúráim',
     'Kedvenc fogások',
+    'Felszerelés', // Új cím
     'Halfajok / Lexikon',
     'Statisztika',
   ];
@@ -148,19 +151,24 @@ class _FomenuScreenState extends State<FomenuScreen> {
               onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
             ),
             ListTile(
-              leading: const Icon(Icons.library_books_outlined, color: Colors.greenAccent),
-              title: const Text('3. Halfajok'),
+              leading: const Icon(Icons.backpack_outlined, color: Colors.greenAccent), // Felszerelés ikon
+              title: const Text('3. Felszerelés'),
               onTap: () { setState(() => _currentIndex = 2); Navigator.pop(context); },
             ),
             ListTile(
-              leading: const Icon(Icons.bar_chart, color: Colors.greenAccent),
-              title: const Text('4. Statisztika'),
+              leading: const Icon(Icons.library_books_outlined, color: Colors.greenAccent),
+              title: const Text('4. Halfajok'),
               onTap: () { setState(() => _currentIndex = 3); Navigator.pop(context); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bar_chart, color: Colors.greenAccent),
+              title: const Text('5. Statisztika'),
+              onTap: () { setState(() => _currentIndex = 4); Navigator.pop(context); },
             ),
             const Divider(color: Colors.white24),
             ListTile(
               leading: const Icon(Icons.category, color: Colors.greenAccent),
-              title: const Text('5. Törzsadatok'),
+              title: const Text('6. Törzsadatok'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -171,7 +179,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.settings, color: Colors.greenAccent),
-              title: const Text('6. Adatkezelés'),
+              title: const Text('7. Adatkezelés'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const AdatkezelesScreen()));
@@ -180,7 +188,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
             const Divider(color: Colors.white24),
             ListTile(
               leading: const Icon(Icons.info_outline, color: Colors.white54),
-              title: const Text('7. Névjegy'),
+              title: const Text('8. Névjegy'),
               onTap: () {
                 Navigator.pop(context);
                 showDialog(
@@ -212,7 +220,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
       ),
       body: _kepernyok[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex > 3 ? 0 : _currentIndex,
+        currentIndex: _currentIndex > 4 ? 0 : _currentIndex, // Frissítve 4-re a max index miatt
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF161616),
@@ -221,8 +229,9 @@ class _FomenuScreenState extends State<FomenuScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Túrák'),
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Kedvencek'),
+          BottomNavigationBarItem(icon: Icon(Icons.backpack_outlined), label: 'Felszerelés'),
           BottomNavigationBarItem(icon: Icon(Icons.library_books_outlined), label: 'Halfajok'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Statisztika'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Statisz.'),
         ],
       ),
     );
