@@ -29,71 +29,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
     });
   }
 
-  void _mutassInfot() {
-    final ScrollController scrollController = ScrollController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Státuszok Jelentése', style: TextStyle(color: Colors.greenAccent)),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Scrollbar(
-            controller: scrollController,
-            thumbVisibility: true,
-            thickness: 4,
-            radius: const Radius.circular(8),
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 12.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoSor(Colors.green, 'Fogható (Őshonos)', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
-                    _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
-                    _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem állnak szigorú természetvédelmi oltalom alatt, de a halgazdálkodási törvény (és a MOHOSZ Országos Horgászrendje) állományvédelmi okokból tiltja a kifogásukat és az elvitelüket. Kifogásuk esetén ugyanúgy azonnal és kíméletesen vissza kell őket engedni a vízbe.'),
-                    _buildInfoSor(Colors.blue, 'Védett', 'A természetvédelmi törvény hatálya alá tartoznak. Ezeknek a halaknak hivatalos, pénzben kifejezett természetvédelmi (eszmei) értékük van (pl. 10 000 Ft-tól akár 250 000 Ft-ig). Kifejezetten ritka, veszélyeztetett, vagy bennszülött (endemikus) fajok. Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
-                    _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Bezárás', style: TextStyle(color: Colors.white70)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoSor(Color szin, String cim, String leiras) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(width: 14, height: 14, decoration: BoxDecoration(color: szin, shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              Expanded(child: Text(cim, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(leiras, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.3)),
-        ],
-      ),
-    );
-  }
-
   Color _getStatuszSzin(String statusz) {
     if (statusz == 'Fogható' || statusz == 'Fogható (Őshonos)') return Colors.green;
     if (statusz == 'Fogható (Idegenhonos)') return Colors.lightGreenAccent; 
@@ -131,12 +66,7 @@ class _LexikonScreenState extends State<LexikonScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Halhatározó'),
-        actions: [
-          IconButton(icon: const Icon(Icons.info_outline, color: Colors.greenAccent), onPressed: _mutassInfot),
-        ],
-      ),
+      // Belső AppBar törölve a duplázódás elkerülése miatt!
       body: Column(
         children: [
           Padding(
@@ -207,6 +137,15 @@ class _LexikonScreenState extends State<LexikonScreen> {
                       ),
           ),
         ],
+      ),
+      // Óriási Kvíz gomb a jobb alsó sarokban
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: Colors.orange[800],
+        icon: const Icon(Icons.sports_esports, color: Colors.white),
+        label: const Text('KVÍZ INDÍTÁSA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const KvizScreen()));
+        },
       ),
     );
   }
