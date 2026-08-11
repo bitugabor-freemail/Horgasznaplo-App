@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_picker/file_picker.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
+import 'felszereles.dart'; // A Felszerelés tételek szerkesztéséhez
 
 class TorzsadatokScreen extends StatefulWidget {
   const TorzsadatokScreen({super.key});
@@ -15,6 +17,8 @@ class TorzsadatokScreen extends StatefulWidget {
 class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   final List<String> _kategoriak = [
     'Halfaj',
+    'Felszerelés Kategória',
+    'Felszerelés Tétel',
     'Horgászbot',
     'Horgászmódszer',
     'Végszerelék',
@@ -30,7 +34,10 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   
   List<Halfaj> _halfajok = [];
   List<Helyszin> _helyszinek = [];
+  List<FelszerelesKategoria> _felszKategoriak = [];
+  List<FelszerelesTetel> _felszTetelek = [];
   List<String> _simaLista = [];
+  bool _folyamatban = false;
 
   @override
   void initState() {
@@ -60,6 +67,12 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     } else if (_kivKategoria == 'Helyszín') {
       _helyszinek = await AdatTarolo.helyszinekBetoltese();
       _helyszinek.sort((a, b) => a.nev.compareTo(b.nev)); 
+    } else if (_kivKategoria == 'Felszerelés Kategória') {
+      _felszKategoriak = await AdatTarolo.felszerelesKategoriakBetoltese();
+    } else if (_kivKategoria == 'Felszerelés Tétel') {
+      _felszTetelek = await AdatTarolo.felszerelesTetelekBetoltese();
+      _felszTetelek.sort((a, b) => a.nev.compareTo(b.nev));
+      _felszKategoriak = await AdatTarolo.felszerelesKategoriakBetoltese(); // Kell a kategória nevéhez
     } else {
       switch (_kivKategoria) {
         case 'Horgászbot': _simaLista = await AdatTarolo.botokBetoltese(); break;
@@ -172,13 +185,52 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     );
   }
 
+  void _felszerelesKategoriaHozzaadas([FelszerelesKategoria? kategoria, int? index]) {
+    final ctrl = TextEditingController(text: kategoria?.nev ?? '');
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text(kategoria == null ? 'Új Kategória' : 'Kategória szerkesztése'),
+        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Név')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+            onPressed: () async {
+              if (ctrl.text.trim().isNotEmpty) {
+                if (kategoria == null) {
+                  _felszKategoriak.add(FelszerelesKategoria(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    nev: ctrl.text.trim(),
+                    sorrend: _felszKategoriak.length,
+                  ));
+                } else if (index != null) {
+                  _felszKategoriak[index] = FelszerelesKategoria(
+                    id: kategoria.id,
+                    nev: ctrl.text.trim(),
+                    sorrend: kategoria.sorrend,
+                  );
+                }
+                await AdatTarolo.felszerelesKategoriakMentes(_felszKategoriak);
+                _adatokBetoltese();
+                if (mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Mentés', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _adatTorlese(int index) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Törlés'),
-        content: const Text('Biztosan törölni szeretnéd ezt a törzsadatot? (A már rögzített túráknál és fogásoknál a megfelelő rublika üres marad, amíg nem választasz másikat.)'),
+        content: const Text('Biztosan törölni szeretnéd ezt a törzsadatot?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégsem')),
           ElevatedButton(
@@ -196,6 +248,18 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 await AdatTarolo.helyszinekMentes(_helyszinek);
                 await AdatTarolo.torzsadatTorles(_kivKategoria, toroltId); 
                 
+              } else if (_kivKategoria == 'Felszerelés Kategória') {
+                bool inUse = _felszTetelek.any((t) => t.kategoriaId == _felszKategoriak[index].id);
+                if (inUse) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nem törölhető, mert vannak benne tételek!')));
+                  return;
+                }
+                _felszKategoriak.removeAt(index);
+                await AdatTarolo.felszerelesKategoriakMentes(_felszKategoriak);
+              } else if (_kivKategoria == 'Felszerelés Tétel') {
+                _felszTetelek.removeAt(index);
+                await AdatTarolo.felszerelesTetelekMentes(_felszTetelek);
               } else {
                 String toroltNev = _simaLista[index];
                 _simaLista.removeAt(index);
@@ -213,93 +277,257 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     );
   }
 
+  // --- OKOS MENÜ (FOGASKERÉK) ---
+  void _mutassOkosMenut() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('$_kivKategoria Beállítások', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.greenAccent), textAlign: TextAlign.center),
+              const Divider(color: Colors.white24, height: 30),
+              
+              if (_kivKategoria == 'Halfaj' || _kivKategoria == 'Felszerelés Tétel') ...[
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800], padding: const EdgeInsets.all(14)),
+                  icon: const Icon(Icons.file_upload, color: Colors.white),
+                  label: const Text('Képcsomag feltöltése (.zip)', style: TextStyle(color: Colors.white)),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _kepCsomagFeltoltese();
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+              
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[800], padding: const EdgeInsets.all(14)),
+                icon: const Icon(Icons.restore, color: Colors.white),
+                label: const Text('Gyári alapértékek visszaállítása', style: TextStyle(color: Colors.white)),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _gyariVisszaallitas();
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _gyariVisszaallitas() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Gyári Visszaállítás', style: TextStyle(color: Colors.orangeAccent)),
+        content: const Text('Ez a funkció visszapótolja a hiányzó gyári adatokat.\n\nA saját, egyedi hozzáadott adataidat NEM módosítja és NEM törli! Biztosan folytatod?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[800]),
+            onPressed: () async {
+              Navigator.pop(context);
+              setState(() => _folyamatban = true);
+              
+              if (_kivKategoria == 'Halfaj') await AdatTarolo.gyariHalfajokVisszaallitas();
+              if (_kivKategoria == 'Időjárás') await AdatTarolo.gyariIdojarasVisszaallitas();
+              if (_kivKategoria == 'Hal sorsa') await AdatTarolo.gyariSorsVisszaallitas();
+              if (_kivKategoria == 'Felszerelés Kategória') await AdatTarolo.gyariFelszerelesKategoriakVisszaallitas();
+              
+              await _adatokBetoltese();
+              setState(() => _folyamatban = false);
+              
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gyári adatok sikeresen visszapótolva!')));
+            },
+            child: const Text('Igen, visszaállítom', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _kepCsomagFeltoltese() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Képcsomag feltöltése', style: TextStyle(color: Colors.blueAccent)),
+        content: const SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Lehetőséged van képcsomagot feltölteni a halfajtákhoz. Az alábbi listában lévő elnevezéseket használd, és a feltöltést .zip fájlformátumba becsomagolva tudod megtenni.', style: TextStyle(fontSize: 14)),
+              SizedBox(height: 12),
+              Text('Halfajtánként pontosan 3 képet tartalmazhat a csomag ([azonosito]_1.jpg, [azonosito]_2.jpg, [azonosito]_3.jpg). Az ennél több (pl. _4.jpg) fájlt a program figyelmen kívül hagyja.', style: TextStyle(fontSize: 14, color: Colors.orangeAccent)),
+              SizedBox(height: 12),
+              Text('Példa nevek:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Ponty -> ponty\nCsuka -> csuka\nSzivárványos pisztráng -> szivarvanyos_pisztrang\nStb...', style: TextStyle(color: Colors.white70)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800]),
+            onPressed: () async {
+              Navigator.pop(context);
+              FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
+              if (result != null && result.files.single.path != null) {
+                setState(() => _folyamatban = true);
+                try {
+                  await AdatTarolo.dlcKepCsomagKicsomagolasa(result.files.single.path!);
+                  await _adatokBetoltese();
+                  setState(() => _folyamatban = false);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Képcsomag sikeresen feldolgozva és mentve!')));
+                } catch (e) {
+                  setState(() => _folyamatban = false);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hiba a kicsomagolás során: $e'), backgroundColor: Colors.redAccent));
+                }
+              }
+            },
+            child: const Text('.ZIP Kiválasztása', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    bool mutatFogaskereket = ['Halfaj', 'Időjárás', 'Hal sorsa', 'Felszerelés Kategóriák'].contains(_kivKategoria);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Törzsadatok Kezelése')),
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: const Color(0xFF161616),
-            child: Row(
-              children: [
-                const Text('Kategória:', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DropdownButton<String>(
-                    value: _kivKategoria,
-                    isExpanded: true,
-                    dropdownColor: const Color(0xFF1E1E1E),
-                    items: _kategoriak.map((k) => DropdownMenuItem(value: k, child: Text(k, style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)))).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() => _kivKategoria = val);
-                        _adatokBetoltese();
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 80),
-              itemCount: _kivKategoria == 'Halfaj' ? _halfajok.length : (_kivKategoria == 'Helyszín' ? _helyszinek.length : _simaLista.length),
-              itemBuilder: (context, index) {
-                String megjelenitettNev = '';
-                if (_kivKategoria == 'Halfaj') {
-                  megjelenitettNev = _halfajok[index].nev;
-                } else if (_kivKategoria == 'Helyszín') {
-                  megjelenitettNev = _helyszinek[index].nev;
-                } else {
-                  megjelenitettNev = _simaLista[index];
-                }
-
-                return Card(
-                  color: const Color(0xFF1E1E1E),
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text(megjelenitettNev, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.white70),
-                          onPressed: () {
-                            if (_kivKategoria == 'Halfaj') {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => HalfajSzerkesztoScreen(
-                                szerkeszthetoHalfaj: _halfajok[index],
-                                mentesCallback: (modositottHal) async {
-                                  String regiNev = _halfajok[index].nev;
-                                  _halfajok[index] = modositottHal;
-                                  await AdatTarolo.halfajokMentes(_halfajok);
-                                  
-                                  if (regiNev != modositottHal.nev) {
-                                    await AdatTarolo.torzsadatNevFrissites('Halfaj', regiNev, modositottHal.nev);
-                                  }
-                                  _adatokBetoltese(); 
-                                },
-                              )));
-                            } else if (_kivKategoria == 'Helyszín') {
-                              _helyszinHozzaadasVagySzerkesztes(_helyszinek[index], index);
-                            } else {
-                              _simaAdatHozzaadasVagySzerkesztes(_simaLista[index], index);
-                            }
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.redAccent),
-                          onPressed: () => _adatTorlese(index),
-                        ),
-                      ],
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: const Color(0xFF161616),
+                child: Row(
+                  children: [
+                    const Text('Kategória:', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: _kivKategoria,
+                        isExpanded: true,
+                        dropdownColor: const Color(0xFF1E1E1E),
+                        items: _kategoriak.map((k) => DropdownMenuItem(value: k, child: Text(k, style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)))).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _kivKategoria = val);
+                            _adatokBetoltese();
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                    if (mutatFogaskereket)
+                      IconButton(
+                        icon: const Icon(Icons.settings, color: Colors.white54),
+                        onPressed: _mutassOkosMenut,
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 80),
+                  itemCount: _kivKategoria == 'Halfaj' ? _halfajok.length :
+                             _kivKategoria == 'Helyszín' ? _helyszinek.length :
+                             _kivKategoria == 'Felszerelés Kategória' ? _felszKategoriak.length :
+                             _kivKategoria == 'Felszerelés Tétel' ? _felszTetelek.length : _simaLista.length,
+                  itemBuilder: (context, index) {
+                    String megjelenitettNev = '';
+                    String alcim = '';
+                    
+                    if (_kivKategoria == 'Halfaj') {
+                      megjelenitettNev = _halfajok[index].nev;
+                    } else if (_kivKategoria == 'Helyszín') {
+                      megjelenitettNev = _helyszinek[index].nev;
+                    } else if (_kivKategoria == 'Felszerelés Kategória') {
+                      megjelenitettNev = _felszKategoriak[index].nev;
+                    } else if (_kivKategoria == 'Felszerelés Tétel') {
+                      final tetel = _felszTetelek[index];
+                      megjelenitettNev = tetel.nev;
+                      final kat = _felszKategoriak.firstWhere((k) => k.id == tetel.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: 'Ismeretlen'));
+                      alcim = kat.nev;
+                    } else {
+                      megjelenitettNev = _simaLista[index];
+                    }
+
+                    return Card(
+                      color: const Color(0xFF1E1E1E),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        title: Text(megjelenitettNev, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: alcim.isNotEmpty ? Text(alcim, style: const TextStyle(color: Colors.greenAccent, fontSize: 12)) : null,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.white70),
+                              onPressed: () {
+                                if (_kivKategoria == 'Halfaj') {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => HalfajSzerkesztoScreen(
+                                    szerkeszthetoHalfaj: _halfajok[index],
+                                    mentesCallback: (modositottHal) async {
+                                      String regiNev = _halfajok[index].nev;
+                                      _halfajok[index] = modositottHal;
+                                      await AdatTarolo.halfajokMentes(_halfajok);
+                                      if (regiNev != modositottHal.nev) {
+                                        await AdatTarolo.torzsadatNevFrissites('Halfaj', regiNev, modositottHal.nev);
+                                      }
+                                      _adatokBetoltese(); 
+                                    },
+                                  )));
+                                } else if (_kivKategoria == 'Felszerelés Tétel') {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => TetelSzerkesztoScreen(
+                                    kategoriak: _felszKategoriak,
+                                    szerkeszthetoTetel: _felszTetelek[index],
+                                    mentesCallback: () => _adatokBetoltese(),
+                                  )));
+                                } else if (_kivKategoria == 'Felszerelés Kategória') {
+                                  _felszerelesKategoriaHozzaadas(_felszKategoriak[index], index);
+                                } else if (_kivKategoria == 'Helyszín') {
+                                  _helyszinHozzaadasVagySzerkesztes(_helyszinek[index], index);
+                                } else {
+                                  _simaAdatHozzaadasVagySzerkesztes(_simaLista[index], index);
+                                }
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.redAccent),
+                              onPressed: () => _adatTorlese(index),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
+          
+          if (_folyamatban)
+            Container(
+              color: Colors.black.withOpacity(0.7),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.greenAccent),
+              ),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -314,6 +542,13 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 _adatokBetoltese(); 
               },
             )));
+          } else if (_kivKategoria == 'Felszerelés Tétel') {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => TetelSzerkesztoScreen(
+              kategoriak: _felszKategoriak,
+              mentesCallback: () => _adatokBetoltese(),
+            )));
+          } else if (_kivKategoria == 'Felszerelés Kategória') {
+            _felszerelesKategoriaHozzaadas();
           } else if (_kivKategoria == 'Helyszín') {
             _helyszinHozzaadasVagySzerkesztes();
           } else {
@@ -324,6 +559,8 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     );
   }
 }
+
+// ... AZ ALATTA LÉVŐ RÉSZ (_HalfajSzerkesztoScreen) TELJESEN MEGEGYEZIK A RÉGIVEL, de a biztonság kedvéért itt van: ...
 
 class HalfajSzerkesztoScreen extends StatefulWidget {
   final Halfaj? szerkeszthetoHalfaj;
@@ -349,7 +586,6 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
   List<String> _kepek = []; 
 
   final List<String> _kategoriak = ['Békés', 'Ragadozó'];
-  
   final List<String> _statuszok = ['Fogható (Őshonos)', 'Fogható (Idegenhonos)', 'Nem fogható', 'Védett', 'Inváziós'];
 
   @override
@@ -383,8 +619,9 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
+      String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
       setState(() {
-        _kepek.add(image.path);
+        _kepek.add(biztonsagosUtvonal);
       });
     }
   }
