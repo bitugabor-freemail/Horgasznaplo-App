@@ -294,18 +294,17 @@ class _KvizScreenState extends State<KvizScreen> {
     if (_osszesHal.length >= 2) _ujKerdes();
   }
 
-  // Ez a függvény szűri ki a gyári "helykitöltő" képeket a Képes Kvízhez
+  // Szigorított képellenőrzés
   bool _ervenyestKep(String kep) {
+    if (kep.isEmpty) return false;
     return (kep.startsWith('http') && !kep.contains('placehold.co')) || File(kep).existsSync();
   }
 
   void _ujKerdes() {
     final random = Random();
     
-    // IMPORTANT: Létrehozunk egy MÁSOLATOT a listáról, hogy a shuffle ne rontsa el az eredetit!
     List<Halfaj> elerhetoHalak = List.from(_osszesHal);
     
-    // Képes mód ellenőrzése
     if (_kepesMod) {
       elerhetoHalak = elerhetoHalak.where((h) {
         return h.kepek.any((kep) => _ervenyestKep(kep));
@@ -313,7 +312,7 @@ class _KvizScreenState extends State<KvizScreen> {
     }
 
     if (elerhetoHalak.isEmpty) {
-      setState(() => _valaszolva = true); // Ez megakadályozza a UI összeomlását és megjeleníti az üzenetet
+      setState(() => _valaszolva = true); 
       return;
     }
 
@@ -425,7 +424,25 @@ class _KvizScreenState extends State<KvizScreen> {
                                             placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
                                             errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50, color: Colors.white24),
                                           )
-                                        : Image.file(File(kivalasztottKep), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                                        : Image.file(
+                                            File(kivalasztottKep), 
+                                            fit: BoxFit.cover, 
+                                            width: double.infinity, 
+                                            height: double.infinity,
+                                            // VÉDELEM: Ha a fájl megsérült vagy eltűnt
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return const Center(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(Icons.phishing, size: 64, color: Colors.grey),
+                                                    SizedBox(height: 8),
+                                                    Text('Kép nem található', style: TextStyle(color: Colors.grey)),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          ),
                                   );
                                 },
                               )
