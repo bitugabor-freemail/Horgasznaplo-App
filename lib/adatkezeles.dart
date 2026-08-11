@@ -1,7 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'adattarolo.dart';
 
 class AdatkezelesScreen extends StatefulWidget {
@@ -81,6 +82,29 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
     );
   }
 
+  Future<void> _fajlMenteseLetoltesekbe(String eredetiPath) async {
+    try {
+      Directory? downloadsDir;
+      if (Platform.isAndroid) {
+        downloadsDir = Directory('/storage/emulated/0/Download');
+      } else {
+        downloadsDir = await getApplicationDocumentsDirectory(); 
+      }
+      
+      if (!await downloadsDir.exists()) {
+        await downloadsDir.create(recursive: true);
+      }
+      
+      final fileName = eredetiPath.split('/').last;
+      final newPath = '${downloadsDir.path}/$fileName';
+      await File(eredetiPath).copy(newPath);
+      
+      _mutassUzenetet('Mentve a Letöltések (Download) könyvtárba!\n$fileName');
+    } catch (e) {
+      _mutassUzenetet('Hiba a fájl mentésekor: $e', hiba: true);
+    }
+  }
+
   void _exportalasMegnyitasa() {
     showDialog(
       context: context,
@@ -101,8 +125,8 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
               setState(() => _toltesFolyamatban = true);
               try {
                 final path = await AdatTarolo.letrehozTeljesExportZIPFajl();
+                await _fajlMenteseLetoltesekbe(path);
                 setState(() => _toltesFolyamatban = false);
-                await Share.shareXFiles([XFile(path)], text: 'Horgásznapló teljes mentés (képekkel)');
               } catch (e) {
                 setState(() => _toltesFolyamatban = false);
                 _mutassUzenetet('Hiba a ZIP mentés során: $e', hiba: true);
@@ -121,8 +145,8 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
               setState(() => _toltesFolyamatban = true);
               try {
                 final path = await AdatTarolo.letrehozGyorsExportJSONFajl();
+                await _fajlMenteseLetoltesekbe(path);
                 setState(() => _toltesFolyamatban = false);
-                await Share.shareXFiles([XFile(path)], text: 'Horgásznapló gyors mentés (csak adatok)');
               } catch (e) {
                 setState(() => _toltesFolyamatban = false);
                 _mutassUzenetet('Hiba a JSON mentés során: $e', hiba: true);
@@ -137,7 +161,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
 
   Future<void> _importalasInditasa() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.any, // Engedjük a ZIP-et és JSON-t is
+      type: FileType.any,
     );
 
     if (result != null && result.files.single.path != null) {
