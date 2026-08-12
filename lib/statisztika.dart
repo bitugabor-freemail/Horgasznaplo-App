@@ -17,7 +17,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
   List<FogasModel> _osszesFogas = [];
   List<Helyszin> _helyszinek = [];
   
-  // Törzsadat listák a szűrőkhöz
   List<Halfaj> _halfajok = [];
   List<String> _botok = [], _modszerek = [], _szerelekek = [], _csalik = [], _etetoanyagok = [], _tarsak = [], _idojarasok = [], _sorsok = [];
 
@@ -42,13 +41,20 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
   void initState() {
     super.initState();
     final most = DateTime.now();
-    _kezdoDatum = DateTime(most.year, most.month, most.day);
-    _vegDatum = DateTime(most.year, most.month, most.day);
+    _kezdoDatum = DateTime(most.year, 1, 1); // Alap biztonsági érték
+    _vegDatum = DateTime(most.year, 12, 31);
     _adatokBetoltese();
   }
 
   Future<void> _adatokBetoltese() async {
     _osszesTura = await AdatTarolo.turakBetoltese();
+    
+    // Kezdődátum beállítása a legelső túrához!
+    if (_osszesTura.isNotEmpty) {
+      _osszesTura.sort((a, b) => a.kezdoDatum.compareTo(b.kezdoDatum));
+      _kezdoDatum = DateTime(_osszesTura.first.kezdoDatum.year, _osszesTura.first.kezdoDatum.month, _osszesTura.first.kezdoDatum.day);
+    }
+    
     _osszesFogas = await AdatTarolo.fogasokBetoltese();
     _helyszinek = await AdatTarolo.helyszinekBetoltese();
     _halfajok = await AdatTarolo.halfajokBetoltese();
@@ -63,12 +69,12 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     setState(() {});
   }
 
-  // --- AKTÍV SZŰRÉS VIZSGÁLATA ---
   bool _isSzuresAktiv() {
     final most = DateTime.now();
-    final ma = DateTime(most.year, most.month, most.day);
+    final alapKezdo = _osszesTura.isNotEmpty ? DateTime(_osszesTura.first.kezdoDatum.year, _osszesTura.first.kezdoDatum.month, _osszesTura.first.kezdoDatum.day) : DateTime(most.year, 1, 1);
+    final alapVeg = DateTime(most.year, 12, 31);
     
-    if (_kezdoDatum != ma || _vegDatum != ma) return true;
+    if (_kezdoDatum != alapKezdo || _vegDatum != alapVeg) return true;
     if (_kezdoIdo.hour != 0 || _kezdoIdo.minute != 0) return true;
     if (_vegIdo.hour != 23 || _vegIdo.minute != 59) return true;
     
@@ -85,8 +91,8 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
   void _szurokAlaphelyzetbe() {
     final most = DateTime.now();
     setState(() {
-      _kezdoDatum = DateTime(most.year, most.month, most.day);
-      _vegDatum = DateTime(most.year, most.month, most.day);
+      _kezdoDatum = _osszesTura.isNotEmpty ? DateTime(_osszesTura.first.kezdoDatum.year, _osszesTura.first.kezdoDatum.month, _osszesTura.first.kezdoDatum.day) : DateTime(most.year, 1, 1);
+      _vegDatum = DateTime(most.year, 12, 31);
       _kezdoIdo = const TimeOfDay(hour: 0, minute: 0);
       _vegIdo = const TimeOfDay(hour: 23, minute: 59);
       
@@ -98,14 +104,11 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     });
   }
 
-  // --- A BRUTÁLIS SZŰRŐ ALGORITMUS ---
   List<FogasModel> _getSzurtFogasok() {
     return _osszesFogas.where((f) {
-      // 1. Dátum szűrés (nap szinten)
       final fDatum = DateTime(f.datum.year, f.datum.month, f.datum.day);
       if (fDatum.isBefore(_kezdoDatum) || fDatum.isAfter(_vegDatum)) return false;
 
-      // 2. Időpont szűrés
       final tParts = f.idopont.split(':');
       if (tParts.length == 2) {
         int fMin = int.parse(tParts[0]) * 60 + int.parse(tParts[1]);
@@ -114,7 +117,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
         if (fMin < startMin || fMin > endMin) return false;
       }
 
-      // 3. Törzsadatok (Közvetlen)
       if (_szuroHalfaj != null && f.halfaj != _szuroHalfaj) return false;
       if (_szuroSors != null && f.sors != _szuroSors) return false;
       if (_szuroBot != null && f.bot != _szuroBot) return false;
@@ -124,7 +126,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       if (_szuroCsali != null && !f.csali.contains(_szuroCsali)) return false;
       if (_szuroEtetoanyag != null && !f.etetoanyag.contains(_szuroEtetoanyag)) return false;
 
-      // 4. Szám alapú szűrők (Min-Max)
       if (_sulyMinCtrl.text.isNotEmpty && (f.suly == null || f.suly! < double.parse(_sulyMinCtrl.text.replaceAll(',', '.')))) return false;
       if (_sulyMaxCtrl.text.isNotEmpty && (f.suly != null && f.suly! > double.parse(_sulyMaxCtrl.text.replaceAll(',', '.')))) return false;
       
@@ -132,13 +133,12 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       if (_hosszMaxCtrl.text.isNotEmpty && (f.hossz != null && f.hossz! > int.parse(_hosszMaxCtrl.text))) return false;
 
       if (_hoMinCtrl.text.isNotEmpty || _hoMaxCtrl.text.isNotEmpty) {
-        double? homerseklet = f.homerseklet; // JAVÍTVA
+        double? homerseklet = f.homerseklet;
         if (homerseklet == null) return false;
         if (_hoMinCtrl.text.isNotEmpty && homerseklet < double.parse(_hoMinCtrl.text.replaceAll(',', '.'))) return false;
         if (_hoMaxCtrl.text.isNotEmpty && homerseklet > double.parse(_hoMaxCtrl.text.replaceAll(',', '.'))) return false;
       }
 
-      // 5. Túra adatokra vonatkozó szűrések (Helyszín, Horgászhely, Társak)
       if (_szuroHelyszin != null || _szuroTars != null || _horgaszhelyCtrl.text.isNotEmpty) {
         final tura = _osszesTura.cast<Tura?>().firstWhere((t) => t?.id == f.turaId, orElse: () => null);
         if (tura == null) return false; 
@@ -156,7 +156,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     }).toList();
   }
 
-  // --- RÉSZLETES SZŰRŐ ABLAK ---
   void _nyitReszletesSzurok() {
     showModalBottomSheet(
       context: context,
@@ -192,7 +191,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // 1. DÁTUM
                           Row(
                             children: [
                               Expanded(child: OutlinedButton(
@@ -213,7 +211,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          // 2. IDŐ
                           Row(
                             children: [
                               Expanded(child: OutlinedButton(
@@ -235,12 +232,10 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                           ),
                           const SizedBox(height: 16),
                           
-                          // 3. TÖRZSDAT LEGÖRDÜLŐK
                           _szuroDropdown(setModalState, 'Halfaj', _szuroHalfaj, _halfajok.map((e) => e.nev).toList(), (val) => _szuroHalfaj = val),
                           _szuroDropdown(setModalState, 'Helyszín', _szuroHelyszin, _helyszinek.map((e) => e.nev).toList(), (val) => _szuroHelyszin = val),
                           _szuroDropdown(setModalState, 'Hal sorsa', _szuroSors, _sorsok, (val) => _szuroSors = val),
                           
-                          // 4. MIN-MAX MEZŐK
                           Row(
                             children: [
                               Expanded(child: TextField(controller: _sulyMinCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Min Súly (kg)', border: OutlineInputBorder()))),
@@ -317,7 +312,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     );
   }
 
-  // --- TAKTIKAI ELEMZŐ ALGORITMUSOK ---
   String _legjobbIdosav(List<FogasModel> fogasok) {
     if (fogasok.isEmpty) return '-';
     Map<int, int> idosavok = {};
@@ -339,7 +333,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     Map<String, int> gyakorisag = {};
     for (var f in fogasok) {
       String kulcs = selector(f);
-      if (kulcs.trim().isNotEmpty && kulcs != '-' && kulcs != ' / °C' && kulcs != ' + ') {
+      if (kulcs.trim().isNotEmpty && kulcs != '-' && kulcs != '? / ?°C' && kulcs != '? + ?') {
         gyakorisag[kulcs] = (gyakorisag[kulcs] ?? 0) + 1;
       }
     }
@@ -368,7 +362,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     final szurtFogasok = _getSzurtFogasok();
     final isSzurt = _isSzuresAktiv();
     
-    // Alap statisztikák
     int darab = szurtFogasok.length;
     double osszsuly = szurtFogasok.fold(0.0, (sum, f) => sum + (f.suly ?? 0.0));
     double atlagsuly = darab > 0 ? osszsuly / darab : 0.0;
@@ -382,7 +375,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
 
     int turakSzama = szurtFogasok.map((f) => f.turaId).toSet().length;
 
-    // Sors arányok
     int visszaDb = szurtFogasok.where((f) => f.sors == 'Visszaengedtem').length;
     int elvittDb = szurtFogasok.where((f) => f.sors == 'Elvittem').length;
     int elpusztultDb = szurtFogasok.where((f) => f.sors == 'Elpusztult').length;
@@ -391,7 +383,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     double elvittSuly = szurtFogasok.where((f) => f.sors == 'Elvittem').fold(0.0, (s, f) => s + (f.suly ?? 0.0));
     double elpusztultSuly = szurtFogasok.where((f) => f.sors == 'Elpusztult').fold(0.0, (s, f) => s + (f.suly ?? 0.0));
 
-    // Tortadiagram adatok
     Map<String, int> halfajDb = {};
     for (var f in szurtFogasok) {
       halfajDb[f.halfaj] = (halfajDb[f.halfaj] ?? 0) + 1;
@@ -434,7 +425,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                 : ListView(
                     padding: const EdgeInsets.all(12),
                     children: [
-                      // 1. ÖSSZESÍTÉS KÁRTYA
                       _Kartya(
                         cim: 'Alap statisztika',
                         ikon: Icons.analytics,
@@ -451,7 +441,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                         ),
                       ),
                       
-                      // 2. SORS ARÁNYOK
                       _Kartya(
                         cim: 'Halak sorsa',
                         ikon: Icons.compare_arrows,
@@ -466,14 +455,12 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                         ),
                       ),
 
-                      // 3. TORTADIAGRAM
                       _Kartya(
                         cim: 'Halfajok megoszlása',
                         ikon: Icons.pie_chart,
                         tartalom: _TortadiagramNezet(adatok: halfajDb, osszesDb: darab),
                       ),
 
-                      // 4. TAKTIKAI ÉRDEKESSÉGEK
                       _Kartya(
                         cim: 'Taktikai érdekességek',
                         ikon: Icons.lightbulb_outline,
@@ -481,11 +468,23 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                           children: [
                             _StatisztikaSor(cim: 'Legjobb 3 órás idősáv', ertek: _legjobbIdosav(szurtFogasok)),
                             const Divider(color: Colors.white12),
-                            _StatisztikaSor(cim: 'Legaktívabb Időjárás+Hőfok', ertek: _legjobbKombo(szurtFogasok, (f) => '${f.idojaras} / ${f.homerseklet}°C')),
+                            // NULL KEZELÉS JAVÍTVA
+                            _StatisztikaSor(cim: 'Legaktívabb Időjárás+Hőfok', ertek: _legjobbKombo(szurtFogasok, (f) {
+                              if ((f.idojaras == null || f.idojaras!.isEmpty) && f.homerseklet == null) return '-';
+                              String idoj = (f.idojaras != null && f.idojaras!.isNotEmpty) ? f.idojaras! : '?';
+                              String ho = f.homerseklet != null ? '${f.homerseklet}°C' : '?';
+                              return '$idoj / $ho';
+                            })),
                             const Divider(color: Colors.white12),
-                            _StatisztikaSor(cim: 'Legjobb Csali + Etetőanyag', ertek: _legjobbKombo(szurtFogasok, (f) => '${f.csali.isNotEmpty ? f.csali.first : ""} + ${f.etetoanyag.isNotEmpty ? f.etetoanyag.first : ""}')),
+                            // NULL KEZELÉS JAVÍTVA EBBEN IS
+                            _StatisztikaSor(cim: 'Legjobb Csali + Etetőanyag', ertek: _legjobbKombo(szurtFogasok, (f) {
+                              if (f.csali.isEmpty && f.etetoanyag.isEmpty) return '-';
+                              String cs = f.csali.isNotEmpty ? f.csali.first : '?';
+                              String et = f.etetoanyag.isNotEmpty ? f.etetoanyag.first : '?';
+                              return '$cs + $et';
+                            })),
                             const Divider(color: Colors.white12),
-                            _StatisztikaSor(cim: 'Legnyerőbb módszer', ertek: _legjobbKombo(szurtFogasok, (f) => f.modszer ?? '')),
+                            _StatisztikaSor(cim: 'Legnyerőbb módszer', ertek: _legjobbKombo(szurtFogasok, (f) => f.modszer ?? '-')),
                             const Divider(color: Colors.white12),
                             _StatisztikaSor(cim: 'Legjobb horgászhely', ertek: _legjobbHelyszin(szurtFogasok)),
                           ],
@@ -499,8 +498,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     );
   }
 }
-
-// --- SEGÉD WIDGETEK ---
 
 class _Kartya extends StatelessWidget {
   final String cim;
