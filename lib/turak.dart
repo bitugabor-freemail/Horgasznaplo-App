@@ -450,11 +450,9 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
   Future<void> _adatokBetoltese() async {
     _helyszinek = await AdatTarolo.helyszinekBetoltese();
-    // ABC sorrend Helyszíneknek
     _helyszinek.sort((a, b) => a.nev.toLowerCase().compareTo(b.nev.toLowerCase()));
     
     _elerhetoTarsak = await AdatTarolo.tarsakBetoltese();
-    // ABC sorrend Társaknak
     _elerhetoTarsak.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     
     setState(() {});
@@ -537,7 +535,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
     );
   }
 
-  // --- HELYSZÍN KERESŐ ABLAK ---
   Future<void> _mutasHelyszinKereso() async {
     String kereses = '';
     await showModalBottomSheet(
@@ -575,7 +572,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                     const SizedBox(height: 8),
                     ListTile(
                       leading: const Icon(Icons.add_circle, color: Colors.greenAccent),
-                      title: const Text('➕ Új helyszín hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      title: const Text('Új helyszín hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                       onTap: () {
                         Navigator.pop(context);
                         _ujHelyszinHozzaadaskor();
@@ -614,7 +611,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
     );
   }
 
-  // --- TÁRS KERESŐ ABLAK ---
   Future<void> _mutasTarsKereso() async {
     String kereses = '';
     await showModalBottomSheet(
@@ -652,7 +648,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                     const SizedBox(height: 8),
                     ListTile(
                       leading: const Icon(Icons.add_circle, color: Colors.greenAccent),
-                      title: const Text('➕ Új horgásztárs hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      title: const Text('Új horgásztárs hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                       onTap: () {
                         Navigator.pop(context);
                         _ujTarsHozzaadaskor();
@@ -750,7 +746,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Kereshető Helyszín választó
             InkWell(
               onTap: _mutasHelyszinKereso,
               borderRadius: BorderRadius.circular(4),
