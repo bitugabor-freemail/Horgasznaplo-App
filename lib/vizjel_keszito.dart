@@ -15,15 +15,16 @@ class VizjelKeszito {
       String formazottDatum = DateFormat('yyyy.MM.dd.').format(fogas.datum);
       final textTopLeft = '$formazottDatum\n${helyszinNev != 'Ismeretlen helyszín' ? helyszinNev : ''}'.trim();
       
-      String textTopRight = fogas.halfaj;
+      // Ez kerül most a bal alsó sarokba
+      String textBottomLeft = fogas.halfaj;
       List<String> parameterek = [];
       if (fogas.suly != null && fogas.suly! > 0) parameterek.add('${fogas.suly} kg');
       if (fogas.hossz != null && fogas.hossz! > 0) parameterek.add('${fogas.hossz} cm');
       if (parameterek.isNotEmpty) {
-        textTopRight += '\n${parameterek.join(' / ')}';
+        textBottomLeft += '\n${parameterek.join(' / ')}';
       }
 
-      final letoltottFajlNev = await _kepGeneralasaEsMentese(kepUtvonal, textTopLeft, textTopRight, 'fogas');
+      final letoltottFajlNev = await _kepGeneralasaEsMentese(kepUtvonal, textTopLeft, textBottomLeft, 'fogas');
       
       if (context.mounted) {
         Navigator.pop(context); // Töltés ablak bezárása
@@ -44,9 +45,9 @@ class VizjelKeszito {
       String kezd = DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum);
       String veg = DateFormat('yyyy.MM.dd.').format(tura.befejezoDatum);
       final textTopLeft = '$kezd - $veg\n${helyszinNev != 'Ismeretlen helyszín' ? helyszinNev : ''}'.trim();
-      const textTopRight = ''; // Túránál ez üres marad
+      const textBottomLeft = ''; // Túránál ez üres marad
 
-      final letoltottFajlNev = await _kepGeneralasaEsMentese(kepUtvonal, textTopLeft, textTopRight, 'tura');
+      final letoltottFajlNev = await _kepGeneralasaEsMentese(kepUtvonal, textTopLeft, textBottomLeft, 'tura');
       
       if (context.mounted) {
         Navigator.pop(context);
@@ -61,7 +62,7 @@ class VizjelKeszito {
   }
 
   // --- KÖZÖS KÉPGENERÁLÓ ÉS MENTŐ MOTOR ---
-  static Future<String> _kepGeneralasaEsMentese(String alapKepUtvonal, String balFelsoszoveg, String jobbFelsoSzoveg, String tipus) async {
+  static Future<String> _kepGeneralasaEsMentese(String alapKepUtvonal, String balFelsoszoveg, String balAlsoSzoveg, String tipus) async {
     // 1. Alapkép betöltése
     final Uint8List imageBytes = await File(alapKepUtvonal).readAsBytes();
     final ui.Codec codec = await ui.instantiateImageCodec(imageBytes);
@@ -107,14 +108,17 @@ class VizjelKeszito {
       canvas.drawParagraph(balParagraph, Offset(padding, padding));
     }
 
-    // JOBB FELSŐ szöveg megrajzolása
-    if (jobbFelsoSzoveg.isNotEmpty) {
-      final ui.ParagraphBuilder jobbBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(textAlign: TextAlign.right))
+    // BAL ALSÓ szöveg megrajzolása
+    if (balAlsoSzoveg.isNotEmpty) {
+      final ui.ParagraphBuilder balAlsoBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(textAlign: TextAlign.left))
         ..pushStyle(textStyle)
-        ..addText(jobbFelsoSzoveg);
-      final ui.Paragraph jobbParagraph = jobbBuilder.build();
-      jobbParagraph.layout(ui.ParagraphConstraints(width: alapKep.width - (padding * 2)));
-      canvas.drawParagraph(jobbParagraph, Offset(alapKep.width - jobbParagraph.maxIntrinsicWidth - padding, padding));
+        ..addText(balAlsoSzoveg);
+      final ui.Paragraph balAlsoParagraph = balAlsoBuilder.build();
+      balAlsoParagraph.layout(ui.ParagraphConstraints(width: alapKep.width - (padding * 2)));
+      
+      // Kiszámoljuk az y pozíciót, hogy a kép aljára kerüljön a margó figyelembevételével
+      final double yPozicio = alapKep.height - balAlsoParagraph.height - padding;
+      canvas.drawParagraph(balAlsoParagraph, Offset(padding, yPozicio));
     }
 
     // LOGÓ megrajzolása (Jobb alsó sarok, áttetszően)
