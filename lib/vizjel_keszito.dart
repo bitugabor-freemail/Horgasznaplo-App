@@ -3,14 +3,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'modellek.dart'; 
 
 class VizjelKeszito {
   
-  // --- FOGÁS MEGOSZTÁSA ---
-  static Future<void> fogasMegosztasa(BuildContext context, FogasModel fogas, String kepUtvonal, String helyszinNev) async {
+  // --- FOGÁS LETÖLTÉSE ---
+  static Future<void> fogasLetoltes(BuildContext context, FogasModel fogas, String kepUtvonal, String helyszinNev) async {
     _mutasToltes(context);
     try {
       String formazottDatum = DateFormat('yyyy.MM.dd.').format(fogas.datum);
@@ -24,18 +23,22 @@ class VizjelKeszito {
         textTopRight += '\n${parameterek.join(' / ')}';
       }
 
-      final file = await _kepGeneralasa(kepUtvonal, textTopLeft, textTopRight);
+      final letoltottFajlNev = await _kepGeneralasaEsMentese(kepUtvonal, textTopLeft, textTopRight, 'fogas');
       
-      if (context.mounted) Navigator.pop(context); // Töltés ablak bezárása
-      await Share.shareXFiles([XFile(file.path)], text: 'Nézd meg ezt a fogásomat!');
+      if (context.mounted) {
+        Navigator.pop(context); // Töltés ablak bezárása
+        _sikerUzenet(context, 'Kép sikeresen mentve a Letöltések közé!\n($letoltottFajlNev)');
+      }
     } catch (e) {
-      if (context.mounted) Navigator.pop(context);
-      _hibaUzenet(context, 'Hiba a kép generálásakor: $e');
+      if (context.mounted) {
+        Navigator.pop(context);
+        _hibaUzenet(context, 'Hiba a kép generálásakor: $e');
+      }
     }
   }
 
-  // --- TÚRA MEGOSZTÁSA ---
-  static Future<void> turaMegosztasa(BuildContext context, Tura tura, String kepUtvonal, String helyszinNev) async {
+  // --- TÚRA LETÖLTÉSE ---
+  static Future<void> turaLetoltes(BuildContext context, Tura tura, String kepUtvonal, String helyszinNev) async {
     _mutasToltes(context);
     try {
       String kezd = DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum);
@@ -43,25 +46,29 @@ class VizjelKeszito {
       final textTopLeft = '$kezd - $veg\n${helyszinNev != 'Ismeretlen helyszín' ? helyszinNev : ''}'.trim();
       const textTopRight = ''; // Túránál ez üres marad
 
-      final file = await _kepGeneralasa(kepUtvonal, textTopLeft, textTopRight);
+      final letoltottFajlNev = await _kepGeneralasaEsMentese(kepUtvonal, textTopLeft, textTopRight, 'tura');
       
-      if (context.mounted) Navigator.pop(context);
-      await Share.shareXFiles([XFile(file.path)], text: 'Horgásztúra emlék!');
+      if (context.mounted) {
+        Navigator.pop(context);
+        _sikerUzenet(context, 'Kép sikeresen mentve a Letöltések közé!\n($letoltottFajlNev)');
+      }
     } catch (e) {
-      if (context.mounted) Navigator.pop(context);
-      _hibaUzenet(context, 'Hiba a kép generálásakor: $e');
+      if (context.mounted) {
+        Navigator.pop(context);
+        _hibaUzenet(context, 'Hiba a kép generálásakor: $e');
+      }
     }
   }
 
-  // --- KÖZÖS KÉPGENERÁLÓ MOTOR ---
-  static Future<File> _kepGeneralasa(String alapKepUtvonal, String balFelsoszoveg, String jobbFelsoSzoveg) async {
+  // --- KÖZÖS KÉPGENERÁLÓ ÉS MENTŐ MOTOR ---
+  static Future<String> _kepGeneralasaEsMentese(String alapKepUtvonal, String balFelsoszoveg, String jobbFelsoSzoveg, String tipus) async {
     // 1. Alapkép betöltése
     final Uint8List imageBytes = await File(alapKepUtvonal).readAsBytes();
     final ui.Codec codec = await ui.instantiateImageCodec(imageBytes);
     final ui.FrameInfo frameInfo = await codec.getNextFrame();
     final ui.Image alapKep = frameInfo.image;
 
-    // 2. Vízjel logó betöltése (az új megadott fájlból!)
+    // 2. Vízjel logó betöltése (Ellenőrizd a pubspec.yaml-t!)
     final ByteData logoData = await rootBundle.load('assets/watermark_logo.png');
     final Uint8List logoBytes = logoData.buffer.asUint8List();
     final ui.Codec logoCodec = await ui.instantiateImageCodec(logoBytes);
@@ -111,7 +118,6 @@ class VizjelKeszito {
     }
 
     // LOGÓ megrajzolása (Jobb alsó sarok, áttetszően)
-    // A logó méretét a kép szélességének 20%-ára skálázzuk
     final double logoTargetWidth = alapKep.width * 0.20;
     final double logoScale = logoTargetWidth / logoKep.width;
     final double logoTargetHeight = logoKep.height * logoScale;
@@ -127,18 +133,30 @@ class VizjelKeszito {
     canvas.drawImage(logoKep, Offset.zero, logoPaint);
     canvas.restore();
 
-    // 4. Kép kimentése
+    // 4. Kép generálása memóriába
     final ui.Picture picture = recorder.endRecording();
     final ui.Image veglegesKep = await picture.toImage(alapKep.width, alapKep.height);
     final ByteData? byteData = await veglegesKep.toByteData(format: ui.ImageByteFormat.png);
     final Uint8List pngBytes = byteData!.buffer.asUint8List();
 
-    // Temp mappába írás a megosztáshoz
-    final directory = await getTemporaryDirectory();
-    final File tempFile = File('${directory.path}/megosztas_${DateTime.now().millisecondsSinceEpoch}.png');
-    await tempFile.writeAsBytes(pngBytes);
+    // 5. MENTÉS A LETÖLTÉSEK (Download) KÖNYVTÁRBA
+    Directory? downloadsDir;
+    if (Platform.isAndroid) {
+      downloadsDir = Directory('/storage/emulated/0/Download');
+    } else {
+      downloadsDir = await getApplicationDocumentsDirectory(); 
+    }
+    
+    if (!await downloadsDir.exists()) {
+      await downloadsDir.create(recursive: true);
+    }
+    
+    final fajlNev = 'horgasznaplo_${tipus}_${DateTime.now().millisecondsSinceEpoch}.png';
+    final newPath = '${downloadsDir.path}/$fajlNev';
+    
+    await File(newPath).writeAsBytes(pngBytes);
 
-    return tempFile;
+    return fajlNev; // Visszaadjuk a fájl nevét a sikerüzenethez
   }
 
   static void _mutasToltes(BuildContext context) {
@@ -150,6 +168,10 @@ class VizjelKeszito {
   }
 
   static void _hibaUzenet(BuildContext context, String uzenet) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(uzenet), backgroundColor: Colors.red));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(uzenet), backgroundColor: Colors.redAccent, duration: const Duration(seconds: 4)));
+  }
+
+  static void _sikerUzenet(BuildContext context, String uzenet) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(uzenet), backgroundColor: Colors.green[700], duration: const Duration(seconds: 4)));
   }
 }
