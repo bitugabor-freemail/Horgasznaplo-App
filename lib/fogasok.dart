@@ -53,7 +53,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => FogasSzerkesztoScreen(
-          turaId: widget.tura.id,
+          tura: widget.tura, // ITT MÁR AZ EGÉSZ TÚRÁT ÁTADJUK!
           szerkeszthetoFogas: fogas,
           mentesCallback: () => _adatokBetoltese(),
         ),
@@ -224,11 +224,11 @@ class _FogasokScreenState extends State<FogasokScreen> {
 }
 
 class FogasSzerkesztoScreen extends StatefulWidget {
-  final String turaId;
+  final Tura tura;
   final FogasModel? szerkeszthetoFogas;
   final VoidCallback mentesCallback;
 
-  const FogasSzerkesztoScreen({super.key, required this.turaId, this.szerkeszthetoFogas, required this.mentesCallback});
+  const FogasSzerkesztoScreen({super.key, required this.tura, this.szerkeszthetoFogas, required this.mentesCallback});
 
   @override
   State<FogasSzerkesztoScreen> createState() => _FogasSzerkesztoScreenState();
@@ -414,7 +414,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                     if (allowNew)
                       ListTile(
                         leading: const Icon(Icons.add_circle, color: Colors.greenAccent),
-                        title: Text('➕ Új $cim hozzáadása', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                        title: Text('Új $cim hozzáadása', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                         onTap: () {
                           Navigator.pop(context);
                           if (cim == 'Halfaj') {
@@ -470,8 +470,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  // --- KIVÁLASZTÓ KÁRTYÁK UI ÉPÍTŐI ---
-  Widget _buildKereshetoDropdown({required String label, required String? value, required List<String> items, required Function(String?) onChanged, bool allowNew = true}) {
+  // JAVÍTVA: Helyes ragozás támogatása
+  Widget _buildKereshetoDropdown({required String label, required String targyEset, required String? value, required List<String> items, required Function(String?) onChanged, bool allowNew = true}) {
     return InkWell(
       onTap: () => _mutasKereshetoAblak(label, items, onChanged, allowNew),
       borderRadius: BorderRadius.circular(4),
@@ -488,7 +488,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  Widget _buildTobbesKivalaszto({required String label, required List<String> elerhetoElemek, required List<String> kivalasztottElemek}) {
+  // JAVÍTVA: Helyes ragozás támogatása
+  Widget _buildTobbesKivalaszto({required String label, required String targyEset, required List<String> elerhetoElemek, required List<String> kivalasztottElemek}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -509,7 +510,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Válassz $label...', style: const TextStyle(color: Colors.white54)),
+                      Text('Válassz $targyEset...', style: const TextStyle(color: Colors.white54)),
                       const Icon(Icons.arrow_drop_down, color: Colors.white70),
                     ],
                   ),
@@ -553,9 +554,26 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   }
 
   void _mentes() async {
+    // --- SZIGORÚ DÁTUM VÉDELEM: CSAK A MENTÉST SZAKÍTJUK MEG ---
+    DateTime tKeze = DateTime(widget.tura.kezdoDatum.year, widget.tura.kezdoDatum.month, widget.tura.kezdoDatum.day);
+    DateTime tVege = DateTime(widget.tura.befejezoDatum.year, widget.tura.befejezoDatum.month, widget.tura.befejezoDatum.day);
+    DateTime fDatum = DateTime(_datum.year, _datum.month, _datum.day);
+
+    if (fDatum.isBefore(tKeze) || fDatum.isAfter(tVege)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('A fogás dátuma (${DateFormat('yyyy.MM.dd').format(fDatum)}) kívül esik a túra időtartamán!'),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 4),
+        )
+      );
+      return; // A program kilép ebből a függvényből, minden adat megmarad a képernyőn!
+    }
+    // -------------------------------------------------------------
+
     final ujFogas = FogasModel(
       id: widget.szerkeszthetoFogas?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      turaId: widget.turaId,
+      turaId: widget.tura.id,
       datum: _datum,
       idopont: '${_idopont.hour.toString().padLeft(2, '0')}:${_idopont.minute.toString().padLeft(2, '0')}',
       halfaj: _kivalasztottHalfaj ?? '', 
@@ -608,6 +626,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
 
             _buildKereshetoDropdown(
               label: 'Halfaj',
+              targyEset: 'Halfajt',
               value: _kivalasztottHalfaj,
               items: _elerhetoHalfajok.map((h) => h.nev).toList(),
               onChanged: (val) => setState(() => _kivalasztottHalfaj = val),
@@ -623,7 +642,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Hal sorsánál maradt a klasszikus lenyíló, hiszen ott csak 3 elem van (nem kell kereső)
             DropdownButtonFormField<String?>(
               value: _sors,
               isExpanded: true,
@@ -636,22 +654,22 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const Divider(height: 32, color: Colors.white24),
 
-            _buildTobbesKivalaszto(label: 'Csali', elerhetoElemek: _elerhetoCsalik, kivalasztottElemek: _kivalasztottCsalik),
+            _buildTobbesKivalaszto(label: 'Csali', targyEset: 'Csalit', elerhetoElemek: _elerhetoCsalik, kivalasztottElemek: _kivalasztottCsalik),
             const SizedBox(height: 16),
-            _buildTobbesKivalaszto(label: 'Etetőanyag', elerhetoElemek: _elerhetoEtetoanyagok, kivalasztottElemek: _kivalasztottEtetoanyagok),
+            _buildTobbesKivalaszto(label: 'Etetőanyag', targyEset: 'Etetőanyagot', elerhetoElemek: _elerhetoEtetoanyagok, kivalasztottElemek: _kivalasztottEtetoanyagok),
             
             const SizedBox(height: 12),
             TextField(controller: _etetesGyakorisagaCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Etetés gyakorisága (perc)', border: OutlineInputBorder())),
             const Divider(height: 32, color: Colors.white24),
 
-            _buildKereshetoDropdown(label: 'Horgászbot', value: _kivalasztottBot, items: _elerhetoBotok, onChanged: (val) => setState(() => _kivalasztottBot = val)),
+            _buildKereshetoDropdown(label: 'Horgászbot', targyEset: 'Horgászbotot', value: _kivalasztottBot, items: _elerhetoBotok, onChanged: (val) => setState(() => _kivalasztottBot = val)),
             const SizedBox(height: 12),
-            _buildKereshetoDropdown(label: 'Módszer', value: _kivalasztottModszer, items: _elerhetoModszerek, onChanged: (val) => setState(() => _kivalasztottModszer = val)),
+            _buildKereshetoDropdown(label: 'Módszer', targyEset: 'Módszert', value: _kivalasztottModszer, items: _elerhetoModszerek, onChanged: (val) => setState(() => _kivalasztottModszer = val)),
             const SizedBox(height: 12),
-            _buildKereshetoDropdown(label: 'Végszerelék', value: _kivalasztottVegszerelek, items: _elerhetoVegszerelekek, onChanged: (val) => setState(() => _kivalasztottVegszerelek = val)),
+            _buildKereshetoDropdown(label: 'Végszerelék', targyEset: 'Végszereléket', value: _kivalasztottVegszerelek, items: _elerhetoVegszerelekek, onChanged: (val) => setState(() => _kivalasztottVegszerelek = val)),
             const Divider(height: 32, color: Colors.white24),
 
-            _buildKereshetoDropdown(label: 'Időjárás', value: _kivalasztottIdojaras, items: _elerhetoIdojarasok, allowNew: false, onChanged: (val) => setState(() => _kivalasztottIdojaras = val)),
+            _buildKereshetoDropdown(label: 'Időjárás', targyEset: 'Időjárást', value: _kivalasztottIdojaras, items: _elerhetoIdojarasok, allowNew: false, onChanged: (val) => setState(() => _kivalasztottIdojaras = val)),
             const SizedBox(height: 12),
             TextField(
               controller: _homersekletCtrl,
