@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'fogasok.dart';
-import 'vizjel_keszito.dart'; // <--- Új import a vízjel készítőhöz
+import 'vizjel_keszito.dart'; 
 
 class TurakScreen extends StatefulWidget {
   const TurakScreen({super.key});
@@ -161,8 +161,7 @@ class _TurakScreenState extends State<TurakScreen> {
     };
   }
 
-  // --- FRISSÍTVE: Most már megkapja a teljes Tura objektumot a megosztáshoz ---
-  void _teljesKepernyosKep(BuildContext context, Tura tura, String kepUtvonal) {
+  void _teljesKepernyosKep(BuildContext context, Tura tura, String kepUtvonal, String helyszinNev) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -172,10 +171,10 @@ class _TurakScreenState extends State<TurakScreen> {
             backgroundColor: Colors.transparent,
             actions: [
               IconButton(
-                // Ikon cserélve megosztásra
                 icon: const Icon(Icons.share, color: Colors.white),
                 onPressed: () {
-                  VizjelKeszito.turaMegosztasa(context, tura, kepUtvonal);
+                  // Vízjeles képkészítő meghívása a helyszín nevével
+                  VizjelKeszito.turaMegosztasa(context, tura, kepUtvonal, helyszinNev);
                 },
               ),
             ],
@@ -270,8 +269,7 @@ class _TurakScreenState extends State<TurakScreen> {
                             
                             if (tura.boritoKep != null && File(tura.boritoKep!).existsSync())
                               GestureDetector(
-                                // FRISSÍTVE: A tura objektum is átadásra kerül
-                                onTap: () => _teljesKepernyosKep(context, tura, tura.boritoKep!),
+                                onTap: () => _teljesKepernyosKep(context, tura, tura.boritoKep!, helyszinNev),
                                 child: Image.file(File(tura.boritoKep!), height: 180, width: double.infinity, fit: BoxFit.cover),
                               ),
 
