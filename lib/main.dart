@@ -37,7 +37,6 @@ class HorgaszNaploApp extends StatelessWidget {
   }
 }
 
-// --- SPLASH SCREEN ---
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -65,11 +64,9 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
-      // A SizedBox.expand kitölti a rendelkezésre álló teljes képernyőt
       body: SizedBox.expand(
         child: Image.asset(
           'assets/2825.png',
-          // A BoxFit.cover gondoskodik róla, hogy a kép arányosan kitöltse a kijelzőt
           fit: BoxFit.cover,
         ),
       ),
@@ -77,7 +74,6 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// --- FŐMENÜ / ALSÓ NAVIGÁCIÓS KERET & HAMBURGER MENÜ (DRAWER) ---
 class FomenuScreen extends StatefulWidget {
   const FomenuScreen({super.key});
 
@@ -133,11 +129,12 @@ class _FomenuScreenState extends State<FomenuScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // JAVÍTVA A SORREND
                     _buildInfoSor(Colors.green, 'Fogható (Őshonos)', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
                     _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
+                    _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
                     _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem állnak szigorú természetvédelmi oltalom alatt, de a halgazdálkodási törvény (és a MOHOSZ Országos Horgászrendje) állományvédelmi okokból tiltja a kifogásukat és az elvitelüket. Kifogásuk esetén ugyanúgy azonnal és kíméletesen vissza kell őket engedni a vízbe.'),
                     _buildInfoSor(Colors.blue, 'Védett', 'A természetvédelmi törvény hatálya alá tartoznak. Ezeknek a halaknak hivatalos, pénzben kifejezett természetvédelmi (eszmei) értékük van (pl. 10 000 Ft-tól akár 250 000 Ft-ig). Kifejezetten ritka, veszélyeztetett, vagy bennszülött (endemikus) fajok. Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
-                    _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
                   ],
                 ),
               ),
