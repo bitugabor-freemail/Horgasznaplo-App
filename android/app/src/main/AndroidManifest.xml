@@ -5,6 +5,13 @@
     <!-- INTERNET ENGEDÉLY AZ IDŐJÁRÁS API-HOZ -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Engedélyek a Vízjeles képek mentéséhez és képek kiválasztásához -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    
+    <!-- Kamera engedély -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:label="Horgásznapló"
         android:name="${applicationName}"
