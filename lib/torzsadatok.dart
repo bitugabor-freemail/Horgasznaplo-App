@@ -31,6 +31,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   ];
   
   String _kivKategoria = 'Halfaj';
+  String _keresesSzoveg = ''; // ÚJ: Keresőhöz
   
   List<Halfaj> _halfajok = [];
   List<Helyszin> _helyszinek = [];
@@ -224,7 +225,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     );
   }
 
-  void _adatTorlese(int index) {
+  void _adatTorlese(int valodiIndex) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -237,32 +238,32 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
             onPressed: () async {
               if (_kivKategoria == 'Halfaj') {
-                String toroltNev = _halfajok[index].nev;
-                _halfajok.removeAt(index);
+                String toroltNev = _halfajok[valodiIndex].nev;
+                _halfajok.removeAt(valodiIndex);
                 await AdatTarolo.halfajokMentes(_halfajok);
                 await AdatTarolo.torzsadatTorles(_kivKategoria, toroltNev);
                 
               } else if (_kivKategoria == 'Helyszín') {
-                String toroltId = _helyszinek[index].id;
-                _helyszinek.removeAt(index);
+                String toroltId = _helyszinek[valodiIndex].id;
+                _helyszinek.removeAt(valodiIndex);
                 await AdatTarolo.helyszinekMentes(_helyszinek);
                 await AdatTarolo.torzsadatTorles(_kivKategoria, toroltId); 
                 
               } else if (_kivKategoria == 'Felszerelés Kategória') {
-                bool inUse = _felszTetelek.any((t) => t.kategoriaId == _felszKategoriak[index].id);
+                bool inUse = _felszTetelek.any((t) => t.kategoriaId == _felszKategoriak[valodiIndex].id);
                 if (inUse) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nem törölhető, mert vannak benne tételek!')));
                   return;
                 }
-                _felszKategoriak.removeAt(index);
+                _felszKategoriak.removeAt(valodiIndex);
                 await AdatTarolo.felszerelesKategoriakMentes(_felszKategoriak);
               } else if (_kivKategoria == 'Felszerelés Tétel') {
-                _felszTetelek.removeAt(index);
+                _felszTetelek.removeAt(valodiIndex);
                 await AdatTarolo.felszerelesTetelekMentes(_felszTetelek);
               } else {
-                String toroltNev = _simaLista[index];
-                _simaLista.removeAt(index);
+                String toroltNev = _simaLista[valodiIndex];
+                _simaLista.removeAt(valodiIndex);
                 await _simaAdatMentes();
                 await AdatTarolo.torzsadatTorles(_kivKategoria, toroltNev);
               }
@@ -408,6 +409,20 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   Widget build(BuildContext context) {
     bool mutatFogaskereket = ['Halfaj', 'Időjárás', 'Hal sorsa', 'Felszerelés Kategóriák'].contains(_kivKategoria);
 
+    // Keresés alapján szűrt lista előállítása
+    List<dynamic> szurtAdatok = [];
+    if (_kivKategoria == 'Halfaj') {
+      szurtAdatok = _halfajok.where((h) => h.nev.toLowerCase().contains(_keresesSzoveg.toLowerCase())).toList();
+    } else if (_kivKategoria == 'Helyszín') {
+      szurtAdatok = _helyszinek.where((h) => h.nev.toLowerCase().contains(_keresesSzoveg.toLowerCase())).toList();
+    } else if (_kivKategoria == 'Felszerelés Kategória') {
+      szurtAdatok = _felszKategoriak.where((k) => k.nev.toLowerCase().contains(_keresesSzoveg.toLowerCase())).toList();
+    } else if (_kivKategoria == 'Felszerelés Tétel') {
+      szurtAdatok = _felszTetelek.where((t) => t.nev.toLowerCase().contains(_keresesSzoveg.toLowerCase())).toList();
+    } else {
+      szurtAdatok = _simaLista.where((s) => s.toLowerCase().contains(_keresesSzoveg.toLowerCase())).toList();
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Törzsadatok Kezelése')),
       body: Stack(
@@ -417,56 +432,80 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 color: const Color(0xFF161616),
-                child: Row(
+                child: Column(
                   children: [
-                    const Text('Kategória:', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: _kivKategoria,
-                        isExpanded: true,
-                        dropdownColor: const Color(0xFF1E1E1E),
-                        items: _kategoriak.map((k) => DropdownMenuItem(value: k, child: Text(k, style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)))).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _kivKategoria = val);
-                            _adatokBetoltese();
-                          }
-                        },
-                      ),
+                    Row(
+                      children: [
+                        const Text('Kategória:', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: _kivKategoria,
+                            isExpanded: true,
+                            dropdownColor: const Color(0xFF1E1E1E),
+                            items: _kategoriak.map((k) => DropdownMenuItem(value: k, child: Text(k, style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)))).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _kivKategoria = val;
+                                  _keresesSzoveg = ''; // Váltáskor nullázzuk a keresést
+                                });
+                                _adatokBetoltese();
+                              }
+                            },
+                          ),
+                        ),
+                        if (mutatFogaskereket)
+                          IconButton(
+                            icon: const Icon(Icons.settings, color: Colors.white54),
+                            onPressed: _mutassOkosMenut,
+                          ),
+                      ],
                     ),
-                    if (mutatFogaskereket)
-                      IconButton(
-                        icon: const Icon(Icons.settings, color: Colors.white54),
-                        onPressed: _mutassOkosMenut,
+                    const SizedBox(height: 8),
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Keresés a listában...',
+                        prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       ),
+                      onChanged: (val) => setState(() => _keresesSzoveg = val),
+                    ),
                   ],
                 ),
               ),
               Expanded(
-                child: ListView.builder(
+                child: szurtAdatok.isEmpty 
+                  ? const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)))
+                  : ListView.builder(
                   padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 80),
-                  itemCount: _kivKategoria == 'Halfaj' ? _halfajok.length :
-                             _kivKategoria == 'Helyszín' ? _helyszinek.length :
-                             _kivKategoria == 'Felszerelés Kategória' ? _felszKategoriak.length :
-                             _kivKategoria == 'Felszerelés Tétel' ? _felszTetelek.length : _simaLista.length,
+                  itemCount: szurtAdatok.length,
                   itemBuilder: (context, index) {
                     String megjelenitettNev = '';
                     String alcim = '';
+                    int valodiIndex = -1;
                     
                     if (_kivKategoria == 'Halfaj') {
-                      megjelenitettNev = _halfajok[index].nev;
+                      valodiIndex = _halfajok.indexOf(szurtAdatok[index] as Halfaj);
+                      megjelenitettNev = _halfajok[valodiIndex].nev;
                     } else if (_kivKategoria == 'Helyszín') {
-                      megjelenitettNev = _helyszinek[index].nev;
+                      valodiIndex = _helyszinek.indexOf(szurtAdatok[index] as Helyszin);
+                      megjelenitettNev = _helyszinek[valodiIndex].nev;
                     } else if (_kivKategoria == 'Felszerelés Kategória') {
-                      megjelenitettNev = _felszKategoriak[index].nev;
+                      valodiIndex = _felszKategoriak.indexOf(szurtAdatok[index] as FelszerelesKategoria);
+                      megjelenitettNev = _felszKategoriak[valodiIndex].nev;
                     } else if (_kivKategoria == 'Felszerelés Tétel') {
-                      final tetel = _felszTetelek[index];
+                      valodiIndex = _felszTetelek.indexOf(szurtAdatok[index] as FelszerelesTetel);
+                      final tetel = _felszTetelek[valodiIndex];
                       megjelenitettNev = tetel.nev;
                       final kat = _felszKategoriak.firstWhere((k) => k.id == tetel.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: 'Ismeretlen'));
                       alcim = kat.nev;
                     } else {
-                      megjelenitettNev = _simaLista[index];
+                      valodiIndex = _simaLista.indexOf(szurtAdatok[index] as String);
+                      megjelenitettNev = _simaLista[valodiIndex];
                     }
 
                     return Card(
@@ -483,10 +522,10 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                               onPressed: () {
                                 if (_kivKategoria == 'Halfaj') {
                                   Navigator.push(context, MaterialPageRoute(builder: (context) => HalfajSzerkesztoScreen(
-                                    szerkeszthetoHalfaj: _halfajok[index],
+                                    szerkeszthetoHalfaj: _halfajok[valodiIndex],
                                     mentesCallback: (modositottHal) async {
-                                      String regiNev = _halfajok[index].nev;
-                                      _halfajok[index] = modositottHal;
+                                      String regiNev = _halfajok[valodiIndex].nev;
+                                      _halfajok[valodiIndex] = modositottHal;
                                       await AdatTarolo.halfajokMentes(_halfajok);
                                       if (regiNev != modositottHal.nev) {
                                         await AdatTarolo.torzsadatNevFrissites('Halfaj', regiNev, modositottHal.nev);
@@ -497,21 +536,21 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                                 } else if (_kivKategoria == 'Felszerelés Tétel') {
                                   Navigator.push(context, MaterialPageRoute(builder: (context) => TetelSzerkesztoScreen(
                                     kategoriak: _felszKategoriak,
-                                    szerkeszthetoTetel: _felszTetelek[index],
+                                    szerkeszthetoTetel: _felszTetelek[valodiIndex],
                                     mentesCallback: () => _adatokBetoltese(),
                                   )));
                                 } else if (_kivKategoria == 'Felszerelés Kategória') {
-                                  _felszerelesKategoriaHozzaadas(_felszKategoriak[index], index);
+                                  _felszerelesKategoriaHozzaadas(_felszKategoriak[valodiIndex], valodiIndex);
                                 } else if (_kivKategoria == 'Helyszín') {
-                                  _helyszinHozzaadasVagySzerkesztes(_helyszinek[index], index);
+                                  _helyszinHozzaadasVagySzerkesztes(_helyszinek[valodiIndex], valodiIndex);
                                 } else {
-                                  _simaAdatHozzaadasVagySzerkesztes(_simaLista[index], index);
+                                  _simaAdatHozzaadasVagySzerkesztes(_simaLista[valodiIndex], valodiIndex);
                                 }
                               },
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.redAccent),
-                              onPressed: () => _adatTorlese(index),
+                              onPressed: () => _adatTorlese(valodiIndex),
                             ),
                           ],
                         ),
@@ -587,7 +626,8 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
   List<String> _kepek = []; 
 
   final List<String> _kategoriak = ['Békés', 'Ragadozó'];
-  final List<String> _statuszok = ['Fogható (Őshonos)', 'Fogható (Idegenhonos)', 'Nem fogható', 'Védett', 'Inváziós'];
+  // JAVÍTVA A STATUSZOK SORRENDJE
+  final List<String> _statuszok = ['Fogható (Őshonos)', 'Fogható (Idegenhonos)', 'Inváziós', 'Nem fogható', 'Védett'];
 
   @override
   void initState() {
@@ -651,11 +691,12 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // JAVÍTVA A SORREND ITT IS
                     _buildInfoSor(Colors.green, 'Fogható (Őshonos)', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
                     _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
+                    _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
                     _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem állnak szigorú természetvédelmi oltalom alatt, de a halgazdálkodási törvény (és a MOHOSZ Országos Horgászrendje) állományvédelmi okokból tiltja a kifogásukat és az elvitelüket. Kifogásuk esetén ugyanúgy azonnal és kíméletesen vissza kell őket engedni a vízbe.'),
                     _buildInfoSor(Colors.blue, 'Védett', 'A természetvédelmi törvény hatálya alá tartoznak. Ezeknek a halaknak hivatalos, pénzben kifejezett természetvédelmi (eszmei) értékük van (pl. 10 000 Ft-tól akár 250 000 Ft-ig). Kifejezetten ritka, veszélyeztetett, vagy bennszülött (endemikus) fajok. Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
-                    _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
                   ],
                 ),
               ),
