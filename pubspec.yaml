@@ -26,7 +26,7 @@ dependencies:
   
   # --- EGYÉB (Pl. Időjárás lekéréshez) ---
   http: ^1.2.1
-  geolocator: ^13.0.0 # <-- Ezt a sort adtam hozzá a GPS lekéréshez!
+  geolocator: ^13.0.0
 
 dev_dependencies:
   flutter_test:
@@ -38,12 +38,11 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false # iOS kikapcsolva a korábbi build hiba miatt
-  image_path: "assets/2825.png" # Cseréld le a pontos logód nevére, ha nem ez az!
+  image_path: "assets/small_logo.png" # <-- ITT JAVÍTVA AZ IKON ELÉRÉSI ÚTJA!
   min_sdk_android: 21
 
 flutter:
   uses-material-design: true
 
-  # --- ITT VAN A MEGOLDÁS A HIÁNYZÓ LOGÓRA ---
   assets:
     - assets/
