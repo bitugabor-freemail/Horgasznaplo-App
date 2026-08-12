@@ -450,7 +450,13 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
   Future<void> _adatokBetoltese() async {
     _helyszinek = await AdatTarolo.helyszinekBetoltese();
+    // ABC sorrend Helyszíneknek
+    _helyszinek.sort((a, b) => a.nev.toLowerCase().compareTo(b.nev.toLowerCase()));
+    
     _elerhetoTarsak = await AdatTarolo.tarsakBetoltese();
+    // ABC sorrend Társaknak
+    _elerhetoTarsak.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    
     setState(() {});
   }
 
@@ -482,6 +488,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                   vizterKod: kodCtrl.text.trim(),
                 );
                 _helyszinek.add(ujHelyszin);
+                _helyszinek.sort((a, b) => a.nev.toLowerCase().compareTo(b.nev.toLowerCase()));
                 await AdatTarolo.helyszinekMentes(_helyszinek);
                 setState(() {
                   _kivalasztottHelyszinId = ujHelyszin.id;
@@ -513,6 +520,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                 final nev = ctrl.text.trim();
                 if (!_elerhetoTarsak.contains(nev)) {
                   _elerhetoTarsak.add(nev);
+                  _elerhetoTarsak.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
                   await AdatTarolo.tarsakMentes(_elerhetoTarsak);
                 }
                 if (!_kivalasztottTarsak.contains(nev)) {
@@ -526,6 +534,154 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // --- HELYSZÍN KERESŐ ABLAK ---
+  Future<void> _mutasHelyszinKereso() async {
+    String kereses = '';
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final szurt = _helyszinek.where((h) => h.nev.toLowerCase().contains(kereses.toLowerCase())).toList();
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.6,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: Text('Helyszín kiválasztása', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextField(
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Keresés...',
+                          prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onChanged: (val) => setModalState(() => kereses = val),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      leading: const Icon(Icons.add_circle, color: Colors.greenAccent),
+                      title: const Text('➕ Új helyszín hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _ujHelyszinHozzaadaskor();
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.clear, color: Colors.redAccent),
+                      title: const Text('-- Nincs megadva --', style: TextStyle(color: Colors.redAccent)),
+                      onTap: () {
+                        setState(() => _kivalasztottHelyszinId = null);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const Divider(color: Colors.white24),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: szurt.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            title: Text(szurt[index].nev),
+                            onTap: () {
+                              setState(() => _kivalasztottHelyszinId = szurt[index].id);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // --- TÁRS KERESŐ ABLAK ---
+  Future<void> _mutasTarsKereso() async {
+    String kereses = '';
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final szurt = _elerhetoTarsak.where((t) => t.toLowerCase().contains(kereses.toLowerCase())).toList();
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.6,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: Text('Horgásztárs kiválasztása', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextField(
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Keresés...',
+                          prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onChanged: (val) => setModalState(() => kereses = val),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      leading: const Icon(Icons.add_circle, color: Colors.greenAccent),
+                      title: const Text('➕ Új horgásztárs hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _ujTarsHozzaadaskor();
+                      },
+                    ),
+                    const Divider(color: Colors.white24),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: szurt.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            title: Text(szurt[index]),
+                            onTap: () {
+                              if (!_kivalasztottTarsak.contains(szurt[index])) {
+                                setState(() => _kivalasztottTarsak.add(szurt[index]));
+                              }
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -556,6 +712,10 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String? aktHelyszinNev = _kivalasztottHelyszinId == null 
+        ? null 
+        : _helyszinek.cast<Helyszin?>().firstWhere((h) => h?.id == _kivalasztottHelyszinId, orElse: () => null)?.nev;
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.szerkeszthetoTura == null ? 'Új Túra Rögzítése' : 'Túra Szerkesztése')),
       body: SingleChildScrollView(
@@ -590,22 +750,20 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            DropdownButtonFormField<String?>(
-              value: _kivalasztottHelyszinId,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Helyszín (Opcionális)', border: OutlineInputBorder()),
-              items: [
-                const DropdownMenuItem<String?>(value: null, child: Text('-- Nincs megadva --')),
-                ..._helyszinek.map((h) => DropdownMenuItem<String?>(value: h.id, child: Text(h.nev))),
-                const DropdownMenuItem<String?>(value: 'UJ_HELYSZIN', child: Text('➕ Új helyszín hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold))),
-              ],
-              onChanged: (val) {
-                if (val == 'UJ_HELYSZIN') {
-                  _ujHelyszinHozzaadaskor();
-                } else {
-                  setState(() => _kivalasztottHelyszinId = val);
-                }
-              },
+            // Kereshető Helyszín választó
+            InkWell(
+              onTap: _mutasHelyszinKereso,
+              borderRadius: BorderRadius.circular(4),
+              child: InputDecorator(
+                decoration: const InputDecoration(labelText: 'Helyszín (Opcionális)', border: OutlineInputBorder()),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(aktHelyszinNev ?? '-- Nincs megadva --', style: TextStyle(color: aktHelyszinNev == null ? Colors.white54 : Colors.white))),
+                    const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -617,20 +775,19 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<String?>(
-                    value: null,
-                    isExpanded: true,
-                    hint: const Text('Válassz horgásztársat...'),
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                    items: [
-                      const DropdownMenuItem<String?>(value: null, child: Text('-- Válassz társat --')),
-                      ..._elerhetoTarsak.map((t) => DropdownMenuItem<String?>(value: t, child: Text(t))),
-                    ],
-                    onChanged: (val) {
-                      if (val != null && !_kivalasztottTarsak.contains(val)) {
-                        setState(() => _kivalasztottTarsak.add(val));
-                      }
-                    },
+                  child: InkWell(
+                    onTap: _mutasTarsKereso,
+                    borderRadius: BorderRadius.circular(4),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text('Válassz horgásztársat...', style: TextStyle(color: Colors.white54)),
+                          Icon(Icons.arrow_drop_down, color: Colors.white70),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -671,7 +828,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                 final picker = ImagePicker();
                 final image = await picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
-                  // ITT TÖRTÉNIK A VARÁZSLAT: Biztonságos másolás
                   String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
                   setState(() => _boritokepUtvonal = biztonsagosUtvonal);
                 }
