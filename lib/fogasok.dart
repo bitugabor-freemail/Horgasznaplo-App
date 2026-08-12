@@ -6,7 +6,7 @@ import 'adattarolo.dart';
 import 'modellek.dart';
 import 'idojaras_szolgaltato.dart';
 import 'torzsadatok.dart'; 
-import 'vizjel_keszito.dart'; // <--- Új import a vízjel készítőhöz
+import 'vizjel_keszito.dart';
 
 class FogasokScreen extends StatefulWidget {
   final Tura tura;
@@ -639,11 +639,10 @@ class FogasReszletekScreen extends StatelessWidget {
             backgroundColor: Colors.transparent,
             actions: [
               IconButton(
-                // Ikon cserélve letöltésről megosztásra
                 icon: const Icon(Icons.share, color: Colors.white),
                 onPressed: () {
-                  // Vízjeles képkészítő meghívása
-                  VizjelKeszito.fogasMegosztasa(context, fogas, fogas.fenykep!);
+                  // Vízjeles képkészítő meghívása a helyszín nevével
+                  VizjelKeszito.fogasMegosztasa(context, fogas, fogas.fenykep!, helyszinNev);
                 },
               ),
             ],
