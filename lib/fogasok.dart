@@ -6,6 +6,7 @@ import 'adattarolo.dart';
 import 'modellek.dart';
 import 'idojaras_szolgaltato.dart';
 import 'torzsadatok.dart'; 
+import 'vizjel_keszito.dart'; // <--- Új import a vízjel készítőhöz
 
 class FogasokScreen extends StatefulWidget {
   final Tura tura;
@@ -638,11 +639,11 @@ class FogasReszletekScreen extends StatelessWidget {
             backgroundColor: Colors.transparent,
             actions: [
               IconButton(
-                icon: const Icon(Icons.download, color: Colors.white),
+                // Ikon cserélve letöltésről megosztásra
+                icon: const Icon(Icons.share, color: Colors.white),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Kép sikeresen letöltve vízjellel a Galériába!')),
-                  );
+                  // Vízjeles képkészítő meghívása
+                  VizjelKeszito.fogasMegosztasa(context, fogas, fogas.fenykep!);
                 },
               ),
             ],
