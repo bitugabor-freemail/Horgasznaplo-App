@@ -94,7 +94,6 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
     return {'helyszin': 'Ismeretlen helyszín', 'horgaszhely': ''};
   }
 
-  // --- Segédfüggvény a navigációkhoz ---
   void _reszletekMegnyitasa(FogasModel fogas, String helyszinNev, String horgaszhely) {
     Navigator.push(
       context,
@@ -109,16 +108,23 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
   }
 
   void _szerkesztesMegnyitasa(FogasModel fogas) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FogasSzerkesztoScreen(
-          turaId: fogas.turaId,
-          szerkeszthetoFogas: fogas,
-          mentesCallback: () => _adatokBetoltese(),
+    // --- JAVÍTVA: Megkeressük a teljes Túra objektumot a fogáshoz, és azt adjuk át ---
+    final tura = _osszesTura.cast<Tura?>().firstWhere((t) => t?.id == fogas.turaId, orElse: () => null);
+    
+    if (tura != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FogasSzerkesztoScreen(
+            tura: tura, // Itt már a tura objektumot adjuk át a turaId helyett!
+            szerkeszthetoFogas: fogas,
+            mentesCallback: () => _adatokBetoltese(),
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hiba: A túra nem található!'), backgroundColor: Colors.redAccent));
+    }
   }
 
   @override
@@ -157,7 +163,6 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(color: keretSzin, width: keretSzin == Colors.transparent ? 0 : 2),
                   ),
-                  // --- 5. PONT: EGÉSZ KÁRTYÁS KATTINTÁS ---
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () => _reszletekMegnyitasa(fogas, turaHelyszin, turaHorgaszhely),
@@ -207,7 +212,6 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                               Row(
                                 children: [
                                   IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _fogasTorles(fogas)),
-                                  // --- 8. PONT: SZERKESZTHETŐSÉG ENGEDÉLYEZÉSE ---
                                   IconButton(
                                     icon: const Icon(Icons.edit_outlined, color: Colors.white70),
                                     onPressed: () => _szerkesztesMegnyitasa(fogas),
@@ -215,7 +219,6 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                                   IconButton(icon: const Icon(Icons.favorite, color: Colors.red), onPressed: () => _kedvencEltavolitas(fogas)),
                                 ],
                               ),
-                              // --- 7. PONT: RÉSZLETES NÉZET BEKÖTÉSE ---
                               IconButton(
                                 icon: const Icon(Icons.visibility, color: Colors.greenAccent),
                                 onPressed: () => _reszletekMegnyitasa(fogas, turaHelyszin, turaHorgaszhely),
