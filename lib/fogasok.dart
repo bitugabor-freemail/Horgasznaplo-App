@@ -299,11 +299,23 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
 
   Future<void> _adatokBetoltese() async {
     _elerhetoHalfajok = await AdatTarolo.halfajokBetoltese();
+    _elerhetoHalfajok.sort((a, b) => a.nev.toLowerCase().compareTo(b.nev.toLowerCase()));
+    
     _elerhetoBotok = await AdatTarolo.botokBetoltese();
+    _elerhetoBotok.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    
     _elerhetoModszerek = await AdatTarolo.modszerekBetoltese();
+    _elerhetoModszerek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    
     _elerhetoVegszerelekek = await AdatTarolo.szerelekekBetoltese();
+    _elerhetoVegszerelekek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    
     _elerhetoCsalik = await AdatTarolo.csalikBetoltese();
+    _elerhetoCsalik.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    
     _elerhetoEtetoanyagok = await AdatTarolo.etetoanyagokBetoltese();
+    _elerhetoEtetoanyagok.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    
     _elerhetoIdojarasok = await AdatTarolo.idojarasBetoltese();
     
     List<String> mentettSorsok = await AdatTarolo.sorsBetoltese();
@@ -345,11 +357,11 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             onPressed: () async {
               if (ctrl.text.trim().isNotEmpty) {
                 final nev = ctrl.text.trim();
-                if (kategoria == 'Horgászbot') { _elerhetoBotok.add(nev); await AdatTarolo.botokMentes(_elerhetoBotok); }
-                if (kategoria == 'Módszer') { _elerhetoModszerek.add(nev); await AdatTarolo.modszerekMentes(_elerhetoModszerek); }
-                if (kategoria == 'Végszerelék') { _elerhetoVegszerelekek.add(nev); await AdatTarolo.szerelekekMentes(_elerhetoVegszerelekek); }
-                if (kategoria == 'Csali') { _elerhetoCsalik.add(nev); await AdatTarolo.csalikMentes(_elerhetoCsalik); }
-                if (kategoria == 'Etetőanyag') { _elerhetoEtetoanyagok.add(nev); await AdatTarolo.etetoanyagokMentes(_elerhetoEtetoanyagok); }
+                if (kategoria == 'Horgászbot') { _elerhetoBotok.add(nev); _elerhetoBotok.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.botokMentes(_elerhetoBotok); }
+                if (kategoria == 'Módszer') { _elerhetoModszerek.add(nev); _elerhetoModszerek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.modszerekMentes(_elerhetoModszerek); }
+                if (kategoria == 'Végszerelék') { _elerhetoVegszerelekek.add(nev); _elerhetoVegszerelekek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.szerelekekMentes(_elerhetoVegszerelekek); }
+                if (kategoria == 'Csali') { _elerhetoCsalik.add(nev); _elerhetoCsalik.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.csalikMentes(_elerhetoCsalik); }
+                if (kategoria == 'Etetőanyag') { _elerhetoEtetoanyagok.add(nev); _elerhetoEtetoanyagok.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.etetoanyagokMentes(_elerhetoEtetoanyagok); }
                 
                 onAdded(nev);
                 setState(() {});
@@ -363,32 +375,120 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  Widget _buildDropdown({required String label, required String? value, required List<String> items, required Function(String?) onChanged, bool allowNew = true}) {
-    return DropdownButtonFormField<String?>(
-      value: value,
-      isExpanded: true,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-      items: [
-        DropdownMenuItem<String?>(value: null, child: const Text('-- Nincs kiválasztva --')),
-        ...items.map((i) => DropdownMenuItem<String?>(value: i, child: Text(i))),
-        if (allowNew)
-          DropdownMenuItem<String?>(value: 'UJ_HOZZAADASA', child: Text('➕ Új $label', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold))),
-      ],
-      onChanged: (val) {
-        if (val == 'UJ_HOZZAADASA') {
-          _ujTorzsadatHozzaadas(label, (ujNev) => onChanged(ujNev));
-        } else {
-          onChanged(val);
-        }
+  // --- UNIVERZÁLIS KERESŐ ABLAK A DROPDOWNOK HELYETT ---
+  Future<void> _mutasKereshetoAblak(String cim, List<String> elemek, Function(String?) onKivalasztva, bool allowNew) async {
+    String kereses = '';
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final szurt = elemek.where((e) => e.toLowerCase().contains(kereses.toLowerCase())).toList();
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.6,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: Text('$cim kiválasztása', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextField(
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Keresés...',
+                          prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onChanged: (val) => setModalState(() => kereses = val),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (allowNew)
+                      ListTile(
+                        leading: const Icon(Icons.add_circle, color: Colors.greenAccent),
+                        title: Text('➕ Új $cim hozzáadása', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          if (cim == 'Halfaj') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HalfajSzerkesztoScreen(
+                                  mentesCallback: (ujHal) async {
+                                    _elerhetoHalfajok.add(ujHal);
+                                    _elerhetoHalfajok.sort((a, b) => a.nev.toLowerCase().compareTo(b.nev.toLowerCase()));
+                                    await AdatTarolo.halfajokMentes(_elerhetoHalfajok);
+                                    onKivalasztva(ujHal.nev);
+                                    setState(() {});
+                                  },
+                                ),
+                              ),
+                            );
+                          } else {
+                            _ujTorzsadatHozzaadas(cim, (ujNev) => onKivalasztva(ujNev));
+                          }
+                        },
+                      ),
+                    ListTile(
+                      leading: const Icon(Icons.clear, color: Colors.redAccent),
+                      title: const Text('-- Nincs kiválasztva --', style: TextStyle(color: Colors.redAccent)),
+                      onTap: () {
+                        onKivalasztva(null);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const Divider(color: Colors.white24),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: szurt.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            title: Text(szurt[index]),
+                            onTap: () {
+                              onKivalasztva(szurt[index]);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }
 
-  Widget _buildTobbesKivalaszto({
-    required String label,
-    required List<String> elerhetoElemek,
-    required List<String> kivalasztottElemek,
-  }) {
+  // --- KIVÁLASZTÓ KÁRTYÁK UI ÉPÍTŐI ---
+  Widget _buildKereshetoDropdown({required String label, required String? value, required List<String> items, required Function(String?) onChanged, bool allowNew = true}) {
+    return InkWell(
+      onTap: () => _mutasKereshetoAblak(label, items, onChanged, allowNew),
+      borderRadius: BorderRadius.circular(4),
+      child: InputDecorator(
+        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: Text(value ?? '-- Nincs kiválasztva --', style: TextStyle(color: value == null ? Colors.white54 : Colors.white))),
+            const Icon(Icons.arrow_drop_down, color: Colors.white70),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTobbesKivalaszto({required String label, required List<String> elerhetoElemek, required List<String> kivalasztottElemek}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -397,20 +497,23 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
         Row(
           children: [
             Expanded(
-              child: DropdownButtonFormField<String?>(
-                value: null,
-                isExpanded: true,
-                hint: Text('Válassz $label...'),
-                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                items: [
-                  const DropdownMenuItem<String?>(value: null, child: Text('-- Válassz --')),
-                  ...elerhetoElemek.map((e) => DropdownMenuItem<String?>(value: e, child: Text(e))),
-                ],
-                onChanged: (val) {
+              child: InkWell(
+                onTap: () => _mutasKereshetoAblak(label, elerhetoElemek, (val) {
                   if (val != null && !kivalasztottElemek.contains(val)) {
                     setState(() => kivalasztottElemek.add(val));
                   }
-                },
+                }, true),
+                borderRadius: BorderRadius.circular(4),
+                child: InputDecorator(
+                  decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Válassz $label...', style: const TextStyle(color: Colors.white54)),
+                      const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                    ],
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -503,35 +606,11 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            DropdownButtonFormField<String?>(
+            _buildKereshetoDropdown(
+              label: 'Halfaj',
               value: _kivalasztottHalfaj,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Halfaj', border: OutlineInputBorder()),
-              items: [
-                const DropdownMenuItem<String?>(value: null, child: Text('-- Válassz halfajt --')),
-                ..._elerhetoHalfajok.map((h) => DropdownMenuItem<String?>(value: h.nev, child: Text(h.nev))),
-                const DropdownMenuItem<String?>(value: 'UJ_HALFAJ', child: Text('➕ Új halfaj hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold))),
-              ],
-              onChanged: (val) {
-                if (val == 'UJ_HALFAJ') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HalfajSzerkesztoScreen(
-                        mentesCallback: (ujHal) async {
-                          _elerhetoHalfajok.add(ujHal);
-                          await AdatTarolo.halfajokMentes(_elerhetoHalfajok);
-                          setState(() {
-                            _kivalasztottHalfaj = ujHal.nev;
-                          });
-                        },
-                      ),
-                    ),
-                  );
-                } else {
-                  setState(() => _kivalasztottHalfaj = val);
-                }
-              },
+              items: _elerhetoHalfajok.map((h) => h.nev).toList(),
+              onChanged: (val) => setState(() => _kivalasztottHalfaj = val),
             ),
             const SizedBox(height: 16),
 
@@ -544,7 +623,17 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            _buildDropdown(label: 'Hal sorsa', value: _sors, items: _elerhetoSorsok, allowNew: false, onChanged: (val) { if (val != null) setState(() => _sors = val); }),
+            // Hal sorsánál maradt a klasszikus lenyíló, hiszen ott csak 3 elem van (nem kell kereső)
+            DropdownButtonFormField<String?>(
+              value: _sors,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Hal sorsa', border: OutlineInputBorder()),
+              items: [
+                const DropdownMenuItem<String?>(value: null, child: Text('-- Nincs kiválasztva --')),
+                ..._elerhetoSorsok.map((s) => DropdownMenuItem<String?>(value: s, child: Text(s))),
+              ],
+              onChanged: (val) { if (val != null) setState(() => _sors = val); },
+            ),
             const Divider(height: 32, color: Colors.white24),
 
             _buildTobbesKivalaszto(label: 'Csali', elerhetoElemek: _elerhetoCsalik, kivalasztottElemek: _kivalasztottCsalik),
@@ -555,14 +644,14 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             TextField(controller: _etetesGyakorisagaCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Etetés gyakorisága (perc)', border: OutlineInputBorder())),
             const Divider(height: 32, color: Colors.white24),
 
-            _buildDropdown(label: 'Horgászbot', value: _kivalasztottBot, items: _elerhetoBotok, onChanged: (val) => setState(() => _kivalasztottBot = val)),
+            _buildKereshetoDropdown(label: 'Horgászbot', value: _kivalasztottBot, items: _elerhetoBotok, onChanged: (val) => setState(() => _kivalasztottBot = val)),
             const SizedBox(height: 12),
-            _buildDropdown(label: 'Módszer', value: _kivalasztottModszer, items: _elerhetoModszerek, onChanged: (val) => setState(() => _kivalasztottModszer = val)),
+            _buildKereshetoDropdown(label: 'Módszer', value: _kivalasztottModszer, items: _elerhetoModszerek, onChanged: (val) => setState(() => _kivalasztottModszer = val)),
             const SizedBox(height: 12),
-            _buildDropdown(label: 'Végszerelék', value: _kivalasztottVegszerelek, items: _elerhetoVegszerelekek, onChanged: (val) => setState(() => _kivalasztottVegszerelek = val)),
+            _buildKereshetoDropdown(label: 'Végszerelék', value: _kivalasztottVegszerelek, items: _elerhetoVegszerelekek, onChanged: (val) => setState(() => _kivalasztottVegszerelek = val)),
             const Divider(height: 32, color: Colors.white24),
 
-            _buildDropdown(label: 'Időjárás', value: _kivalasztottIdojaras, items: _elerhetoIdojarasok, allowNew: false, onChanged: (val) => setState(() => _kivalasztottIdojaras = val)),
+            _buildKereshetoDropdown(label: 'Időjárás', value: _kivalasztottIdojaras, items: _elerhetoIdojarasok, allowNew: false, onChanged: (val) => setState(() => _kivalasztottIdojaras = val)),
             const SizedBox(height: 12),
             TextField(
               controller: _homersekletCtrl,
