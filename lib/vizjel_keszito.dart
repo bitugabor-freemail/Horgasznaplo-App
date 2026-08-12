@@ -4,20 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'modellek.dart'; // Ide importáld a modelljeidet (Tura, Fogas stb.)
+import 'package:intl/intl.dart';
+import 'modellek.dart'; 
 
 class VizjelKeszito {
   
   // --- FOGÁS MEGOSZTÁSA ---
-  static Future<void> fogasMegosztasa(BuildContext context, Fogas fogas, String kepUtvonal) async {
+  static Future<void> fogasMegosztasa(BuildContext context, FogasModel fogas, String kepUtvonal, String helyszinNev) async {
     _mutasToltes(context);
     try {
-      final textTopLeft = '${fogas.datum}\n${fogas.helyszin.isNotEmpty ? fogas.helyszin : ''}'.trim();
+      String formazottDatum = DateFormat('yyyy.MM.dd.').format(fogas.datum);
+      final textTopLeft = '$formazottDatum\n${helyszinNev != 'Ismeretlen helyszín' ? helyszinNev : ''}'.trim();
       
       String textTopRight = fogas.halfaj;
       List<String> parameterek = [];
-      if (fogas.suly > 0) parameterek.add('${fogas.suly} kg');
-      if (fogas.hossz > 0) parameterek.add('${fogas.hossz} cm');
+      if (fogas.suly != null && fogas.suly! > 0) parameterek.add('${fogas.suly} kg');
+      if (fogas.hossz != null && fogas.hossz! > 0) parameterek.add('${fogas.hossz} cm');
       if (parameterek.isNotEmpty) {
         textTopRight += '\n${parameterek.join(' / ')}';
       }
@@ -33,11 +35,13 @@ class VizjelKeszito {
   }
 
   // --- TÚRA MEGOSZTÁSA ---
-  static Future<void> turaMegosztasa(BuildContext context, Tura tura, String kepUtvonal) async {
+  static Future<void> turaMegosztasa(BuildContext context, Tura tura, String kepUtvonal, String helyszinNev) async {
     _mutasToltes(context);
     try {
-      final textTopLeft = '${tura.kezdoDatum} - ${tura.zaroDatum}\n${tura.helyszin.isNotEmpty ? tura.helyszin : ''}'.trim();
-      final textTopRight = ''; // Túránál ez üres marad
+      String kezd = DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum);
+      String veg = DateFormat('yyyy.MM.dd.').format(tura.befejezoDatum);
+      final textTopLeft = '$kezd - $veg\n${helyszinNev != 'Ismeretlen helyszín' ? helyszinNev : ''}'.trim();
+      const textTopRight = ''; // Túránál ez üres marad
 
       final file = await _kepGeneralasa(kepUtvonal, textTopLeft, textTopRight);
       
