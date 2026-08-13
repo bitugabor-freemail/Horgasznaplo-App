@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
+import 'package:intl/intl.dart'; // ÚJ: Szükséges az olvasható dátumhoz
 import 'modellek.dart';
 
 class AdatTarolo {
@@ -182,7 +183,6 @@ class AdatTarolo {
       if (!jelenlegi.any((k) => k.id == g.id)) {
         jelenlegi.add(g);
       } else {
-        // Frissítjük a gyári nevét és sorrendjét, ha visszaállítás történt
         final idx = jelenlegi.indexWhere((k) => k.id == g.id);
         jelenlegi[idx] = g;
       }
@@ -213,14 +213,11 @@ class AdatTarolo {
     for (var gyHal in gyari) {
       int idx = jelenlegi.indexWhere((h) => h.id == gyHal.id);
       if (idx == -1) {
-        // Nincs benne, hozzáadjuk a gyárit
         jelenlegi.add(gyHal);
       } else {
-        // Benne van, frissítjük a szöveges adatokat, de a KÉPEKET okosan összefűzzük
         List<String> meglevoKepek = jelenlegi[idx].kepek;
         List<String> ujKepek = List.from(meglevoKepek);
 
-        // Hozzáadjuk az 1, 2, 3 gyári képeket, ha a helyük szabad (max 5 képes limitet betartva)
         for (var gyKep in gyHal.kepek) {
           if (!ujKepek.contains(gyKep) && ujKepek.length < 5) {
             ujKepek.add(gyKep);
@@ -237,7 +234,7 @@ class AdatTarolo {
           tilalmiIdoszak: gyHal.tilalmiIdoszak,
           szabalyozasEve: gyHal.szabalyozasEve,
           megjegyzes: gyHal.megjegyzes,
-          kepek: ujKepek, // Az okosan összefűzött képlista
+          kepek: ujKepek, 
         );
       }
     }
@@ -269,7 +266,11 @@ class AdatTarolo {
   static Future<String> letrehozGyorsExportJSONFajl() async {
     final appDir = await getApplicationDocumentsDirectory();
     final jsonStr = await letrehozExportJson();
-    final fajlNev = 'horgasznaplo_gyors_mentes_${DateTime.now().millisecondsSinceEpoch}.json';
+    
+    // ÚJ NÉVFORMÁTUM A SZÖVEGES JSON MENTÉSHEZ
+    final String idobelyeg = DateFormat('yyyy_MM_dd_HH_mm_ss').format(DateTime.now());
+    final fajlNev = 'horgasznaplo_gyors_mentes_$idobelyeg.json';
+    
     final path = '${appDir.path}/$fajlNev';
     final file = File(path);
     await file.writeAsString(jsonStr);
@@ -302,7 +303,10 @@ class AdatTarolo {
     final zipEncoder = ZipEncoder();
     final zipAdat = zipEncoder.encode(archive);
     
-    final fajlNev = 'horgasznaplo_teljes_mentes_${DateTime.now().millisecondsSinceEpoch}.zip';
+    // ÚJ NÉVFORMÁTUM A TELJES ZIP MENTÉSHEZ
+    final String idobelyeg = DateFormat('yyyy_MM_dd_HH_mm_ss').format(DateTime.now());
+    final fajlNev = 'horgasznaplo_teljes_mentes_$idobelyeg.zip';
+    
     final path = '${appDir.path}/$fajlNev';
     final fajl = File(path);
     await fajl.writeAsBytes(zipAdat!);
@@ -315,7 +319,6 @@ class AdatTarolo {
     String jsonTartalom = '';
 
     if (fajlUtvonal.toLowerCase().endsWith('.zip')) {
-      // ZIP kicsomagolása
       final bytes = await File(fajlUtvonal).readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
       final appDir = await getApplicationDocumentsDirectory();
@@ -334,7 +337,6 @@ class AdatTarolo {
         }
       }
     } else if (fajlUtvonal.toLowerCase().endsWith('.json')) {
-      // Sima JSON
       jsonTartalom = await File(fajlUtvonal).readAsString();
     } else {
       throw Exception('Nem támogatott fájlformátum!');
@@ -344,7 +346,6 @@ class AdatTarolo {
 
     final Map<String, dynamic> data = jsonDecode(jsonTartalom);
 
-    // Kíméletlen felülírás
     if (data.containsKey('turak')) await prefs.setString(_turakKulcs, jsonEncode(data['turak']));
     if (data.containsKey('fogasok')) await prefs.setString(_fogasokKulcs, jsonEncode(data['fogasok']));
     if (data.containsKey('halfajok')) await prefs.setString(_halfajokKulcs, jsonEncode(data['halfajok']));
@@ -361,7 +362,6 @@ class AdatTarolo {
     if (data.containsKey('sors')) await prefs.setString(_sorsKulcs, jsonEncode(data['sors']));
   }
 
-  // --- DLC KÉPCSOMAG (ZIP) FELTÖLTÉSE ---
   static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {
     final Map<String, String> idMapper = _getDlcAzonositoMap();
     final bytes = await File(zipPath).readAsBytes();
@@ -374,7 +374,6 @@ class AdatTarolo {
       if (file.isFile) {
         final nev = file.name.split('/').last.toLowerCase();
         
-        // Csak a _1.jpg, _2.jpg, _3.jpg fájlokat engedjük be
         final match = RegExp(r'^([a-z_]+)_(1|2|3)\.jpg$').firstMatch(nev);
         if (match != null) {
           final dlcId = match.group(1)!;
@@ -384,21 +383,17 @@ class AdatTarolo {
           if (belsoHalId != null) {
             final halIndex = halfajok.indexWhere((h) => h.id == belsoHalId);
             if (halIndex != -1) {
-              // Bemásoljuk a képet a rejtett könyvtárba egy fix, felismerhető DLC névvel
               final ujUtvonal = await biztonsagosKepMasolas(
-                '', // Nincs eredeti útvonal, mi írjuk ki a byte-okat
+                '', 
                 egyediNev: 'dlc_${belsoHalId}_$sorszam.jpg'
               );
               
-              // Kiírjuk a fájlt a kicsomagolt tartalommal
               await File(ujUtvonal).writeAsBytes(file.content as List<int>);
 
               List<String> ujKepek = List.from(halfajok[halIndex].kepek);
               
-              // Megnézzük, van-e már a sloton (1, 2, 3) DLC kép. Ha igen, eltávolítjuk a listából.
               ujKepek.removeWhere((k) => k.endsWith('dlc_${belsoHalId}_$sorszam.jpg'));
               
-              // Hozzáadjuk az újat, ha belefér a limitbe
               if (ujKepek.length < 5) {
                 ujKepek.add(ujUtvonal);
               }
@@ -454,9 +449,7 @@ class AdatTarolo {
     };
   }
 
-  // --- TÖRZSDAT TÖRLÉSEK ÉS NÉV FRISSÍTÉSEK LOGIKÁJA ---
   static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {
-    // EREDETI LOGIKA ÉRINTETLENÜL HAGYVA (csak a fogasok, túrák neveit írja át)
     if (kategoria == 'Horgásztársak') {
       final turak = await turakBetoltese();
       bool changed = false;
@@ -508,7 +501,6 @@ class AdatTarolo {
   }
 
   static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {
-    // EREDETI LOGIKA ÉRINTETLENÜL HAGYVA
     if (kategoria == 'Helyszín') {
       final turak = await turakBetoltese();
       bool changed = false;
