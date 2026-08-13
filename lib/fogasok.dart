@@ -53,7 +53,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => FogasSzerkesztoScreen(
-          tura: widget.tura, // ITT MÁR AZ EGÉSZ TÚRÁT ÁTADJUK!
+          tura: widget.tura,
           szerkeszthetoFogas: fogas,
           mentesCallback: () => _adatokBetoltese(),
         ),
@@ -375,9 +375,10 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  // --- UNIVERZÁLIS KERESŐ ABLAK A DROPDOWNOK HELYETT ---
   Future<void> _mutasKereshetoAblak(String cim, List<String> elemek, Function(String?) onKivalasztva, bool allowNew) async {
     String kereses = '';
+    final keresoCtrl = TextEditingController();
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -401,10 +402,18 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: TextField(
+                        controller: keresoCtrl,
                         autofocus: true,
                         decoration: InputDecoration(
                           hintText: 'Keresés...',
                           prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.redAccent),
+                            onPressed: () {
+                              keresoCtrl.clear();
+                              setModalState(() => kereses = '');
+                            },
+                          ),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onChanged: (val) => setModalState(() => kereses = val),
@@ -470,7 +479,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  // JAVÍTVA: Helyes ragozás támogatása
   Widget _buildKereshetoDropdown({required String label, required String targyEset, required String? value, required List<String> items, required Function(String?) onChanged, bool allowNew = true}) {
     return InkWell(
       onTap: () => _mutasKereshetoAblak(label, items, onChanged, allowNew),
@@ -488,7 +496,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  // JAVÍTVA: Helyes ragozás támogatása
   Widget _buildTobbesKivalaszto({required String label, required String targyEset, required List<String> elerhetoElemek, required List<String> kivalasztottElemek}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,7 +561,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   }
 
   void _mentes() async {
-    // --- SZIGORÚ DÁTUM VÉDELEM: CSAK A MENTÉST SZAKÍTJUK MEG ---
     DateTime tKeze = DateTime(widget.tura.kezdoDatum.year, widget.tura.kezdoDatum.month, widget.tura.kezdoDatum.day);
     DateTime tVege = DateTime(widget.tura.befejezoDatum.year, widget.tura.befejezoDatum.month, widget.tura.befejezoDatum.day);
     DateTime fDatum = DateTime(_datum.year, _datum.month, _datum.day);
@@ -567,9 +573,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
           duration: const Duration(seconds: 4),
         )
       );
-      return; // A program kilép ebből a függvényből, minden adat megmarad a képernyőn!
+      return; 
     }
-    // -------------------------------------------------------------
 
     final ujFogas = FogasModel(
       id: widget.szerkeszthetoFogas?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
