@@ -155,7 +155,10 @@ class VizjelKeszito {
       await downloadsDir.create(recursive: true);
     }
     
-    final fajlNev = 'horgasznaplo_${tipus}_${DateTime.now().millisecondsSinceEpoch}.png';
+    // ÚJ NÉVFORMÁTUM A VÍZJELES KÉPEKHEZ IS
+    final String idobelyeg = DateFormat('yyyy_MM_dd_HH_mm_ss').format(DateTime.now());
+    final fajlNev = 'horgasznaplo_${tipus}_$idobelyeg.png';
+    
     final newPath = '${downloadsDir.path}/$fajlNev';
     
     await File(newPath).writeAsBytes(pngBytes);
