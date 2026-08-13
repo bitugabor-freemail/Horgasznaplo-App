@@ -32,7 +32,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   
   String _kivKategoria = 'Halfaj';
   String _keresesSzoveg = ''; 
-  final _keresoCtrl = TextEditingController(); // ÚJ Controller a keresőhöz
+  final _keresoCtrl = TextEditingController(); 
   
   List<Halfaj> _halfajok = [];
   List<Helyszin> _helyszinek = [];
@@ -502,7 +502,11 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                       megjelenitettNev = _halfajok[valodiIndex].nev;
                     } else if (_kivKategoria == 'Helyszín') {
                       valodiIndex = _helyszinek.indexOf(szurtAdatok[index] as Helyszin);
-                      megjelenitettNev = _helyszinek[valodiIndex].nev;
+                      final hely = _helyszinek[valodiIndex];
+                      megjelenitettNev = hely.nev;
+                      if (hely.vizterKod != null && hely.vizterKod!.isNotEmpty) {
+                        alcim = 'Víztérkód: ${hely.vizterKod}';
+                      }
                     } else if (_kivKategoria == 'Felszerelés Kategória') {
                       valodiIndex = _felszKategoriak.indexOf(szurtAdatok[index] as FelszerelesKategoria);
                       megjelenitettNev = _felszKategoriak[valodiIndex].nev;
@@ -522,7 +526,9 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         title: Text(megjelenitettNev, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: alcim.isNotEmpty ? Text(alcim, style: const TextStyle(color: Colors.greenAccent, fontSize: 12)) : null,
+                        subtitle: alcim.isNotEmpty 
+                          ? Text(alcim, style: _kivKategoria == 'Helyszín' ? const TextStyle(fontSize: 16, color: Colors.white70) : const TextStyle(color: Colors.greenAccent, fontSize: 12)) 
+                          : null,
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
