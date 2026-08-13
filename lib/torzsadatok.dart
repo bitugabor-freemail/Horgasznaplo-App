@@ -31,7 +31,8 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   ];
   
   String _kivKategoria = 'Halfaj';
-  String _keresesSzoveg = ''; // ÚJ: Keresőhöz
+  String _keresesSzoveg = ''; 
+  final _keresoCtrl = TextEditingController(); // ÚJ Controller a keresőhöz
   
   List<Halfaj> _halfajok = [];
   List<Helyszin> _helyszinek = [];
@@ -409,7 +410,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   Widget build(BuildContext context) {
     bool mutatFogaskereket = ['Halfaj', 'Időjárás', 'Hal sorsa', 'Felszerelés Kategóriák'].contains(_kivKategoria);
 
-    // Keresés alapján szűrt lista előállítása
     List<dynamic> szurtAdatok = [];
     if (_kivKategoria == 'Halfaj') {
       szurtAdatok = _halfajok.where((h) => h.nev.toLowerCase().contains(_keresesSzoveg.toLowerCase())).toList();
@@ -448,7 +448,8 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                               if (val != null) {
                                 setState(() {
                                   _kivKategoria = val;
-                                  _keresesSzoveg = ''; // Váltáskor nullázzuk a keresést
+                                  _keresesSzoveg = ''; 
+                                  _keresoCtrl.clear();
                                 });
                                 _adatokBetoltese();
                               }
@@ -464,9 +465,17 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                     ),
                     const SizedBox(height: 8),
                     TextField(
+                      controller: _keresoCtrl,
                       decoration: InputDecoration(
                         hintText: 'Keresés a listában...',
                         prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.redAccent),
+                          onPressed: () {
+                            _keresoCtrl.clear();
+                            setState(() => _keresesSzoveg = '');
+                          },
+                        ),
                         filled: true,
                         fillColor: const Color(0xFF1E1E1E),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -601,7 +610,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   }
 }
 
-// ... _HalfajSzerkesztoScreen LOGIKÁJA ...
 class HalfajSzerkesztoScreen extends StatefulWidget {
   final Halfaj? szerkeszthetoHalfaj;
   final Function(Halfaj) mentesCallback;
@@ -626,7 +634,6 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
   List<String> _kepek = []; 
 
   final List<String> _kategoriak = ['Békés', 'Ragadozó'];
-  // JAVÍTVA A STATUSZOK SORRENDJE
   final List<String> _statuszok = ['Fogható (Őshonos)', 'Fogható (Idegenhonos)', 'Inváziós', 'Nem fogható', 'Védett'];
 
   @override
@@ -691,10 +698,9 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // JAVÍTVA A SORREND ITT IS
                     _buildInfoSor(Colors.green, 'Fogható (Őshonos)', 'Megtartható a méret-, tilalmi idő- és darabszám-korlátozások betartásával.'),
                     _buildInfoSor(Colors.lightGreenAccent, 'Fogható (Idegenhonos)', 'Szabadon fogható, betelepített halak. Országos méret-, és darabkorlátozás, valamint tilalmi idő nem vonatkozik rájuk (helyi horgászrend ettől eltérhet).'),
-                    _buildInfoSor(Colors.red, 'Inváziós', 'Nem szabad visszaengedni, el kell távolítani a víztérből.'),
+                    _buildInfoSor(Colors.red, 'Inváziós', 'Az inváziós halak olyan halfajok, amelyek egy számukra nem őshonos területre kerülnek, ott elszaporodnak, és közben káros hatással lehetnek a helyi élővilágra. Kifogásuk esetén ezeket a halakat nem szabad visszaengedni, el kell távolítani a víztérből.'),
                     _buildInfoSor(Colors.white70, 'Nem fogható', 'Nem állnak szigorú természetvédelmi oltalom alatt, de a halgazdálkodási törvény (és a MOHOSZ Országos Horgászrendje) állományvédelmi okokból tiltja a kifogásukat és az elvitelüket. Kifogásuk esetén ugyanúgy azonnal és kíméletesen vissza kell őket engedni a vízbe.'),
                     _buildInfoSor(Colors.blue, 'Védett', 'A természetvédelmi törvény hatálya alá tartoznak. Ezeknek a halaknak hivatalos, pénzben kifejezett természetvédelmi (eszmei) értékük van (pl. 10 000 Ft-tól akár 250 000 Ft-ig). Kifejezetten ritka, veszélyeztetett, vagy bennszülött (endemikus) fajok. Nem tartható meg, azonnal és kíméletesen vissza kell engedni.'),
                   ],
