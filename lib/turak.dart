@@ -128,13 +128,6 @@ class _TurakScreenState extends State<TurakScreen> {
     );
   }
 
-  String _getHelyszinNeve(String? helyszinId) {
-    if (helyszinId == null) return 'Ismeretlen helyszín';
-    final h = _helyszinek.where((x) => x.id == helyszinId).toList();
-    if (h.isNotEmpty) return h.first.nev;
-    return 'Ismeretlen helyszín';
-  }
-
   Map<String, dynamic> _getStatisztika(String turaId) {
     final turaFogasai = _fogasok.where((f) => f.turaId == turaId).toList();
     int darab = turaFogasai.length;
@@ -234,8 +227,12 @@ class _TurakScreenState extends State<TurakScreen> {
                     itemBuilder: (context, index) {
                       final tura = mutatottTurak[index];
                       final stat = _getStatisztika(tura.id);
-                      final helyszinNev = _getHelyszinNeve(tura.helyszinId);
                       final vanMegjegyzes = tura.megjegyzes.isNotEmpty;
+
+                      // Helyszín és víztérkód lekérése
+                      final helyszinObj = _helyszinek.cast<Helyszin?>().firstWhere((h) => h?.id == tura.helyszinId, orElse: () => null);
+                      final helyszinNev = helyszinObj?.nev ?? 'Ismeretlen helyszín';
+                      final vizterKod = helyszinObj?.vizterKod;
 
                       final kezdo = DateTime(tura.kezdoDatum.year, tura.kezdoDatum.month, tura.kezdoDatum.day);
                       final befejezo = DateTime(tura.befejezoDatum.year, tura.befejezoDatum.month, tura.befejezoDatum.day);
@@ -278,9 +275,13 @@ class _TurakScreenState extends State<TurakScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(helyszinNev, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  if (vizterKod != null && vizterKod.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text('Víztérkód: $vizterKod', style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                                  ],
                                   if (tura.horgaszhely.isNotEmpty) ...[
                                     const SizedBox(height: 2),
-                                    Text(tura.horgaszhely, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                                    Text('Horgászhely: ${tura.horgaszhely}', style: const TextStyle(fontSize: 16, color: Colors.white70)),
                                   ],
                                   const Divider(height: 20, color: Colors.white12),
                                   
@@ -603,6 +604,9 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                         itemBuilder: (context, index) {
                           return ListTile(
                             title: Text(szurt[index].nev),
+                            subtitle: (szurt[index].vizterKod != null && szurt[index].vizterKod!.isNotEmpty)
+                                ? Text('Víztérkód: ${szurt[index].vizterKod}', style: const TextStyle(fontSize: 16, color: Colors.white70))
+                                : null,
                             onTap: () {
                               setState(() => _kivalasztottHelyszinId = szurt[index].id);
                               Navigator.pop(context);
@@ -702,7 +706,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
   }
 
   Future<void> _mentes() async {
-    // --- DÁTUM VÉDELEM MEGLÉVŐ FOGÁSOKRA ---
     if (widget.szerkeszthetoTura != null) {
       final osszesFogas = await AdatTarolo.fogasokBetoltese();
       final turaFogasai = osszesFogas.where((f) => f.turaId == widget.szerkeszthetoTura!.id).toList();
@@ -720,7 +723,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
               duration: const Duration(seconds: 5),
             )
           );
-          return; // Megszakítjuk a mentést!
+          return; 
         }
       }
     }
