@@ -537,6 +537,8 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
   Future<void> _mutasHelyszinKereso() async {
     String kereses = '';
+    final keresoCtrl = TextEditingController();
+    
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -560,10 +562,18 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: TextField(
+                        controller: keresoCtrl,
                         autofocus: true,
                         decoration: InputDecoration(
                           hintText: 'Keresés...',
                           prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.redAccent),
+                            onPressed: () {
+                              keresoCtrl.clear();
+                              setModalState(() => kereses = '');
+                            },
+                          ),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onChanged: (val) => setModalState(() => kereses = val),
@@ -613,6 +623,8 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
   Future<void> _mutasTarsKereso() async {
     String kereses = '';
+    final keresoCtrl = TextEditingController();
+    
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -636,10 +648,18 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: TextField(
+                        controller: keresoCtrl,
                         autofocus: true,
                         decoration: InputDecoration(
                           hintText: 'Keresés...',
                           prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.redAccent),
+                            onPressed: () {
+                              keresoCtrl.clear();
+                              setModalState(() => kereses = '');
+                            },
+                          ),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onChanged: (val) => setModalState(() => kereses = val),
@@ -682,6 +702,29 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
   }
 
   Future<void> _mentes() async {
+    // --- DÁTUM VÉDELEM MEGLÉVŐ FOGÁSOKRA ---
+    if (widget.szerkeszthetoTura != null) {
+      final osszesFogas = await AdatTarolo.fogasokBetoltese();
+      final turaFogasai = osszesFogas.where((f) => f.turaId == widget.szerkeszthetoTura!.id).toList();
+      
+      DateTime tKezd = DateTime(_kezdDatum.year, _kezdDatum.month, _kezdDatum.day);
+      DateTime tVeg = DateTime(_vegDatum.year, _vegDatum.month, _vegDatum.day);
+
+      for (var f in turaFogasai) {
+        DateTime fDatum = DateTime(f.datum.year, f.datum.month, f.datum.day);
+        if (fDatum.isBefore(tKezd) || fDatum.isAfter(tVeg)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Hiba: A túrához tartozik egy fogás (${DateFormat('yyyy.MM.dd').format(fDatum)}), ami kívül esne a megadott új dátumokon! Előbb módosítsd a fogást.'),
+              backgroundColor: Colors.redAccent,
+              duration: const Duration(seconds: 5),
+            )
+          );
+          return; // Megszakítjuk a mentést!
+        }
+      }
+    }
+
     final ujTura = Tura(
       id: widget.szerkeszthetoTura?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       kezdoDatum: _kezdDatum,
