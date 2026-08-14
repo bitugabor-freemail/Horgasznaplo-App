@@ -543,11 +543,19 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
           const SizedBox(height: 6),
           Wrap(
             spacing: 8,
-            runSpacing: 4,
+            runSpacing: 8, // Nagyobb térköz, ha eltörik a sor
             children: kivalasztottElemek.map((elem) {
               return ActionChip(
                 backgroundColor: Colors.green[800],
-                label: Text(elem, style: const TextStyle(color: Colors.white)),
+                // ÚJ: Itt adjuk meg a maximális szélességet és a tördelést!
+                label: Container(
+                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
+                  child: Text(
+                    elem, 
+                    style: const TextStyle(color: Colors.white),
+                    softWrap: true,
+                  ),
+                ),
                 avatar: const Icon(Icons.close, size: 16, color: Colors.white70),
                 onPressed: () {
                   setState(() => kivalasztottElemek.remove(elem));
@@ -826,7 +834,10 @@ class FogasReszletekScreen extends StatelessWidget {
               child: Column(
                 children: [
                   Text(helyszinNev, style: const TextStyle(fontSize: 16, color: Colors.white70)),
-                  if (horgaszhely.isNotEmpty) Text(horgaszhely, style: const TextStyle(fontSize: 14, color: Colors.white54)),
+                  // ÚJ: A Horgászhely kiírás pótólva
+                  if (horgaszhely.isNotEmpty) 
+                    Text('Horgászhely: $horgaszhely', style: const TextStyle(fontSize: 14, color: Colors.white54)),
+                  
                   const SizedBox(height: 8),
                   Text(fogas.halfaj.isEmpty ? 'Ismeretlen halfaj' : fogas.halfaj, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
@@ -848,8 +859,10 @@ class FogasReszletekScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  _AdatSor(cim: 'Csali', ertek: fogas.csali.isEmpty ? '-' : fogas.csali.join(', ')),
-                  _AdatSor(cim: 'Etetőanyag', ertek: fogas.etetoanyag.isEmpty ? '-' : fogas.etetoanyag.join(', ')),
+                  // ÚJ: Pöttyös listás elrendezés a sima vesszős megoldás helyett
+                  _AdatSor(cim: 'Csali', ertek: fogas.csali.isEmpty ? '-' : fogas.csali.map((c) => '• $c').join('\n')),
+                  _AdatSor(cim: 'Etetőanyag', ertek: fogas.etetoanyag.isEmpty ? '-' : fogas.etetoanyag.map((e) => '• $e').join('\n')),
+                  
                   _AdatSor(cim: 'Etetés üteme', ertek: fogas.etetesGyakorisaga == null ? '-' : '${fogas.etetesGyakorisaga} perc'),
                   const Divider(color: Colors.white24),
                   _AdatSor(cim: 'Bot', ertek: fogas.bot?.isEmpty ?? true ? '-' : fogas.bot!),
@@ -906,7 +919,7 @@ class _AdatSor extends StatelessWidget {
             child: Text(cim, style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
           ),
           Expanded(
-            child: Text(ertek, style: const TextStyle(color: Colors.white, fontSize: 16)),
+            child: Text(ertek, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.4)),
           ),
         ],
       ),
