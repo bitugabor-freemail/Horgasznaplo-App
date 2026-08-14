@@ -349,7 +349,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     Map<String, int> gyakorisag = {};
     for (var f in fogasok) {
       String kulcs = selector(f);
-      // Kigyomlálva az összes kérdőjel és a részben üres kötőjeles verzió[span_1](start_span)[span_1](end_span)
       if (kulcs.trim().isNotEmpty && kulcs != '-' && kulcs != '- / -' && kulcs != '- / -°C' && kulcs != '- + -') {
         gyakorisag[kulcs] = (gyakorisag[kulcs] ?? 0) + 1;
       }
@@ -496,17 +495,16 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                               const Divider(color: Colors.white12),
                               _StatisztikaSor(cim: 'Legaktívabb Időjárás+Hőfok', ertek: _legjobbKombo(szurtFogasok, (f) {
                                 if ((f.idojaras == null || f.idojaras!.isEmpty) && f.homerseklet == null) return '-';
-                                // Kötőjelet használunk a kérdőjel helyett[span_2](start_span)[span_2](end_span)
                                 String idoj = (f.idojaras != null && f.idojaras!.isNotEmpty) ? f.idojaras! : '-';
                                 String ho = f.homerseklet != null ? '${f.homerseklet}°C' : '-';
                                 return '$idoj / $ho';
                               })),
                               const Divider(color: Colors.white12),
+                              // ÚJ LOGIKA: A KOKTÉL ÖSSZEFŰZÉSE
                               _StatisztikaSor(cim: 'Legjobb Csali + Etetőanyag', ertek: _legjobbKombo(szurtFogasok, (f) {
                                 if (f.csali.isEmpty && f.etetoanyag.isEmpty) return '-';
-                                // Itt is kötőjelre cserélve[span_3](start_span)[span_3](end_span)
-                                String cs = f.csali.isNotEmpty ? f.csali.first : '-';
-                                String et = f.etetoanyag.isNotEmpty ? f.etetoanyag.first : '-';
+                                String cs = f.csali.isNotEmpty ? f.csali.join(' & ') : '-';
+                                String et = f.etetoanyag.isNotEmpty ? f.etetoanyag.join(' & ') : '-';
                                 return '$cs + $et';
                               })),
                               const Divider(color: Colors.white12),
@@ -571,8 +569,8 @@ class _StatisztikaSor extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(cim, style: const TextStyle(color: Colors.white54, fontSize: 14))),
-          Expanded(child: Text(ertek, textAlign: TextAlign.right, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold))),
+          Expanded(flex: 2, child: Text(cim, style: const TextStyle(color: Colors.white54, fontSize: 14))),
+          Expanded(flex: 3, child: Text(ertek, textAlign: TextAlign.right, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold))),
         ],
       ),
     );
