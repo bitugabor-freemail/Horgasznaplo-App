@@ -293,6 +293,18 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       if (f.homerseklet != null) _homersekletCtrl.text = f.homerseklet.toString();
       _megjegyzesCtrl.text = f.megjegyzes;
       _fenykepUtvonal = f.fenykep;
+    } else {
+      // ÚJ LOGIKA: Okos dátum beállítás új fogásnál
+      final most = DateTime.now();
+      final maiNap = DateTime(most.year, most.month, most.day);
+      final tKezd = DateTime(widget.tura.kezdoDatum.year, widget.tura.kezdoDatum.month, widget.tura.kezdoDatum.day);
+      final tVeg = DateTime(widget.tura.befejezoDatum.year, widget.tura.befejezoDatum.month, widget.tura.befejezoDatum.day);
+
+      if (maiNap.isBefore(tKezd) || maiNap.isAfter(tVeg)) {
+        _datum = tKezd; // Kívül esik, ráugrunk a túra első napjára
+      } else {
+        _datum = maiNap; // Belül van, jöhet az "élő" mai nap
+      }
     }
     _adatokBetoltese();
   }
@@ -547,7 +559,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             children: kivalasztottElemek.map((elem) {
               return ActionChip(
                 backgroundColor: Colors.green[800],
-                // Szöveg tördelésének beállítása
                 label: Container(
                   constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
                   child: Text(
