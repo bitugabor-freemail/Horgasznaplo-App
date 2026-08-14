@@ -229,7 +229,6 @@ class _TurakScreenState extends State<TurakScreen> {
                       final stat = _getStatisztika(tura.id);
                       final vanMegjegyzes = tura.megjegyzes.isNotEmpty;
 
-                      // Helyszín és víztérkód lekérése
                       final helyszinObj = _helyszinek.cast<Helyszin?>().firstWhere((h) => h?.id == tura.helyszinId, orElse: () => null);
                       final helyszinNev = helyszinObj?.nev ?? 'Ismeretlen helyszín';
                       final vizterKod = helyszinObj?.vizterKod;
@@ -773,7 +772,15 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                     label: Text('Kezd: ${DateFormat('yyyy.MM.dd').format(_kezdDatum)}'),
                     onPressed: () async {
                       final p = await showDatePicker(context: context, initialDate: _kezdDatum, firstDate: DateTime(2000), lastDate: DateTime(2100));
-                      if (p != null) setState(() => _kezdDatum = p);
+                      if (p != null) {
+                        setState(() {
+                          // ÚJ LOGIKA: Kiszámoljuk az eddigi különbséget napokban
+                          final int kulonbseg = _vegDatum.difference(_kezdDatum).inDays;
+                          _kezdDatum = p;
+                          // ÚJ LOGIKA: Hozzáadjuk a különbséget az új kezdődátumhoz
+                          _vegDatum = _kezdDatum.add(Duration(days: kulonbseg));
+                        });
+                      }
                     },
                   ),
                 ),
@@ -784,6 +791,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                     label: Text('Vége: ${DateFormat('yyyy.MM.dd').format(_vegDatum)}'),
                     onPressed: () async {
                       final p = await showDatePicker(context: context, initialDate: _vegDatum, firstDate: DateTime(2000), lastDate: DateTime(2100));
+                      // Itt szándékosan csak a végdátumot állítjuk, a kezdő érintetlen marad
                       if (p != null) setState(() => _vegDatum = p);
                     },
                   ),
