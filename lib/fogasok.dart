@@ -543,17 +543,19 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
           const SizedBox(height: 6),
           Wrap(
             spacing: 8,
-            runSpacing: 8, // Nagyobb térköz, ha eltörik a sor
+            runSpacing: 8,
             children: kivalasztottElemek.map((elem) {
               return ActionChip(
                 backgroundColor: Colors.green[800],
-                // ÚJ: Itt adjuk meg a maximális szélességet és a tördelést!
+                // Szöveg tördelésének beállítása
                 label: Container(
                   constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
                   child: Text(
                     elem, 
                     style: const TextStyle(color: Colors.white),
                     softWrap: true,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 avatar: const Icon(Icons.close, size: 16, color: Colors.white70),
@@ -834,7 +836,6 @@ class FogasReszletekScreen extends StatelessWidget {
               child: Column(
                 children: [
                   Text(helyszinNev, style: const TextStyle(fontSize: 16, color: Colors.white70)),
-                  // ÚJ: A Horgászhely kiírás pótólva
                   if (horgaszhely.isNotEmpty) 
                     Text('Horgászhely: $horgaszhely', style: const TextStyle(fontSize: 14, color: Colors.white54)),
                   
@@ -859,7 +860,6 @@ class FogasReszletekScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  // ÚJ: Pöttyös listás elrendezés a sima vesszős megoldás helyett
                   _AdatSor(cim: 'Csali', ertek: fogas.csali.isEmpty ? '-' : fogas.csali.map((c) => '• $c').join('\n')),
                   _AdatSor(cim: 'Etetőanyag', ertek: fogas.etetoanyag.isEmpty ? '-' : fogas.etetoanyag.map((e) => '• $e').join('\n')),
                   
