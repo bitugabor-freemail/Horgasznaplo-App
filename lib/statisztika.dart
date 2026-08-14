@@ -373,6 +373,94 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     return '${legjobb.key} (${legjobb.value} db)';
   }
 
+  // --- ÚJ LOGIKA: TAG ALAPÚ RANGSOROLÁS (TOP 3) ---
+  Map<String, _TagStat> _getCsaliStats(List<FogasModel> fogasok) {
+    Map<String, _TagStat> stats = {};
+    for (var f in fogasok) {
+      for (var csali in f.csali) {
+        if (!stats.containsKey(csali)) stats[csali] = _TagStat();
+        stats[csali]!.darab += 1;
+        stats[csali]!.osszsuly += (f.suly ?? 0.0);
+      }
+    }
+    return stats;
+  }
+
+  Map<String, _TagStat> _getEtetoStats(List<FogasModel> fogasok) {
+    Map<String, _TagStat> stats = {};
+    for (var f in fogasok) {
+      for (var eteto in f.etetoanyag) {
+        if (!stats.containsKey(eteto)) stats[eteto] = _TagStat();
+        stats[eteto]!.darab += 1;
+        stats[eteto]!.osszsuly += (f.suly ?? 0.0);
+      }
+    }
+    return stats;
+  }
+
+  Widget _buildTop3Blokk(String cim, Map<String, _TagStat> stats) {
+    if (stats.isEmpty) return const SizedBox();
+
+    // Darabszám alapján rendezve (ha egyenlő, átlagsúly dönt)
+    var darabLista = stats.entries.toList()
+      ..sort((a, b) {
+        int cmp = b.value.darab.compareTo(a.value.darab);
+        if (cmp == 0) return b.value.atlag.compareTo(a.value.atlag);
+        return cmp;
+      });
+    var topDarab = darabLista.take(3).toList();
+
+    // Átlagsúly alapján rendezve (csak > 0 súlyúak, ha egyenlő, darabszám dönt)
+    var sulyLista = stats.entries.where((e) => e.value.atlag > 0).toList()
+      ..sort((a, b) {
+        int cmp = b.value.atlag.compareTo(a.value.atlag);
+        if (cmp == 0) return b.value.darab.compareTo(a.value.darab);
+        return cmp;
+      });
+    var topSuly = sulyLista.take(3).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Text('🏆 $cim', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
+        ),
+        
+        if (topDarab.isNotEmpty) ...[
+          const Text('Legtöbb halat adó (Darab)', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 6),
+          ...topDarab.asMap().entries.map((e) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text('${e.key + 1}. ${e.value.key} (${e.value.value.darab} db)', style: const TextStyle(color: Colors.white, fontSize: 14)),
+          )),
+          const SizedBox(height: 12),
+        ],
+
+        if (topSuly.isNotEmpty) ...[
+          const Text('Legnagyobb halat adó (Átlagsúly)', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 6),
+          ...topSuly.asMap().entries.map((e) {
+            final val = e.value.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  children: [
+                    TextSpan(text: '${e.key + 1}. ${e.value.key}: '),
+                    TextSpan(text: '${val.atlag.toStringAsFixed(2)} kg/hal', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    TextSpan(text: ' (${val.darab} db)', style: const TextStyle(color: Colors.white54)),
+                  ]
+                )
+              ),
+            );
+          }),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final szurtTurak = _getSzurtTurak(); 
@@ -406,6 +494,10 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     for (var f in szurtFogasok) {
       halfajDb[f.halfaj] = (halfajDb[f.halfaj] ?? 0) + 1;
     }
+
+    // Toplisták generálása
+    Map<String, _TagStat> csaliStats = _getCsaliStats(szurtFogasok);
+    Map<String, _TagStat> etetoStats = _getEtetoStats(szurtFogasok);
 
     return Scaffold(
       body: Column(
@@ -490,6 +582,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                           cim: 'Taktikai érdekességek',
                           ikon: Icons.lightbulb_outline,
                           tartalom: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _StatisztikaSor(cim: 'Legjobb 3 órás idősáv', ertek: _legjobbIdosav(szurtFogasok)),
                               const Divider(color: Colors.white12),
@@ -500,17 +593,29 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                                 return '$idoj / $ho';
                               })),
                               const Divider(color: Colors.white12),
-                              // ÚJ LOGIKA: A KOKTÉL ÖSSZEFŰZÉSE
-                              _StatisztikaSor(cim: 'Legjobb Csali + Etetőanyag', ertek: _legjobbKombo(szurtFogasok, (f) {
+                              _StatisztikaSor(cim: 'Legnyerőbb módszer', ertek: _legjobbKombo(szurtFogasok, (f) => f.modszer ?? '-')),
+                              const Divider(color: Colors.white12),
+                              _StatisztikaSor(cim: 'Legjobb horgászhely', ertek: _legjobbHelyszin(szurtFogasok)),
+                              const Divider(color: Colors.white12),
+                              
+                              // Legjobb kombó koktél összefűzése
+                              _StatisztikaSor(cim: 'Legjobb Kombináció (Koktél)', ertek: _legjobbKombo(szurtFogasok, (f) {
                                 if (f.csali.isEmpty && f.etetoanyag.isEmpty) return '-';
                                 String cs = f.csali.isNotEmpty ? f.csali.join(' & ') : '-';
                                 String et = f.etetoanyag.isNotEmpty ? f.etetoanyag.join(' & ') : '-';
                                 return '$cs + $et';
                               })),
-                              const Divider(color: Colors.white12),
-                              _StatisztikaSor(cim: 'Legnyerőbb módszer', ertek: _legjobbKombo(szurtFogasok, (f) => f.modszer ?? '-')),
-                              const Divider(color: Colors.white12),
-                              _StatisztikaSor(cim: 'Legjobb horgászhely', ertek: _legjobbHelyszin(szurtFogasok)),
+                              
+                              // TOP 3 RÉSZLEG
+                              if (csaliStats.isNotEmpty) ...[
+                                const Divider(color: Colors.white24, height: 32),
+                                _buildTop3Blokk('TOP 3 CSALI', csaliStats),
+                              ],
+                              
+                              if (etetoStats.isNotEmpty) ...[
+                                const Divider(color: Colors.white24, height: 32),
+                                _buildTop3Blokk('TOP 3 ETETŐANYAG', etetoStats),
+                              ],
                             ],
                           ),
                         ),
@@ -521,6 +626,13 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       ),
     );
   }
+}
+
+// Belső osztály a Toplisták számlálásához
+class _TagStat {
+  int darab = 0;
+  double osszsuly = 0.0;
+  double get atlag => darab > 0 ? osszsuly / darab : 0.0;
 }
 
 class _Kartya extends StatelessWidget {
