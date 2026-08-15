@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_file_plus/open_file_plus.dart';
@@ -106,75 +105,55 @@ class _DokumentumokScreenState extends State<DokumentumokScreen> {
                 style: TextStyle(color: Colors.white54, fontSize: 16),
               ),
             )
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.1,
-              ),
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
               itemCount: _mappak.length,
               itemBuilder: (context, index) {
                 final mappa = _mappak[index];
-                return InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MappaTartalomScreen(mappa: mappa)),
-                    );
-                  },
-                  onLongPress: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: const Color(0xFF1E1E1E),
-                      builder: (context) => Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.edit, color: Colors.white70),
-                            title: const Text('Átnevezés'),
-                            onTap: () {
-                              Navigator.pop(context);
-                              _mappaKezeles(mappa);
-                            },
-                          ),
-                          ListTile(
-                            leading: const Icon(Icons.delete, color: Colors.redAccent),
-                            title: const Text('Törlés'),
-                            onTap: () {
-                              Navigator.pop(context);
-                              _mappaTorles(mappa);
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white12),
+                return Card(
+                  color: const Color(0xFF1E1E1E),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  child: ListTile(
+                    leading: const Icon(Icons.folder, color: Colors.greenAccent, size: 40),
+                    title: Text(
+                      mappa.nev,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.folder, size: 60, color: Colors.greenAccent),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            mappa.nev,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => MappaTartalomScreen(mappa: mappa)),
+                      );
+                    },
+                    onLongPress: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        builder: (context) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.edit, color: Colors.white70),
+                              title: const Text('Átnevezés'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _mappaKezeles(mappa);
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.delete, color: Colors.redAccent),
+                              title: const Text('Törlés'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _mappaTorles(mappa);
+                              },
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 );
               },
@@ -251,7 +230,6 @@ class _MappaTartalomScreenState extends State<MappaTartalomScreen> {
     }
   }
 
-  // ITT NYÍLIK MEG KÖZVETLENÜL A FÁJL A TELEFON PDF OLVASÓJÁVAL
   void _fajlMegnyitasa(DokumentumFajl fajl) async {
     final result = await OpenFile.open(fajl.utvonal);
     if (result.type != ResultType.done && mounted) {
