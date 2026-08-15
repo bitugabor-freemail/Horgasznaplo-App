@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:open_file_plus/open_file_plus.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 
@@ -251,6 +251,15 @@ class _MappaTartalomScreenState extends State<MappaTartalomScreen> {
     }
   }
 
+  void _fajlMegnyitasa(DokumentumFajl fajl) async {
+    final result = await OpenFile.open(fajl.utvonal);
+    if (result.type != ResultType.done && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Nem található PDF olvasó alkalmazás a megnyitáshoz: ${result.message}')),
+      );
+    }
+  }
+
   void _fajlKezeles(DokumentumFajl fajl) {
     final ctrl = TextEditingController(text: fajl.nev);
     showDialog(
@@ -342,12 +351,7 @@ class _MappaTartalomScreenState extends State<MappaTartalomScreen> {
                         leading: const Icon(Icons.picture_as_pdf, color: Colors.redAccent, size: 40),
                         title: Text(fajl.nev, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: const Text('Kattints a megnyitáshoz', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => PdfNezegetoScreen(fajl: fajl)),
-                          );
-                        },
+                        onTap: () => _fajlMegnyitasa(fajl),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -379,26 +383,6 @@ class _MappaTartalomScreenState extends State<MappaTartalomScreen> {
         onPressed: _pdfHozzaadasa,
         tooltip: 'PDF Hozzáadása',
         child: const Icon(Icons.add_chart, color: Colors.white),
-      ),
-    );
-  }
-}
-
-class PdfNezegetoScreen extends StatelessWidget {
-  final DokumentumFajl fajl;
-  const PdfNezegetoScreen({super.key, required this.fajl});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(fajl.nev),
-        backgroundColor: const Color(0xFF161616),
-      ),
-      body: SfPdfViewer.file(
-        File(fajl.utvonal),
-        canShowScrollHead: false,
-        canShowScrollStatus: true,
       ),
     );
   }
