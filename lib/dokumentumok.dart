@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:open_file_plus/open_file_plus.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 
@@ -250,32 +251,14 @@ class _MappaTartalomScreenState extends State<MappaTartalomScreen> {
     }
   }
 
-  void _fajlMegnyitasa(DokumentumFajl fajl) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: Text(fajl.nev),
-        content: const Text('A dokumentum sikeresen rögzítve van a belső tárhelyen és offline is elérhető.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Bezárás')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
-            onPressed: () async {
-              Navigator.pop(context);
-              if (await File(fajl.utvonal).exists()) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('A fájl elérhető és biztonságban van a belső mappában.')),
-                  );
-                }
-              }
-            },
-            child: const Text('Rendben', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+  // ITT NYÍLIK MEG KÖZVETLENÜL A FÁJL A TELEFON PDF OLVASÓJÁVAL
+  void _fajlMegnyitasa(DokumentumFajl fajl) async {
+    final result = await OpenFile.open(fajl.utvonal);
+    if (result.type != ResultType.done && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Nem sikerült megnyitni a PDF-et: ${result.message}')),
+      );
+    }
   }
 
   void _fajlKezeles(DokumentumFajl fajl) {
