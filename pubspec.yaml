@@ -23,6 +23,7 @@ dependencies:
   file_picker: ^8.0.3
   archive: ^3.4.10
   share_plus: ^7.2.2
+  open_file_plus: ^3.4.0 # <-- BEKERÜLT A PDF MEGNYITÁSHOZ
   
   # --- EGYÉB (Pl. Időjárás lekéréshez) ---
   http: ^1.2.1
