@@ -102,10 +102,9 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
           fogas: fogas,
           helyszinNev: helyszinNev,
           horgaszhely: horgaszhely,
-          // Rákötöttük a lebegő gombot a szerkesztőre
           onEdit: () {
-            Navigator.pop(context); // Bezárja a részleteket
-            _szerkesztesMegnyitasa(fogas); // Megnyitja a szerkesztőt
+            Navigator.pop(context); 
+            _szerkesztesMegnyitasa(fogas); 
           },
         ),
       ),
@@ -156,8 +155,11 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                 final turaHelyszin = turaAdatok['helyszin']!;
                 final turaHorgaszhely = turaAdatok['horgaszhely']!;
 
+                // ÚJ LOGIKA: Keretszínek az új színpaletta alapján
                 Color keretSzin = Colors.transparent;
-                if (fogas.sors == 'Elvittem') keretSzin = Colors.orangeAccent;
+                if (fogas.sors == 'Visszaengedtem') keretSzin = Colors.greenAccent;
+                if (fogas.sors == 'Elvittem') keretSzin = Colors.blueAccent;
+                if (fogas.sors == 'Elajándékoztam') keretSzin = Colors.orangeAccent;
                 if (fogas.sors == 'Elpusztult') keretSzin = Colors.redAccent;
 
                 return Card(
