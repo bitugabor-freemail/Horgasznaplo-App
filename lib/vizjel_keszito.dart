@@ -12,17 +12,21 @@ class VizjelKeszito {
   static Future<void> fogasLetoltes(BuildContext context, FogasModel fogas, String kepUtvonal, String helyszinNev) async {
     _mutasToltes(context);
     try {
+      // ÚJ ELRENDEZÉS: Helyszín felül, dátum alatta
       String formazottDatum = DateFormat('yyyy.MM.dd.').format(fogas.datum);
-      final textTopLeft = '$formazottDatum\n${helyszinNev != 'Ismeretlen helyszín' ? helyszinNev : ''}'.trim();
+      final String hely = helyszinNev != 'Ismeretlen helyszín' ? '$helyszinNev\n' : '';
+      final textTopLeft = '$hely$formazottDatum'.trim();
       
-      // Ez kerül most a bal alsó sarokba
-      String textBottomLeft = fogas.halfaj;
+      // ÚJ ELRENDEZÉS: Súly/Hossz felül, halfaj alatta
       List<String> parameterek = [];
       if (fogas.suly != null && fogas.suly! > 0) parameterek.add('${fogas.suly} kg');
       if (fogas.hossz != null && fogas.hossz! > 0) parameterek.add('${fogas.hossz} cm');
+      
+      String textBottomLeft = '';
       if (parameterek.isNotEmpty) {
-        textBottomLeft += '\n${parameterek.join(' / ')}';
+        textBottomLeft += '${parameterek.join(' / ')}\n';
       }
+      textBottomLeft += fogas.halfaj;
 
       final letoltottFajlNev = await _kepGeneralasaEsMentese(kepUtvonal, textTopLeft, textBottomLeft, 'fogas');
       
@@ -44,7 +48,7 @@ class VizjelKeszito {
     try {
       String kezd = DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum);
       String veg = DateFormat('yyyy.MM.dd.').format(tura.befejezoDatum);
-      final textTopLeft = '$kezd - $veg\n${helyszinNev != 'Ismeretlen helyszín' ? helyszinNev : ''}'.trim();
+      final textTopLeft = '${helyszinNev != 'Ismeretlen helyszín' ? helyszinNev + '\n' : ''}$kezd - $veg'.trim();
       const textBottomLeft = ''; // Túránál ez üres marad
 
       final letoltottFajlNev = await _kepGeneralasaEsMentese(kepUtvonal, textTopLeft, textBottomLeft, 'tura');
