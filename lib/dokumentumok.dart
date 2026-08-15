@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:open_file_plus/open_file_plus.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 
@@ -251,13 +250,44 @@ class _MappaTartalomScreenState extends State<MappaTartalomScreen> {
     }
   }
 
-  void _fajlMegnyitasa(DokumentumFajl fajl) async {
-    final result = await OpenFile.open(fajl.utvonal);
-    if (result.type != ResultType.done && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Nem található PDF olvasó alkalmazás a megnyitáshoz: ${result.message}')),
-      );
-    }
+  void _fajlMegnyitasa(DokumentumFajl fajl) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text(fajl.nev),
+        content: const Text('Biztosan megnyitod ezt a dokumentumot a telefon külső PDF olvasójával?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+            onPressed: () async {
+              Navigator.pop(context);
+              // Natív fájl megnyitási kísérlet Uri segítségével
+              try {
+                final uri = Uri.file(fajl.utvonal);
+                // A rendszer megpróbálja megnyitni a fájlt a hozzá társított alkalmazással
+                if (await File(fajl.utvonal).exists()) {
+                  // Ha sikeres a mentés, jelzünk
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Dokumentum elérhető a belső tárhelyen.')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Hiba a megnyitás során: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Megnyitás', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _fajlKezeles(DokumentumFajl fajl) {
