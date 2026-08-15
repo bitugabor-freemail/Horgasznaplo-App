@@ -50,12 +50,12 @@ class FogasModel {
   final String halfaj;
   final double? suly;
   final double? hossz;
-  final String? sors; // Visszaállítva az eredetire
+  final String? sors;
   final List<String> csali;
   final List<String> etetoanyag;
   final int? etetesGyakorisaga;
   final String? bot;
-  final String? modszer; // Visszaállítva az eredetire
+  final String? modszer;
   final String? vegszerelek;
   final String? idojaras;
   final double? homerseklet;
@@ -93,12 +93,12 @@ class FogasModel {
     'halfaj': halfaj,
     'suly': suly,
     'hossz': hossz,
-    'sors': sors, // Visszaállítva az eredetire
+    'sors': sors,
     'csali': csali,
     'etetoanyag': etetoanyag,
     'etetesGyakorisaga': etetesGyakorisaga,
     'bot': bot,
-    'modszer': modszer, // Visszaállítva az eredetire
+    'modszer': modszer,
     'vegszerelek': vegszerelek,
     'idojaras': idojaras,
     'homerseklet': homerseklet,
@@ -115,12 +115,12 @@ class FogasModel {
     halfaj: json['halfaj'],
     suly: json['suly']?.toDouble(),
     hossz: json['hossz']?.toDouble(),
-    sors: json['sors'], // Visszaállítva az eredetire
+    sors: json['sors'],
     csali: List<String>.from(json['csali'] ?? []),
     etetoanyag: List<String>.from(json['etetoanyag'] ?? []),
     etetesGyakorisaga: json['etetesGyakorisaga'],
     bot: json['bot'],
-    modszer: json['modszer'], // Visszaállítva az eredetire
+    modszer: json['modszer'],
     vegszerelek: json['vegszerelek'],
     idojaras: json['idojaras'],
     homerseklet: json['homerseklet']?.toDouble(),
@@ -233,7 +233,7 @@ class FelszerelesKategoria {
 class FelszerelesTetel {
   final String id;
   final String kategoriaId;
-  final String marka; // Ha üres, a UI fogja "[N/A] - No Name"-ként mutatni
+  final String marka; 
   final String nev;
   final String jellemzo;
   final double? mennyiseg;
@@ -276,4 +276,30 @@ class FelszerelesTetel {
     leiras: json['leiras'] ?? '',
     kepek: List<String>.from(json['kepek'] ?? []),
   );
+}
+
+// --- ÚJ DOKUMENTUM MODELLEK ---
+
+class DokumentumMappa {
+  String id;
+  String nev;
+
+  DokumentumMappa({required this.id, required this.nev});
+
+  Map<String, dynamic> toJson() => {'id': id, 'nev': nev};
+  factory DokumentumMappa.fromJson(Map<String, dynamic> json) => 
+      DokumentumMappa(id: json['id'], nev: json['nev']);
+}
+
+class DokumentumFajl {
+  String id;
+  String mappaId;
+  String nev;
+  String utvonal;
+
+  DokumentumFajl({required this.id, required this.mappaId, required this.nev, required this.utvonal});
+
+  Map<String, dynamic> toJson() => {'id': id, 'mappaId': mappaId, 'nev': nev, 'utvonal': utvonal};
+  factory DokumentumFajl.fromJson(Map<String, dynamic> json) => 
+      DokumentumFajl(id: json['id'], mappaId: json['mappaId'], nev: json['nev'], utvonal: json['utvonal']);
 }
