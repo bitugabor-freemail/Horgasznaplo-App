@@ -146,7 +146,7 @@ class AdatTarolo {
   }
   static Future<void> gyariIdojarasVisszaallitas() async {
     List<String> gyari = [
-      'Derült, napos',
+      'Derült, tiszta',
       'Változóan felhős',
       'Borult, felhős',
       'Szemerkélő eső',
