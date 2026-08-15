@@ -50,22 +50,9 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   Future<void> _adatokBetoltese() async {
     if (_kivKategoria == 'Halfaj') {
       _halfajok = await AdatTarolo.halfajokBetoltese();
+      // Itt most már tisztán ABC sorrendbe rendezi a halakat (kis/nagybetű függetlenül)
+      _halfajok.sort((a, b) => a.nev.toLowerCase().compareTo(b.nev.toLowerCase()));
       
-      int getSuly(String s) {
-        if (s == 'Fogható' || s == 'Fogható (Őshonos)') return 1;
-        if (s == 'Fogható (Idegenhonos)') return 2;
-        if (s == 'Inváziós') return 3;
-        if (s == 'Nem fogható') return 4;
-        if (s == 'Védett') return 5;
-        return 6;
-      }
-      
-      _halfajok.sort((a, b) {
-        int cmp = getSuly(a.statusz).compareTo(getSuly(b.statusz));
-        if (cmp != 0) return cmp;
-        return a.nev.compareTo(b.nev);
-      });
-
     } else if (_kivKategoria == 'Helyszín') {
       _helyszinek = await AdatTarolo.helyszinekBetoltese();
       _helyszinek.sort((a, b) => a.nev.compareTo(b.nev)); 
