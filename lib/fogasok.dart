@@ -97,10 +97,10 @@ class _FogasokScreenState extends State<FogasokScreen> {
   }
 
   Color _getKartyaszin(String? sors) {
-    if (sors == 'Visszaengedtem') return Colors.green.withOpacity(0.25);
-    if (sors == 'Elvittem') return Colors.blue.withOpacity(0.25);
-    if (sors == 'Elajándékoztam') return Colors.orange.withOpacity(0.25);
-    if (sors == 'Elpusztult') return Colors.red.withOpacity(0.25);
+    if (sors == 'Visszaengedtem') return Colors.green.withOpacity(0.18);
+    if (sors == 'Elvittem') return Colors.blue.withOpacity(0.18);
+    if (sors == 'Elajándékoztam') return Colors.orange.withOpacity(0.18);
+    if (sors == 'Elpusztult') return Colors.red.withOpacity(0.18);
     return const Color(0xFF1E1E1E); 
   }
 
