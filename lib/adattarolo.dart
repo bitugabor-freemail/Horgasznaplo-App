@@ -4,7 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
-import 'package:intl/intl.dart'; // ÚJ: Szükséges az olvasható dátumhoz
+import 'package:intl/intl.dart';
 import 'modellek.dart';
 
 class AdatTarolo {
@@ -25,7 +25,7 @@ class AdatTarolo {
 
   // --- BIZTONSÁGOS KÉPKEZELÉS ---
   static Future<String> biztonsagosKepMasolas(String eredetiUtvonal, {String? egyediNev}) async {
-    if (eredetiUtvonal.startsWith('http')) return eredetiUtvonal; // Webes linkeket békén hagyjuk
+    if (eredetiUtvonal.startsWith('http')) return eredetiUtvonal; 
     
     final eredetiFajl = File(eredetiUtvonal);
     if (!await eredetiFajl.exists()) return eredetiUtvonal;
@@ -39,7 +39,6 @@ class AdatTarolo {
     final fajlNev = egyediNev ?? '${DateTime.now().millisecondsSinceEpoch}_${eredetiUtvonal.split('/').last}';
     final ujUtvonal = '${kepekMappa.path}/$fajlNev';
 
-    // Ha még nincs ott a fájl, bemásoljuk (ez védi a már rejtett mappában lévő képeket az újra-másolástól)
     if (eredetiUtvonal != ujUtvonal) {
       await eredetiFajl.copy(ujUtvonal);
     }
@@ -146,7 +145,19 @@ class AdatTarolo {
     return List<String>.from(await _betoltes(_idojarasKulcs));
   }
   static Future<void> gyariIdojarasVisszaallitas() async {
-    List<String> gyari = ['Napsütés', 'Közepesen felhős', 'Erősen felhős', 'Borult', 'Szemerkélő eső', 'Eső', 'Zápor', 'Erős szél', 'Vihar', 'Zivatar', 'Jégeső', 'Havazás', 'Havaseső', 'Köd'];
+    List<String> gyari = [
+      'Derült, napos',
+      'Változóan felhős',
+      'Borult, felhős',
+      'Szemerkélő eső',
+      'Tartós eső',
+      'Zápor',
+      'Zivatar, vihar',
+      'Ködös, párás',
+      'Viharos szél',
+      'Havazás',
+      'Havas eső'
+    ];
     List<String> jelenlegi = List<String>.from(await _betoltes(_idojarasKulcs));
     for (String g in gyari) { if (!jelenlegi.contains(g)) jelenlegi.add(g); }
     await idojarasMentes(jelenlegi);
@@ -163,7 +174,7 @@ class AdatTarolo {
     return List<String>.from(await _betoltes(_sorsKulcs));
   }
   static Future<void> gyariSorsVisszaallitas() async {
-    List<String> gyari = ['Visszaengedtem', 'Elvittem', 'Elpusztult'];
+    List<String> gyari = ['Visszaengedtem', 'Elvittem', 'Elajándékoztam', 'Elpusztult'];
     List<String> jelenlegi = List<String>.from(await _betoltes(_sorsKulcs));
     for (String g in gyari) { if (!jelenlegi.contains(g)) jelenlegi.add(g); }
     await sorsMentes(jelenlegi);
