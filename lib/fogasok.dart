@@ -134,8 +134,8 @@ class _FogasokScreenState extends State<FogasokScreen> {
                             helyszinNev: _turaHelyszinNev,
                             horgaszhely: widget.tura.horgaszhely,
                             onEdit: () {
-                              Navigator.pop(context); 
-                              _fogasSzerkesztes(fogas); 
+                              Navigator.pop(context); // Részletek bezárása
+                              _fogasSzerkesztes(fogas); // Szerkesztő megnyitása
                             },
                           ),
                         ),
@@ -768,7 +768,7 @@ class FogasReszletekScreen extends StatelessWidget {
   final FogasModel fogas;
   final String helyszinNev;
   final String horgaszhely;
-  final VoidCallback onEdit; 
+  final VoidCallback onEdit;
 
   const FogasReszletekScreen({
     super.key,
@@ -811,7 +811,6 @@ class FogasReszletekScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ÚJ LOGIKA: Színek beállítása a jelvényhez (chip)
     Color badgeSzin = Colors.grey[800]!;
     if (fogas.sors == 'Visszaengedtem') badgeSzin = Colors.green[900]!;
     if (fogas.sors == 'Elvittem') badgeSzin = Colors.blue[900]!;
@@ -931,7 +930,7 @@ class FogasReszletekScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            const SizedBox(height: 100), 
+            const SizedBox(height: 100), // Alsó margó a lebegő gomb miatt
           ],
         ),
       ),
