@@ -155,7 +155,6 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
                 final turaHelyszin = turaAdatok['helyszin']!;
                 final turaHorgaszhely = turaAdatok['horgaszhely']!;
 
-                // ÚJ LOGIKA: Keretszínek az új színpaletta alapján
                 Color keretSzin = Colors.transparent;
                 if (fogas.sors == 'Visszaengedtem') keretSzin = Colors.greenAccent;
                 if (fogas.sors == 'Elvittem') keretSzin = Colors.blueAccent;
