@@ -102,13 +102,17 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
           fogas: fogas,
           helyszinNev: helyszinNev,
           horgaszhely: horgaszhely,
+          // Rákötöttük a lebegő gombot a szerkesztőre
+          onEdit: () {
+            Navigator.pop(context); // Bezárja a részleteket
+            _szerkesztesMegnyitasa(fogas); // Megnyitja a szerkesztőt
+          },
         ),
       ),
     );
   }
 
   void _szerkesztesMegnyitasa(FogasModel fogas) {
-    // --- JAVÍTVA: Megkeressük a teljes Túra objektumot a fogáshoz, és azt adjuk át ---
     final tura = _osszesTura.cast<Tura?>().firstWhere((t) => t?.id == fogas.turaId, orElse: () => null);
     
     if (tura != null) {
@@ -116,7 +120,7 @@ class _KedvencekScreenState extends State<KedvencekScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => FogasSzerkesztoScreen(
-            tura: tura, // Itt már a tura objektumot adjuk át a turaId helyett!
+            tura: tura, 
             szerkeszthetoFogas: fogas,
             mentesCallback: () => _adatokBetoltese(),
           ),
