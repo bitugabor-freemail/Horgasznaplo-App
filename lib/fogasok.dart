@@ -97,8 +97,10 @@ class _FogasokScreenState extends State<FogasokScreen> {
   }
 
   Color _getKartyaszin(String? sors) {
-    if (sors == 'Elvittem') return Colors.orange.withOpacity(0.15);
-    if (sors == 'Elpusztult') return Colors.red.withOpacity(0.15);
+    if (sors == 'Visszaengedtem') return Colors.green.withOpacity(0.25);
+    if (sors == 'Elvittem') return Colors.blue.withOpacity(0.25);
+    if (sors == 'Elajándékoztam') return Colors.orange.withOpacity(0.25);
+    if (sors == 'Elpusztult') return Colors.red.withOpacity(0.25);
     return const Color(0xFF1E1E1E); 
   }
 
@@ -132,8 +134,8 @@ class _FogasokScreenState extends State<FogasokScreen> {
                             helyszinNev: _turaHelyszinNev,
                             horgaszhely: widget.tura.horgaszhely,
                             onEdit: () {
-                              Navigator.pop(context); // Részletek bezárása
-                              _fogasSzerkesztes(fogas); // Szerkesztő megnyitása
+                              Navigator.pop(context); 
+                              _fogasSzerkesztes(fogas); 
                             },
                           ),
                         ),
@@ -766,7 +768,7 @@ class FogasReszletekScreen extends StatelessWidget {
   final FogasModel fogas;
   final String helyszinNev;
   final String horgaszhely;
-  final VoidCallback onEdit; // Lebegő szerkesztéshez szükséges callback
+  final VoidCallback onEdit; 
 
   const FogasReszletekScreen({
     super.key,
@@ -797,7 +799,6 @@ class FogasReszletekScreen extends StatelessWidget {
             child: InteractiveViewer(
               minScale: 1.0,
               maxScale: 5.0,
-              // Szabad vászon nagyítás engedélyezése:
               boundaryMargin: const EdgeInsets.all(double.infinity),
               clipBehavior: Clip.none,
               child: Image.file(File(fogas.fenykep!), fit: BoxFit.contain),
@@ -810,6 +811,13 @@ class FogasReszletekScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ÚJ LOGIKA: Színek beállítása a jelvényhez (chip)
+    Color badgeSzin = Colors.grey[800]!;
+    if (fogas.sors == 'Visszaengedtem') badgeSzin = Colors.green[900]!;
+    if (fogas.sors == 'Elvittem') badgeSzin = Colors.blue[900]!;
+    if (fogas.sors == 'Elajándékoztam') badgeSzin = Colors.orange[900]!;
+    if (fogas.sors == 'Elpusztult') badgeSzin = Colors.red[900]!;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Fogás Részletei'),
@@ -876,7 +884,7 @@ class FogasReszletekScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: fogas.sors == 'Visszaengedtem' ? Colors.green[900] : (fogas.sors == 'Elvittem' ? Colors.orange[900] : Colors.red[900]),
+                      color: badgeSzin,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(fogas.sors ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -923,7 +931,7 @@ class FogasReszletekScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            const SizedBox(height: 100), // Alsó margó a lebegő gomb miatt
+            const SizedBox(height: 100), 
           ],
         ),
       ),
