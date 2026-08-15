@@ -131,6 +131,10 @@ class _FogasokScreenState extends State<FogasokScreen> {
                             fogas: fogas,
                             helyszinNev: _turaHelyszinNev,
                             horgaszhely: widget.tura.horgaszhely,
+                            onEdit: () {
+                              Navigator.pop(context); // Részletek bezárása
+                              _fogasSzerkesztes(fogas); // Szerkesztő megnyitása
+                            },
                           ),
                         ),
                       );
@@ -199,6 +203,10 @@ class _FogasokScreenState extends State<FogasokScreen> {
                                           fogas: fogas,
                                           helyszinNev: _turaHelyszinNev,
                                           horgaszhely: widget.tura.horgaszhely,
+                                          onEdit: () {
+                                            Navigator.pop(context); 
+                                            _fogasSzerkesztes(fogas); 
+                                          },
                                         ),
                                       ),
                                     );
@@ -294,16 +302,15 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       _megjegyzesCtrl.text = f.megjegyzes;
       _fenykepUtvonal = f.fenykep;
     } else {
-      // ÚJ LOGIKA: Okos dátum beállítás új fogásnál
       final most = DateTime.now();
       final maiNap = DateTime(most.year, most.month, most.day);
       final tKezd = DateTime(widget.tura.kezdoDatum.year, widget.tura.kezdoDatum.month, widget.tura.kezdoDatum.day);
       final tVeg = DateTime(widget.tura.befejezoDatum.year, widget.tura.befejezoDatum.month, widget.tura.befejezoDatum.day);
 
       if (maiNap.isBefore(tKezd) || maiNap.isAfter(tVeg)) {
-        _datum = tKezd; // Kívül esik, ráugrunk a túra első napjára
+        _datum = tKezd; 
       } else {
-        _datum = maiNap; // Belül van, jöhet az "élő" mai nap
+        _datum = maiNap; 
       }
     }
     _adatokBetoltese();
@@ -361,7 +368,12 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: Text('Új $kategoria hozzáadása'),
-        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Megnevezés')),
+        content: TextField(
+          controller: ctrl, 
+          autofocus: true, 
+          onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+          decoration: const InputDecoration(labelText: 'Megnevezés')
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
           ElevatedButton(
@@ -416,6 +428,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                       child: TextField(
                         controller: keresoCtrl,
                         autofocus: true,
+                        onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                         decoration: InputDecoration(
                           hintText: 'Keresés...',
                           prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
@@ -753,12 +766,14 @@ class FogasReszletekScreen extends StatelessWidget {
   final FogasModel fogas;
   final String helyszinNev;
   final String horgaszhely;
+  final VoidCallback onEdit; // Lebegő szerkesztéshez szükséges callback
 
   const FogasReszletekScreen({
     super.key,
     required this.fogas,
     required this.helyszinNev,
     required this.horgaszhely,
+    required this.onEdit,
   });
 
   void _teljesKepernyosKep(BuildContext context) {
@@ -780,9 +795,12 @@ class FogasReszletekScreen extends StatelessWidget {
           ),
           body: Center(
             child: InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: Image.file(File(fogas.fenykep!)),
+              minScale: 1.0,
+              maxScale: 5.0,
+              // Szabad vászon nagyítás engedélyezése:
+              boundaryMargin: const EdgeInsets.all(double.infinity),
+              clipBehavior: Clip.none,
+              child: Image.file(File(fogas.fenykep!), fit: BoxFit.contain),
             ),
           ),
         ),
@@ -905,9 +923,15 @@ class FogasReszletekScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 100), // Alsó margó a lebegő gomb miatt
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green[600],
+        onPressed: onEdit,
+        tooltip: 'Szerkesztés',
+        child: const Icon(Icons.edit, color: Colors.white),
       ),
     );
   }
