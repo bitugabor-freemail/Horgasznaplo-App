@@ -8,6 +8,7 @@ import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
 import 'torzsadatok.dart';
+import 'dokumentumok.dart'; // ÚJ: Dokumentumok importálása
 
 void main() {
   runApp(const HorgaszNaploApp());
@@ -264,9 +265,21 @@ class _FomenuScreenState extends State<FomenuScreen> {
               onTap: () { setState(() => _currentIndex = 4); Navigator.pop(context); },
             ),
             const Divider(color: Colors.white24),
+            // ÚJ: Dokumentumok menüpont a Drawer-ben
+            ListTile(
+              leading: const Icon(Icons.folder_shared_outlined, color: Colors.greenAccent),
+              title: const Text('6. Dokumentumok'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DokumentumokScreen()),
+                );
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.category, color: Colors.greenAccent),
-              title: const Text('6. Törzsadatok'),
+              title: const Text('7. Törzsadatok'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -277,7 +290,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.settings, color: Colors.greenAccent),
-              title: const Text('7. Adatkezelés'),
+              title: const Text('8. Adatkezelés'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const AdatkezelesScreen()));
@@ -286,7 +299,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
             const Divider(color: Colors.white24),
             ListTile(
               leading: const Icon(Icons.info_outline, color: Colors.white54),
-              title: const Text('8. Névjegy'),
+              title: const Text('9. Névjegy'),
               onTap: () {
                 Navigator.pop(context);
                 showDialog(
