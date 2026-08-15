@@ -173,9 +173,12 @@ class _TurakScreenState extends State<TurakScreen> {
           ),
           body: Center(
             child: InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: Image.file(File(kepUtvonal)),
+              minScale: 1.0,
+              maxScale: 5.0,
+              // Szabad vászon nagyítás engedélyezése
+              boundaryMargin: const EdgeInsets.all(double.infinity),
+              clipBehavior: Clip.none,
+              child: Image.file(File(kepUtvonal), fit: BoxFit.contain),
             ),
           ),
         ),
@@ -469,9 +472,18 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nevCtrl, autofocus: true, decoration: const InputDecoration(labelText: 'Helyszín neve *')),
+            TextField(
+              controller: nevCtrl, 
+              autofocus: true, 
+              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+              decoration: const InputDecoration(labelText: 'Helyszín neve *')
+            ),
             const SizedBox(height: 12),
-            TextField(controller: kodCtrl, decoration: const InputDecoration(labelText: 'Víztér kód (opcionális)')),
+            TextField(
+              controller: kodCtrl, 
+              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+              decoration: const InputDecoration(labelText: 'Víztér kód (opcionális)')
+            ),
           ],
         ),
         actions: [
@@ -508,7 +520,12 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Új horgásztárs hozzáadása'),
-        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Név')),
+        content: TextField(
+          controller: ctrl, 
+          autofocus: true, 
+          onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+          decoration: const InputDecoration(labelText: 'Név')
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
           ElevatedButton(
@@ -564,6 +581,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                       child: TextField(
                         controller: keresoCtrl,
                         autofocus: true,
+                        onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                         decoration: InputDecoration(
                           hintText: 'Keresés...',
                           prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
@@ -653,6 +671,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                       child: TextField(
                         controller: keresoCtrl,
                         autofocus: true,
+                        onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                         decoration: InputDecoration(
                           hintText: 'Keresés...',
                           prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
@@ -774,10 +793,8 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                       final p = await showDatePicker(context: context, initialDate: _kezdDatum, firstDate: DateTime(2000), lastDate: DateTime(2100));
                       if (p != null) {
                         setState(() {
-                          // ÚJ LOGIKA: Kiszámoljuk az eddigi különbséget napokban
                           final int kulonbseg = _vegDatum.difference(_kezdDatum).inDays;
                           _kezdDatum = p;
-                          // ÚJ LOGIKA: Hozzáadjuk a különbséget az új kezdődátumhoz
                           _vegDatum = _kezdDatum.add(Duration(days: kulonbseg));
                         });
                       }
@@ -791,7 +808,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                     label: Text('Vége: ${DateFormat('yyyy.MM.dd').format(_vegDatum)}'),
                     onPressed: () async {
                       final p = await showDatePicker(context: context, initialDate: _vegDatum, firstDate: DateTime(2000), lastDate: DateTime(2100));
-                      // Itt szándékosan csak a végdátumot állítjuk, a kezdő érintetlen marad
                       if (p != null) setState(() => _vegDatum = p);
                     },
                   ),
