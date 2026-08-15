@@ -373,7 +373,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     return '${legjobb.key} (${legjobb.value} db)';
   }
 
-  // --- ÚJ LOGIKA: TAG ALAPÚ RANGSOROLÁS (TOP 3) ---
+  // --- TOP 3 ---
   Map<String, _TagStat> _getCsaliStats(List<FogasModel> fogasok) {
     Map<String, _TagStat> stats = {};
     for (var f in fogasok) {
@@ -401,7 +401,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
   Widget _buildTop3Blokk(String cim, Map<String, _TagStat> stats) {
     if (stats.isEmpty) return const SizedBox();
 
-    // Darabszám alapján rendezve (ha egyenlő, átlagsúly dönt)
     var darabLista = stats.entries.toList()
       ..sort((a, b) {
         int cmp = b.value.darab.compareTo(a.value.darab);
@@ -410,7 +409,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       });
     var topDarab = darabLista.take(3).toList();
 
-    // Átlagsúly alapján rendezve (csak > 0 súlyúak, ha egyenlő, darabszám dönt)
     var sulyLista = stats.entries.where((e) => e.value.atlag > 0).toList()
       ..sort((a, b) {
         int cmp = b.value.atlag.compareTo(a.value.atlag);
@@ -495,9 +493,26 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       halfajDb[f.halfaj] = (halfajDb[f.halfaj] ?? 0) + 1;
     }
 
-    // Toplisták generálása
     Map<String, _TagStat> csaliStats = _getCsaliStats(szurtFogasok);
     Map<String, _TagStat> etetoStats = _getEtetoStats(szurtFogasok);
+
+    // --- SZEMÉLYES REKORDOK (PB) SZÁMÍTÁSA ---
+    Map<String, FogasModel> rekordok = {};
+    for (var f in szurtFogasok) {
+      if (f.suly != null && f.suly! > 0) {
+        if (!rekordok.containsKey(f.halfaj)) {
+          rekordok[f.halfaj] = f;
+        } else {
+          if (f.suly! > (rekordok[f.halfaj]!.suly ?? 0)) {
+            rekordok[f.halfaj] = f;
+          }
+        }
+      }
+    }
+    
+    var rekordLista = rekordok.values.toList();
+    // Csökkenő sorrendbe rendezzük súly alapján
+    rekordLista.sort((a, b) => (b.suly ?? 0).compareTo(a.suly ?? 0));
 
     return Scaffold(
       body: Column(
@@ -598,7 +613,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                               _StatisztikaSor(cim: 'Legjobb horgászhely', ertek: _legjobbHelyszin(szurtFogasok)),
                               const Divider(color: Colors.white12),
                               
-                              // Legjobb kombó koktél összefűzése
                               _StatisztikaSor(cim: 'Legjobb Kombináció (Koktél)', ertek: _legjobbKombo(szurtFogasok, (f) {
                                 if (f.csali.isEmpty && f.etetoanyag.isEmpty) return '-';
                                 String cs = f.csali.isNotEmpty ? f.csali.join(' & ') : '-';
@@ -606,7 +620,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                                 return '$cs + $et';
                               })),
                               
-                              // TOP 3 RÉSZLEG
                               if (csaliStats.isNotEmpty) ...[
                                 const Divider(color: Colors.white24, height: 32),
                                 _buildTop3Blokk('TOP 3 CSALI', csaliStats),
@@ -619,6 +632,29 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                             ],
                           ),
                         ),
+                        
+                      // --- ÚJ RÉSZ: SZEMÉLYES REKORDOK (PB) ---
+                      if (rekordLista.isNotEmpty)
+                        _Kartya(
+                          cim: 'Személyes Rekordok (Fajonként)',
+                          ikon: Icons.emoji_events,
+                          tartalom: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: rekordLista.map((f) {
+                              String hosszSzoveg = (f.hossz != null && f.hossz! > 0) ? ' (${f.hossz} cm)' : '';
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(f.halfaj, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                    Text('${f.suly} kg$hosszSzoveg', style: const TextStyle(color: Colors.amberAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
                     ],
                   ),
           ),
@@ -628,7 +664,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
   }
 }
 
-// Belső osztály a Toplisták számlálásához
 class _TagStat {
   int darab = 0;
   double osszsuly = 0.0;
