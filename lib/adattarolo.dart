@@ -153,6 +153,7 @@ class AdatTarolo {
       'Tartós eső',
       'Zápor',
       'Zivatar, vihar',
+      'Jégeső',
       'Ködös, párás',
       'Viharos szél',
       'Havazás',
