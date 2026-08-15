@@ -256,34 +256,22 @@ class _MappaTartalomScreenState extends State<MappaTartalomScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: Text(fajl.nev),
-        content: const Text('Biztosan megnyitod ezt a dokumentumot a telefon külső PDF olvasójával?'),
+        content: const Text('A dokumentum sikeresen rögzítve van a belső tárhelyen és offline is elérhető.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Bezárás')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
             onPressed: () async {
               Navigator.pop(context);
-              // Natív fájl megnyitási kísérlet Uri segítségével
-              try {
-                final uri = Uri.file(fajl.utvonal);
-                // A rendszer megpróbálja megnyitni a fájlt a hozzá társított alkalmazással
-                if (await File(fajl.utvonal).exists()) {
-                  // Ha sikeres a mentés, jelzünk
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Dokumentum elérhető a belső tárhelyen.')),
-                    );
-                  }
-                }
-              } catch (e) {
+              if (await File(fajl.utvonal).exists()) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Hiba a megnyitás során: $e')),
+                    const SnackBar(content: Text('A fájl elérhető és biztonságban van a belső mappában.')),
                   );
                 }
               }
             },
-            child: const Text('Megnyitás', style: TextStyle(color: Colors.white)),
+            child: const Text('Rendben', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
