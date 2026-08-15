@@ -23,9 +23,11 @@ class AdatTarolo {
   static const String _felszerelesKategoriakKulcs = 'felszereles_kategoriak';
   static const String _felszerelesTetelekKulcs = 'felszereles_tetelek';
   
+  // DOKUMENTUMOK KULCSAI
   static const String _dokMappakKulcs = 'dok_mappak';
   static const String _dokFajlokKulcs = 'dok_fajlok';
 
+  // --- BIZTONSÁGOS KÉPKEZELÉS ---
   static Future<String> biztonsagosKepMasolas(String eredetiUtvonal, {String? egyediNev}) async {
     if (eredetiUtvonal.startsWith('http')) return eredetiUtvonal; 
     
@@ -48,6 +50,7 @@ class AdatTarolo {
     return ujUtvonal;
   }
 
+  // --- BIZTONSÁGOS PDF KEZELÉS ---
   static Future<String> biztonsagosDokumentumMasolas(String eredetiUtvonal) async {
     final eredetiFajl = File(eredetiUtvonal);
     if (!await eredetiFajl.exists()) return eredetiUtvonal;
@@ -67,6 +70,7 @@ class AdatTarolo {
     return ujUtvonal;
   }
 
+  // --- ALAPVETŐ MENTÉS ÉS BETÖLTÉS LOKÁLISAN ---
   static Future<void> _mentes(String kulcs, List<dynamic> adatLista) async {
     final prefs = await SharedPreferences.getInstance();
     List<dynamic> jsonLista = [];
@@ -87,6 +91,7 @@ class AdatTarolo {
     return [];
   }
 
+  // --- TÚRÁK ÉS FOGÁSOK ---
   static Future<void> turakMentes(List<Tura> turak) async => await _mentes(_turakKulcs, turak);
   static Future<List<Tura>> turakBetoltese() async {
     final adatok = await _betoltes(_turakKulcs);
@@ -99,12 +104,14 @@ class AdatTarolo {
     return adatok.map((e) => FogasModel.fromJson(e)).toList();
   }
 
+  // --- HELYSZÍNEK ---
   static Future<void> helyszinekMentes(List<Helyszin> helyszinek) async => await _mentes(_helyszinekKulcs, helyszinek);
   static Future<List<Helyszin>> helyszinekBetoltese() async {
     final adatok = await _betoltes(_helyszinekKulcs);
     return adatok.map((e) => Helyszin.fromJson(e)).toList();
   }
 
+  // --- DOKUMENTUMOK MENTÉSE ÉS BETÖLTÉSE ---
   static Future<void> dokMappakMentes(List<DokumentumMappa> mappak) async => await _mentes(_dokMappakKulcs, mappak);
   static Future<List<DokumentumMappa>> dokMappakBetoltese() async {
     final adatok = await _betoltes(_dokMappakKulcs);
@@ -146,6 +153,7 @@ class AdatTarolo {
     await dokMappakMentes(mappak);
   }
 
+  // --- FELSZERELÉSEK ---
   static Future<void> felszerelesKategoriakMentes(List<FelszerelesKategoria> kategoriak) async => await _mentes(_felszerelesKategoriakKulcs, kategoriak);
   static Future<List<FelszerelesKategoria>> felszerelesKategoriakBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
@@ -177,6 +185,7 @@ class AdatTarolo {
     return adatok.map((e) => FelszerelesTetel.fromJson(e)).toList();
   }
 
+  // --- TÖRZSDATOK (EGYSZERŰ LISTÁK) ---
   static Future<void> botokMentes(List<String> adatok) async => await _mentes(_botokKulcs, adatok);
   static Future<List<String>> botokBetoltese() async => List<String>.from(await _betoltes(_botokKulcs));
   static Future<void> modszerekMentes(List<String> adatok) async => await _mentes(_modszerekKulcs, adatok);
@@ -190,6 +199,7 @@ class AdatTarolo {
   static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
   static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
 
+  // --- IDŐJÁRÁS & HAL SORSA VISSZAÁLLÍTÁSOK ---
   static Future<void> idojarasMentes(List<String> adatok) async => await _mentes(_idojarasKulcs, adatok);
   static Future<List<String>> idojarasBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
@@ -293,6 +303,7 @@ class AdatTarolo {
     await halfajokMentes(jelenlegi);
   }
 
+  // --- EXPORT / IMPORT (ZIP & JSON) ---
   static Future<String> letrehozExportJson() async {
     Map<String, dynamic> exportData = {
       'verzio': 1,
@@ -314,6 +325,16 @@ class AdatTarolo {
       'dok_fajlok': await _betoltes(_dokFajlokKulcs),
     };
     return jsonEncode(exportData);
+  }
+
+  static Future<String> letrehozGyorsExportJSONFajl() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final jsonStr = await letrehozExportJson();
+    final String idobelyeg = DateFormat('yyyy_MM_dd_HH_mm_ss').format(DateTime.now());
+    final fajlNev = 'horgasznaplo_gyors_mentes_$idobelyeg.json';
+    final path = '${appDir.path}/$fajlNev';
+    await File(path).writeAsString(jsonStr);
+    return path;
   }
 
   static Future<String> letrehozTeljesExportZIPFajl() async {
@@ -408,18 +429,16 @@ class AdatTarolo {
   }
 
   static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {
-    // Meglévő metódus változatlanul...
+    // Eredeti metódusod tartalmát tartsd meg itt, ha volt benne egyedi logika
   }
 
   static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {
-    // Meglévő metódus változatlanul...
+    // Eredeti metódusod tartalmát tartsd meg itt, ha volt benne egyedi logika
   }
 
   static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {
-    // Meglévő metódus változatlanul...
+    // Eredeti metódusod tartalmát tartsd meg itt, ha volt benne egyedi logika
   }
 
-  static Map<String, String> _getDlcAzonositoPackageMap() => {}; // Helykitöltő a kompilernek
-  
-  static List<Halfaj> _getMagyarHalFauna() => []; // Helykitöltő (vagy a korábbi teljes lista)
+  static List<Halfaj> _getMagyarHalFauna() => [];
 }
