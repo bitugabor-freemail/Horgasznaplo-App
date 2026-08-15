@@ -17,6 +17,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   int _fogasokSzama = 0;
   int _halfajokSzama = 0;
   int _felszerelesSzama = 0;
+  int _dokumentumokSzama = 0;
   bool _toltesFolyamatban = false;
 
   @override
@@ -30,12 +31,14 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
     final fogasok = await AdatTarolo.fogasokBetoltese();
     final halfajok = await AdatTarolo.halfajokBetoltese();
     final felszerelesek = await AdatTarolo.felszerelesTetelekBetoltese();
+    final dokumentumok = await AdatTarolo.dokFajlokBetoltese();
 
     setState(() {
       _turakSzama = turak.length;
       _fogasokSzama = fogasok.length;
       _halfajokSzama = halfajok.length;
       _felszerelesSzama = felszerelesek.length;
+      _dokumentumokSzama = dokumentumok.length;
     });
   }
 
@@ -230,6 +233,8 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                         _StatRow(cim: 'Felszerelés tételek:', ertek: '$_felszerelesSzama db'),
                         const Divider(color: Colors.white24),
                         _StatRow(cim: 'Mentett halfajok:', ertek: '$_halfajokSzama db'),
+                        const Divider(color: Colors.white24),
+                        _StatRow(cim: 'Mentett dokumentumok:', ertek: '$_dokumentumokSzama db'),
                       ],
                     ),
                   ),
