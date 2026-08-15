@@ -85,7 +85,9 @@ class FomenuScreen extends StatefulWidget {
 class _FomenuScreenState extends State<FomenuScreen> {
   int _currentIndex = 0;
   final GlobalKey<FelszerelesScreenState> _felszerelesKey = GlobalKey<FelszerelesScreenState>();
-  late final List<Widget> _kepernyok;
+  
+  // LEVETTÜK A FINAL JELZŐT, HOGY TUDJUK FRISSÍTENI A LISTÁT
+  late List<Widget> _kepernyok; 
 
   @override
   void initState() {
@@ -97,6 +99,20 @@ class _FomenuScreenState extends State<FomenuScreen> {
       const LexikonScreen(),
       const StatisztikaScreen(),
     ];
+  }
+
+  // ÚJ FRISSÍTŐ FUNKCIÓ A MENÜPONTOKHOZ
+  void _kepernyokFrissitese() {
+    setState(() {
+      _kepernyok = [
+        TurakScreen(key: UniqueKey()),
+        KedvencekScreen(key: UniqueKey()),
+        FelszerelesScreen(key: _felszerelesKey),
+        LexikonScreen(key: UniqueKey()),
+        StatisztikaScreen(key: UniqueKey()),
+      ];
+    });
+    _felszerelesKey.currentState?.adatokBetoltese();
   }
 
   final List<String> _cimek = [
@@ -265,7 +281,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
               onTap: () { setState(() => _currentIndex = 4); Navigator.pop(context); },
             ),
             const Divider(color: Colors.white24),
-            // ÚJ: Dokumentumok menüpont a Drawer-ben
+            // Dokumentumok menüpont
             ListTile(
               leading: const Icon(Icons.folder_shared_outlined, color: Colors.greenAccent),
               title: const Text('6. Dokumentumok'),
@@ -280,20 +296,26 @@ class _FomenuScreenState extends State<FomenuScreen> {
             ListTile(
               leading: const Icon(Icons.category, color: Colors.greenAccent),
               title: const Text('7. Törzsadatok'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                Navigator.push(
+                // MEGVÁRJUK A TÖRZSDATOK BEZÁRÁSÁT
+                await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const TorzsadatokScreen()),
                 );
+                // MAJD AZONNAL FRISSÍTJÜK A KÉPERNYŐKET
+                _kepernyokFrissitese();
               },
             ),
             ListTile(
               leading: const Icon(Icons.settings, color: Colors.greenAccent),
               title: const Text('8. Adatkezelés'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const AdatkezelesScreen()));
+                // MEGVÁRJUK AZ ADATKEZELÉS BEZÁRÁSÁT
+                await Navigator.push(context, MaterialPageRoute(builder: (context) => const AdatkezelesScreen()));
+                // MAJD AZONNAL FRISSÍTJÜK A KÉPERNYŐKET (pl. Import után)
+                _kepernyokFrissitese();
               },
             ),
             const Divider(color: Colors.white24),
