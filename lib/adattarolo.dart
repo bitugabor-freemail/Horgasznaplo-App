@@ -20,6 +20,7 @@ class AdatTarolo {
   static const String _tarsakKulcs = 'torzs_tarsak';
   static const String _idojarasKulcs = 'torzs_idojaras';
   static const String _sorsKulcs = 'torzs_sors';
+  static const String _taskakKulcs = 'torzs_taskak'; // ÚJ TÖRZSDAT KULCS
   static const String _felszerelesKategoriakKulcs = 'felszereles_kategoriak';
   static const String _felszerelesTetelekKulcs = 'felszereles_tetelek';
   
@@ -198,6 +199,10 @@ class AdatTarolo {
   static Future<List<String>> etetoanyagokBetoltese() async => List<String>.from(await _betoltes(_etetoanyagokKulcs));
   static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
   static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
+  
+  // ÚJ TÁSKÁK TÖRZSDAT FUNKCIÓI
+  static Future<void> taskakMentes(List<String> adatok) async => await _mentes(_taskakKulcs, adatok);
+  static Future<List<String>> taskakBetoltese() async => List<String>.from(await _betoltes(_taskakKulcs));
 
   // --- IDŐJÁRÁS & HAL SORSA VISSZAÁLLÍTÁSOK ---
   static Future<void> idojarasMentes(List<String> adatok) async => await _mentes(_idojarasKulcs, adatok);
@@ -322,6 +327,7 @@ class AdatTarolo {
       'tarsak': await _betoltes(_tarsakKulcs),
       'idojaras': await _betoltes(_idojarasKulcs),
       'sors': await _betoltes(_sorsKulcs),
+      'taskak': await _betoltes(_taskakKulcs), // ÚJ
       'dok_mappak': await _betoltes(_dokMappakKulcs),
       'dok_fajlok': await _betoltes(_dokFajlokKulcs),
     };
@@ -425,6 +431,7 @@ class AdatTarolo {
     if (data.containsKey('tarsak')) await prefs.setString(_tarsakKulcs, jsonEncode(data['tarsak']));
     if (data.containsKey('idojaras')) await prefs.setString(_idojarasKulcs, jsonEncode(data['idojaras']));
     if (data.containsKey('sors')) await prefs.setString(_sorsKulcs, jsonEncode(data['sors']));
+    if (data.containsKey('taskak')) await prefs.setString(_taskakKulcs, jsonEncode(data['taskak'])); // ÚJ
     if (data.containsKey('dok_mappak')) await prefs.setString(_dokMappakKulcs, jsonEncode(data['dok_mappak']));
     if (data.containsKey('dok_fajlok')) await prefs.setString(_dokFajlokKulcs, jsonEncode(data['dok_fajlok']));
   }
