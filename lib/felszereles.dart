@@ -96,7 +96,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     final mutathatoTetelek = _getSzurtEsRendezettTetelek();
 
     return Scaffold(
-      // Belső AppBar törölve, hogy ne duplázódjon a fejléc!
       body: Column(
         children: [
           Container(
@@ -182,12 +181,11 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                                   ),
                                   Expanded(
                                     child: Padding(
-                                      // Jobb oldal és alja szabadon hagyva a fix gomboknak
                                       padding: const EdgeInsets.only(top: 12, bottom: 32, right: 40),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(markaNev, style: const TextStyle(fontSize: 12, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                                          Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                                           const SizedBox(height: 4),
                                           Text(tetel.nev, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                                           if (tetel.jellemzo.isNotEmpty) ...[
@@ -200,7 +198,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                                   ),
                                 ],
                               ),
-                              // 3 pontos menü szigorúan a jobb felső sarokban
                               Positioned(
                                 top: 4,
                                 right: 4,
@@ -217,7 +214,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                                   ],
                                 ),
                               ),
-                              // Mennyiség fixen a jobb alsó sarokban
                               if (tetel.mennyiseg != null || tetel.mertekegyseg.isNotEmpty)
                                 Positioned(
                                   bottom: 12,
