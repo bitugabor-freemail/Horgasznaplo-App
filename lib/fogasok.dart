@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'idojaras_szolgaltato.dart';
@@ -134,8 +135,8 @@ class _FogasokScreenState extends State<FogasokScreen> {
                             helyszinNev: _turaHelyszinNev,
                             horgaszhely: widget.tura.horgaszhely,
                             onEdit: () {
-                              Navigator.pop(context); // Részletek bezárása
-                              _fogasSzerkesztes(fogas); // Szerkesztő megnyitása
+                              Navigator.pop(context); 
+                              _fogasSzerkesztes(fogas); 
                             },
                           ),
                         ),
@@ -152,8 +153,8 @@ class _FogasokScreenState extends State<FogasokScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: (fogas.fenykep != null && File(fogas.fenykep!).existsSync())
-                              ? Image.file(File(fogas.fenykep!), fit: BoxFit.cover)
+                          child: (fogas.kepek.isNotEmpty && File(fogas.kepek.first).existsSync())
+                              ? Image.file(File(fogas.kepek.first), fit: BoxFit.cover)
                               : const Icon(Icons.set_meal, color: Colors.white24, size: 30),
                         ),
                         Expanded(
@@ -264,7 +265,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
 
   final _homersekletCtrl = TextEditingController();
   final _megjegyzesCtrl = TextEditingController();
-  String? _fenykepUtvonal;
+  
+  List<String> _kepek = []; // ÚJ: 3 képes limit
 
   bool _isIdojarasLekeresFolyamatban = false; 
 
@@ -302,7 +304,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       
       if (f.homerseklet != null) _homersekletCtrl.text = f.homerseklet.toString();
       _megjegyzesCtrl.text = f.megjegyzes;
-      _fenykepUtvonal = f.fenykep;
+      _kepek = List.from(f.kepek);
     } else {
       final most = DateTime.now();
       final maiNap = DateTime(most.year, most.month, most.day);
@@ -523,46 +525,30 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
+  // TISZTÍTOTT UI: NINCS "ÚJ" GOMB A MEZŐ MELLETT!
   Widget _buildTobbesKivalaszto({required String label, required String targyEset, required List<String> elerhetoElemek, required List<String> kivalasztottElemek}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('$label hozzáadása:', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: InkWell(
-                onTap: () => _mutasKereshetoAblak(label, elerhetoElemek, (val) {
-                  if (val != null && !kivalasztottElemek.contains(val)) {
-                    setState(() => kivalasztottElemek.add(val));
-                  }
-                }, true),
-                borderRadius: BorderRadius.circular(4),
-                child: InputDecorator(
-                  decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Válassz $targyEset...', style: const TextStyle(color: Colors.white54)),
-                      const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                    ],
-                  ),
-                ),
-              ),
+        InkWell(
+          onTap: () => _mutasKereshetoAblak(label, elerhetoElemek, (val) {
+            if (val != null && !kivalasztottElemek.contains(val)) {
+              setState(() => kivalasztottElemek.add(val));
+            }
+          }, true),
+          borderRadius: BorderRadius.circular(4),
+          child: InputDecorator(
+            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Válassz $targyEset...', style: const TextStyle(color: Colors.white54)),
+                const Icon(Icons.arrow_drop_down, color: Colors.white70),
+              ],
             ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green[800], padding: const EdgeInsets.symmetric(vertical: 14)),
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text('Új', style: TextStyle(color: Colors.white)),
-              onPressed: () {
-                _ujTorzsadatHozzaadas(label, (ujNev) {
-                  setState(() => kivalasztottElemek.add(ujNev));
-                });
-              },
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: 12),
         if (kivalasztottElemek.isNotEmpty) ...[
@@ -630,7 +616,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       idojaras: _kivalasztottIdojaras,
       homerseklet: double.tryParse(_homersekletCtrl.text.replaceAll(',', '.')),
       megjegyzes: _megjegyzesCtrl.text,
-      fenykep: _fenykepUtvonal,
+      fenykep: _kepek.isNotEmpty ? _kepek.first : null, // Visszafelé kompatibilitás (biztosíték)
+      kepek: _kepek, // ÚJ 3 KÉPES LISTA
       isKedvenc: widget.szerkeszthetoFogas?.isKedvenc ?? false,
     );
 
@@ -725,29 +712,60 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800], padding: const EdgeInsets.all(12)),
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('Fénykép kiválasztása'),
-              onPressed: () async {
-                final picker = ImagePicker();
-                final image = await picker.pickImage(source: ImageSource.gallery);
-                if (image != null) {
-                  String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
-                  setState(() => _fenykepUtvonal = biztonsagosUtvonal);
-                }
-              },
+            // ÚJ: 3 KÉPES FOTÓTÖLTŐ
+            const Text('Fényképek (Maximum 3 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                ..._kepek.asMap().entries.map((entry) {
+                  int idx = entry.key;
+                  String utvonal = entry.value;
+                  return Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Container(
+                        width: 100, height: 100,
+                        decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+                        clipBehavior: Clip.antiAlias,
+                        child: utvonal.startsWith('http')
+                            ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
+                            : Image.file(File(utvonal), fit: BoxFit.cover),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() => _kepek.removeAt(idx)),
+                        child: Container(
+                          margin: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                          child: const Icon(Icons.close, color: Colors.redAccent, size: 24),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+                if (_kepek.length < 3)
+                  GestureDetector(
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final image = await picker.pickImage(source: ImageSource.gallery);
+                      if (image != null) {
+                        String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
+                        setState(() => _kepek.add(biztonsagosUtvonal));
+                      }
+                    },
+                    child: Container(
+                      width: 100, height: 100,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.greenAccent, width: 2),
+                      ),
+                      child: const Center(child: Icon(Icons.add_a_photo, color: Colors.greenAccent, size: 30)),
+                    ),
+                  ),
+              ],
             ),
-            if (_fenykepUtvonal != null) ...[
-              const SizedBox(height: 8),
-              Stack(
-                alignment: Alignment.topRight,
-                children: [
-                  ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(_fenykepUtvonal!), height: 200, width: double.infinity, fit: BoxFit.cover)),
-                  IconButton(icon: const Icon(Icons.cancel, color: Colors.red), onPressed: () => setState(() => _fenykepUtvonal = null)),
-                ],
-              )
-            ],
             const SizedBox(height: 16),
             TextField(controller: _megjegyzesCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Megjegyzés', border: OutlineInputBorder())),
             const SizedBox(height: 24),
@@ -764,7 +782,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   }
 }
 
-class FogasReszletekScreen extends StatelessWidget {
+class FogasReszletekScreen extends StatefulWidget {
   final FogasModel fogas;
   final String helyszinNev;
   final String horgaszhely;
@@ -778,32 +796,57 @@ class FogasReszletekScreen extends StatelessWidget {
     required this.onEdit,
   });
 
-  void _teljesKepernyosKep(BuildContext context) {
+  @override
+  State<FogasReszletekScreen> createState() => _FogasReszletekScreenState();
+}
+
+class _FogasReszletekScreenState extends State<FogasReszletekScreen> {
+  final PageController _pageCtrl = PageController();
+
+  void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex) {
+    int aktIndex = kezdoIndex;
+    final PageController fullPageCtrl = PageController(initialPage: kezdoIndex);
+    
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.download, color: Colors.white),
-                onPressed: () {
-                  VizjelKeszito.fogasLetoltes(context, fogas, fogas.fenykep!, helyszinNev);
+        builder: (context) => StatefulBuilder(
+          builder: (context, setFullState) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.download, color: Colors.white),
+                    onPressed: () {
+                      // AZ AKTUÁLIS KÉPET VÍZJELEZI
+                      VizjelKeszito.fogasLetoltes(context, widget.fogas, widget.fogas.kepek[aktIndex], widget.helyszinNev);
+                    },
+                  ),
+                ],
+              ),
+              body: PageView.builder(
+                controller: fullPageCtrl,
+                itemCount: widget.fogas.kepek.length,
+                onPageChanged: (idx) => setFullState(() => aktIndex = idx),
+                itemBuilder: (context, i) {
+                  final utvonal = widget.fogas.kepek[i];
+                  return InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 5.0,
+                    boundaryMargin: const EdgeInsets.all(double.infinity),
+                    clipBehavior: Clip.none,
+                    child: Center(
+                      child: utvonal.startsWith('http')
+                          ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.contain)
+                          : Image.file(File(utvonal), fit: BoxFit.contain),
+                    ),
+                  );
                 },
               ),
-            ],
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              minScale: 1.0,
-              maxScale: 5.0,
-              boundaryMargin: const EdgeInsets.all(double.infinity),
-              clipBehavior: Clip.none,
-              child: Image.file(File(fogas.fenykep!), fit: BoxFit.contain),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
@@ -812,10 +855,10 @@ class FogasReszletekScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Color badgeSzin = Colors.grey[800]!;
-    if (fogas.sors == 'Visszaengedtem') badgeSzin = Colors.green[900]!;
-    if (fogas.sors == 'Elvittem') badgeSzin = Colors.blue[900]!;
-    if (fogas.sors == 'Elajándékoztam') badgeSzin = Colors.orange[900]!;
-    if (fogas.sors == 'Elpusztult') badgeSzin = Colors.red[900]!;
+    if (widget.fogas.sors == 'Visszaengedtem') badgeSzin = Colors.green[900]!;
+    if (widget.fogas.sors == 'Elvittem') badgeSzin = Colors.blue[900]!;
+    if (widget.fogas.sors == 'Elajándékoztam') badgeSzin = Colors.orange[900]!;
+    if (widget.fogas.sors == 'Elpusztult') badgeSzin = Colors.red[900]!;
 
     return Scaffold(
       appBar: AppBar(
@@ -830,31 +873,60 @@ class FogasReszletekScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Center(
                 child: Text(
-                  '${DateFormat('yyyy.MM.dd.').format(fogas.datum)} - ${fogas.idopont}',
+                  '${DateFormat('yyyy.MM.dd.').format(widget.fogas.datum)} - ${widget.fogas.idopont}',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.greenAccent),
                 ),
               ),
             ),
             
-            if (fogas.fenykep != null && File(fogas.fenykep!).existsSync())
-              GestureDetector(
-                onTap: () => _teljesKepernyosKep(context),
-                child: Container(
-                  width: double.infinity,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: FileImage(File(fogas.fenykep!)),
-                      fit: BoxFit.cover,
+            if (widget.fogas.kepek.isNotEmpty)
+              SizedBox(
+                height: 300,
+                width: double.infinity,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PageView.builder(
+                      controller: _pageCtrl,
+                      itemCount: widget.fogas.kepek.length,
+                      itemBuilder: (context, i) {
+                        final utvonal = widget.fogas.kepek[i];
+                        return GestureDetector(
+                          onTap: () => _teljesKepernyosGaleria(context, i),
+                          child: utvonal.startsWith('http')
+                            ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
+                            : (File(utvonal).existsSync() ? Image.file(File(utvonal), fit: BoxFit.cover) : const Icon(Icons.broken_image, size: 50)),
+                        );
+                      },
                     ),
-                  ),
-                  child: const Align(
-                    alignment: Alignment.bottomRight,
-                    child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Icon(Icons.zoom_out_map, color: Colors.white54),
-                    ),
-                  ),
+                    if (widget.fogas.kepek.length > 1) ...[
+                      Positioned(
+                        left: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_left, color: Colors.white),
+                            onPressed: () => _pageCtrl.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_right, color: Colors.white),
+                            onPressed: () => _pageCtrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                          ),
+                        ),
+                      ),
+                      const Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Icon(Icons.zoom_out_map, color: Colors.white70),
+                      ),
+                    ]
+                  ],
                 ),
               )
             else
@@ -871,14 +943,14 @@ class FogasReszletekScreen extends StatelessWidget {
               color: const Color(0xFF161616),
               child: Column(
                 children: [
-                  Text(helyszinNev, style: const TextStyle(fontSize: 16, color: Colors.white70)),
-                  if (horgaszhely.isNotEmpty) 
-                    Text('Horgászhely: $horgaszhely', style: const TextStyle(fontSize: 14, color: Colors.white54)),
+                  Text(widget.helyszinNev, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                  if (widget.horgaszhely.isNotEmpty) 
+                    Text('Horgászhely: ${widget.horgaszhely}', style: const TextStyle(fontSize: 14, color: Colors.white54)),
                   
                   const SizedBox(height: 8),
-                  Text(fogas.halfaj.isEmpty ? 'Ismeretlen halfaj' : fogas.halfaj, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(widget.fogas.halfaj.isEmpty ? 'Ismeretlen halfaj' : widget.fogas.halfaj, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text('${fogas.suly ?? '-'} kg  |  ${fogas.hossz ?? '-'} cm', style: const TextStyle(fontSize: 20, color: Colors.white70)),
+                  Text('${widget.fogas.suly ?? '-'} kg  |  ${widget.fogas.hossz ?? '-'} cm', style: const TextStyle(fontSize: 20, color: Colors.white70)),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -886,7 +958,7 @@ class FogasReszletekScreen extends StatelessWidget {
                       color: badgeSzin,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(fogas.sors ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(widget.fogas.sors ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -896,22 +968,22 @@ class FogasReszletekScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  _AdatSor(cim: 'Csali', ertek: fogas.csali.isEmpty ? '-' : fogas.csali.map((c) => '• $c').join('\n')),
-                  _AdatSor(cim: 'Etetőanyag', ertek: fogas.etetoanyag.isEmpty ? '-' : fogas.etetoanyag.map((e) => '• $e').join('\n')),
+                  _AdatSor(cim: 'Csali', ertek: widget.fogas.csali.isEmpty ? '-' : widget.fogas.csali.map((c) => '• $c').join('\n')),
+                  _AdatSor(cim: 'Etetőanyag', ertek: widget.fogas.etetoanyag.isEmpty ? '-' : widget.fogas.etetoanyag.map((e) => '• $e').join('\n')),
                   
-                  _AdatSor(cim: 'Etetés üteme', ertek: fogas.etetesGyakorisaga == null ? '-' : '${fogas.etetesGyakorisaga} perc'),
+                  _AdatSor(cim: 'Etetés üteme', ertek: widget.fogas.etetesGyakorisaga == null ? '-' : '${widget.fogas.etetesGyakorisaga} perc'),
                   const Divider(color: Colors.white24),
-                  _AdatSor(cim: 'Bot', ertek: fogas.bot?.isEmpty ?? true ? '-' : fogas.bot!),
-                  _AdatSor(cim: 'Módszer', ertek: fogas.modszer?.isEmpty ?? true ? '-' : fogas.modszer!),
-                  _AdatSor(cim: 'Szerelék', ertek: fogas.vegszerelek?.isEmpty ?? true ? '-' : fogas.vegszerelek!),
+                  _AdatSor(cim: 'Bot', ertek: widget.fogas.bot?.isEmpty ?? true ? '-' : widget.fogas.bot!),
+                  _AdatSor(cim: 'Módszer', ertek: widget.fogas.modszer?.isEmpty ?? true ? '-' : widget.fogas.modszer!),
+                  _AdatSor(cim: 'Szerelék', ertek: widget.fogas.vegszerelek?.isEmpty ?? true ? '-' : widget.fogas.vegszerelek!),
                   const Divider(color: Colors.white24),
-                  _AdatSor(cim: 'Időjárás', ertek: fogas.idojaras?.isEmpty ?? true ? '-' : fogas.idojaras!),
-                  _AdatSor(cim: 'Hőmérséklet', ertek: fogas.homerseklet == null ? '-' : '${fogas.homerseklet} °C'),
+                  _AdatSor(cim: 'Időjárás', ertek: widget.fogas.idojaras?.isEmpty ?? true ? '-' : widget.fogas.idojaras!),
+                  _AdatSor(cim: 'Hőmérséklet', ertek: widget.fogas.homerseklet == null ? '-' : '${widget.fogas.homerseklet} °C'),
                 ],
               ),
             ),
 
-            if (fogas.megjegyzes.isNotEmpty)
+            if (widget.fogas.megjegyzes.isNotEmpty)
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.all(16.0),
@@ -926,17 +998,17 @@ class FogasReszletekScreen extends StatelessWidget {
                   children: [
                     const Text('Megjegyzés', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
                     const SizedBox(height: 8),
-                    Text(fogas.megjegyzes, style: const TextStyle(fontSize: 16, height: 1.4)),
+                    Text(widget.fogas.megjegyzes, style: const TextStyle(fontSize: 16, height: 1.4)),
                   ],
                 ),
               ),
-            const SizedBox(height: 100), // Alsó margó a lebegő gomb miatt
+            const SizedBox(height: 100),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green[600],
-        onPressed: onEdit,
+        onPressed: widget.onEdit,
         tooltip: 'Szerkesztés',
         child: const Icon(Icons.edit, color: Colors.white),
       ),
