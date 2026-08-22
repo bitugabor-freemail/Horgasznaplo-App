@@ -15,7 +15,13 @@ class FelszerelesScreen extends StatefulWidget {
 class FelszerelesScreenState extends State<FelszerelesScreen> {
   List<FelszerelesKategoria> _kategoriak = [];
   List<FelszerelesTetel> _tetelek = [];
+  List<String> _taskak = [];
+  
   String? _kivalasztottKategoriaId;
+  String? _kivalasztottTaska;
+  bool _isTaskaNezet = false;
+  
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -23,15 +29,28 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     adatokBetoltese();
   }
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   Future<void> adatokBetoltese() async {
     final kat = await AdatTarolo.felszerelesKategoriakBetoltese();
     final tet = await AdatTarolo.felszerelesTetelekBetoltese();
+    final taskak = await AdatTarolo.taskakBetoltese();
+    taskak.sort();
     
     setState(() {
       _kategoriak = kat;
       _tetelek = tet;
+      _taskak = taskak;
+      
       if (_kategoriak.isNotEmpty && _kivalasztottKategoriaId == null) {
         _kivalasztottKategoriaId = _kategoriak.first.id;
+      }
+      if (_taskak.isNotEmpty && _kivalasztottTaska == null) {
+        _kivalasztottTaska = _taskak.first;
       }
     });
   }
@@ -74,43 +93,200 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
-  List<FelszerelesTetel> _getSzurtEsRendezettTetelek() {
-    if (_kivalasztottKategoriaId == null) return [];
+  Widget _buildListaOldal(int index) {
+    List<FelszerelesTetel> mutathato;
     
-    List<FelszerelesTetel> szurt = _tetelek.where((t) => t.kategoriaId == _kivalasztottKategoriaId).toList();
-    
-    szurt.sort((a, b) {
-      String markaA = a.marka.trim().isEmpty ? '[N/A] - No Name' : a.marka.trim();
-      String markaB = b.marka.trim().isEmpty ? '[N/A] - No Name' : b.marka.trim();
+    if (_isTaskaNezet) {
+      if (_taskak.isEmpty) return const Center(child: Text('Nincsenek rögzített táskák.', style: TextStyle(color: Colors.white54)));
+      String aktTaska = _taskak[index];
+      mutathato = _tetelek.where((t) => t.taska == aktTaska).toList();
       
-      int markaCmp = markaA.compareTo(markaB);
-      if (markaCmp != 0) return markaCmp;
-      return a.nev.compareTo(b.nev);
-    });
-    
-    return szurt;
+      mutathato.sort((a, b) {
+        int pozCmp = (a.pozicio ?? '').compareTo(b.pozicio ?? '');
+        if (pozCmp != 0) return pozCmp;
+        return a.nev.compareTo(b.nev);
+      });
+    } else {
+      if (_kategoriak.isEmpty) return const Center(child: Text('Nincsenek kategóriák. Hozz létre egyet!'));
+      String aktKat = _kategoriak[index].id;
+      mutathato = _tetelek.where((t) => t.kategoriaId == aktKat).toList();
+      
+      mutathato.sort((a, b) {
+        String markaA = a.marka.trim().isEmpty ? '[N/A] - No Name' : a.marka.trim();
+        String markaB = b.marka.trim().isEmpty ? '[N/A] - No Name' : b.marka.trim();
+        int markaCmp = markaA.compareTo(markaB);
+        if (markaCmp != 0) return markaCmp;
+        return a.nev.compareTo(b.nev);
+      });
+    }
+
+    if (mutathato.isEmpty) {
+      return Center(child: Text('Ebben a ${_isTaskaNezet ? 'táskában' : 'kategóriában'} nincsenek tételek.', style: const TextStyle(color: Colors.white54)));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: mutathato.length,
+      itemBuilder: (context, idx) {
+        final tetel = mutathato[idx];
+        final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
+        
+        List<String> taskaPozicioReszek = [];
+        if (tetel.taska != null && tetel.taska!.isNotEmpty) taskaPozicioReszek.add(tetel.taska!);
+        if (tetel.pozicio != null && tetel.pozicio!.isNotEmpty) taskaPozicioReszek.add(tetel.pozicio!);
+        final taskaPozicioSzoveg = taskaPozicioReszek.join(' - ');
+
+        return Card(
+          color: const Color(0xFF1E1E1E),
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TetelReszletekScreen(tetel: tetel)),
+              );
+            },
+            child: Stack(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      margin: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: tetel.kepek.isNotEmpty && File(tetel.kepek.first).existsSync()
+                          ? Image.file(File(tetel.kepek.first), fit: BoxFit.cover)
+                          : const Icon(Icons.image_not_supported, color: Colors.white24, size: 30),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 12, right: 40),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text(tetel.nev, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                            if (tetel.jellemzo.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
+                            ],
+                            
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    taskaPozicioSzoveg,
+                                    style: const TextStyle(fontSize: 13, color: Colors.amber),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (tetel.mennyiseg != null || tetel.mertekegyseg.isNotEmpty)
+                                  Text(
+                                    '${tetel.mennyiseg != null ? tetel.mennyiseg!.toString().replaceAll('.0', '') : ''} ${tetel.mertekegyseg}'.trim(),
+                                    style: const TextStyle(fontSize: 13, color: Colors.white54),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.white54),
+                    color: const Color(0xFF1E1E1E),
+                    onSelected: (value) {
+                      if (value == 'edit') _tetelSzerkesztokMegnyitasa(tetel);
+                      if (value == 'delete') _tetelTorlese(tetel);
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(value: 'edit', child: Text('Szerkesztés')),
+                      const PopupMenuItem(value: 'delete', child: Text('Törlés', style: TextStyle(color: Colors.redAccent))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final mutathatoTetelek = _getSzurtEsRendezettTetelek();
+    int oldalszam = _isTaskaNezet ? _taskak.length : _kategoriak.length;
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_isTaskaNezet ? 'Táskák' : 'Felszerelések'),
+        backgroundColor: const Color(0xFF161616),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.compare_arrows, color: Colors.greenAccent),
+            tooltip: 'Nézet váltása',
+            color: const Color(0xFF1E1E1E),
+            onSelected: (val) {
+              setState(() {
+                if (val == 'kategoria') {
+                  _isTaskaNezet = false;
+                } else {
+                  _isTaskaNezet = true;
+                }
+              });
+              if (_pageController.hasClients) {
+                _pageController.jumpToPage(0);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'kategoria', child: Row(children: [Icon(Icons.category, size: 20, color: !_isTaskaNezet ? Colors.greenAccent : Colors.white70), const SizedBox(width: 8), Text('Kategória nézet', style: TextStyle(color: !_isTaskaNezet ? Colors.greenAccent : Colors.white))])),
+              PopupMenuItem(value: 'taska', child: Row(children: [Icon(Icons.business_center, size: 20, color: _isTaskaNezet ? Colors.greenAccent : Colors.white70), const SizedBox(width: 8), Text('Táska nézet', style: TextStyle(color: _isTaskaNezet ? Colors.greenAccent : Colors.white))])),
+            ],
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Container(
             height: 50,
             color: const Color(0xFF161616),
-            child: ListView.builder(
+            child: oldalszam == 0 
+                ? const SizedBox() 
+                : ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: _kategoriak.length,
+              itemCount: oldalszam,
               itemBuilder: (context, index) {
-                final kategoria = _kategoriak[index];
-                final isSelected = kategoria.id == _kivalasztottKategoriaId;
+                String nev;
+                bool isSelected;
+                
+                if (_isTaskaNezet) {
+                  nev = _taskak[index];
+                  isSelected = nev == _kivalasztottTaska;
+                } else {
+                  nev = _kategoriak[index].nev;
+                  isSelected = _kategoriak[index].id == _kivalasztottKategoriaId;
+                }
                 
                 return GestureDetector(
                   onTap: () {
-                    setState(() => _kivalasztottKategoriaId = kategoria.id);
+                    if (_pageController.hasClients) {
+                      _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -124,7 +300,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      kategoria.nev,
+                      nev,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -138,113 +314,24 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
           ),
           
           Expanded(
-            child: _kategoriak.isEmpty
-              ? const Center(child: Text('Nincsenek kategóriák. Hozz létre egyet!'))
-              : mutathatoTetelek.isEmpty
-                ? const Center(child: Text('Ebben a kategóriában nincsenek tételek.', style: TextStyle(color: Colors.white54)))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: mutathatoTetelek.length,
-                    itemBuilder: (context, index) {
-                      final tetel = mutathatoTetelek[index];
-                      final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
-                      
-                      // Okkersárga szöveg összeállítása
-                      List<String> taskaPozicioReszek = [];
-                      if (tetel.taska != null && tetel.taska!.isNotEmpty) taskaPozicioReszek.add(tetel.taska!);
-                      if (tetel.pozicio != null && tetel.pozicio!.isNotEmpty) taskaPozicioReszek.add(tetel.pozicio!);
-                      final taskaPozicioSzoveg = taskaPozicioReszek.join(' - ');
-
-                      return Card(
-                        color: const Color(0xFF1E1E1E),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => TetelReszletekScreen(tetel: tetel)),
-                            );
-                          },
-                          child: Stack(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    margin: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black26,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: tetel.kepek.isNotEmpty && File(tetel.kepek.first).existsSync()
-                                        ? Image.file(File(tetel.kepek.first), fit: BoxFit.cover)
-                                        : const Icon(Icons.image_not_supported, color: Colors.white24, size: 30),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(top: 12, bottom: 12, right: 40),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                                          const SizedBox(height: 4),
-                                          Text(tetel.nev, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                                          if (tetel.jellemzo.isNotEmpty) ...[
-                                            const SizedBox(height: 4),
-                                            Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
-                                          ],
-                                          
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            crossAxisAlignment: CrossAxisAlignment.end,
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  taskaPozicioSzoveg,
-                                                  style: const TextStyle(fontSize: 13, color: Colors.amber),
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              if (tetel.mennyiseg != null || tetel.mertekegyseg.isNotEmpty)
-                                                Text(
-                                                  '${tetel.mennyiseg != null ? tetel.mennyiseg!.toString().replaceAll('.0', '') : ''} ${tetel.mertekegyseg}'.trim(),
-                                                  style: const TextStyle(fontSize: 13, color: Colors.white54),
-                                                ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: PopupMenuButton<String>(
-                                  icon: const Icon(Icons.more_vert, color: Colors.white54),
-                                  color: const Color(0xFF1E1E1E),
-                                  onSelected: (value) {
-                                    if (value == 'edit') _tetelSzerkesztokMegnyitasa(tetel);
-                                    if (value == 'delete') _tetelTorlese(tetel);
-                                  },
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(value: 'edit', child: Text('Szerkesztés')),
-                                    const PopupMenuItem(value: 'delete', child: Text('Törlés', style: TextStyle(color: Colors.redAccent))),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+            child: oldalszam == 0 
+              ? Center(child: Text(_isTaskaNezet ? 'Nincsenek rögzített táskák.' : 'Nincsenek kategóriák. Hozz létre egyet!'))
+              : PageView.builder(
+                  controller: _pageController,
+                  itemCount: oldalszam,
+                  onPageChanged: (index) {
+                    setState(() {
+                      if (_isTaskaNezet) {
+                        _kivalasztottTaska = _taskak[index];
+                      } else {
+                        _kivalasztottKategoriaId = _kategoriak[index].id;
+                      }
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    return _buildListaOldal(index);
+                  },
+                ),
           ),
         ],
       ),
@@ -357,23 +444,7 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
               ),
             ),
             
-            if (widget.tetel.leiras.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(12)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Leírás', style: TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text(widget.tetel.leiras, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.4)),
-                  ],
-                ),
-              ),
-            ],
-
+            // KÉPEK ELŐRE HOZVA
             if (widget.tetel.kepek.isNotEmpty) ...[
               const SizedBox(height: 24),
               const Text('Fényképek', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -438,6 +509,26 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
                   child: Text('Lapozz a többi képért ↔', style: TextStyle(color: Colors.white38, fontSize: 12)),
                 )),
             ],
+
+            // LEÍRÁS ALULRA TOLVA
+            if (widget.tetel.leiras.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Leírás', style: TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(widget.tetel.leiras, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.4)),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -513,7 +604,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     });
   }
 
-  // ÚJ: MULTIPLE IMAGE PICKER
   Future<void> _kepHozzaadasa() async {
     if (_kepek.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 képet adhatsz hozzá!')));
@@ -539,6 +629,129 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
         ));
       }
     }
+  }
+  
+  void _ujTaskaHozzaadaskor() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Új Táska / Doboz hozzáadása'),
+        content: TextField(
+          controller: ctrl, 
+          autofocus: true, 
+          onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+          decoration: const InputDecoration(labelText: 'Táska megnevezése')
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+            onPressed: () async {
+              if (ctrl.text.trim().isNotEmpty) {
+                final nev = ctrl.text.trim();
+                if (!_elerhetoTaskak.contains(nev)) {
+                  _elerhetoTaskak.add(nev);
+                  _elerhetoTaskak.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+                  await AdatTarolo.taskakMentes(_elerhetoTaskak);
+                }
+                setState(() => _kivalasztottTaska = nev);
+                if (mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Mentés', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _mutasTaskaKereso() async {
+    String kereses = '';
+    final keresoCtrl = TextEditingController();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final szurt = _elerhetoTaskak.where((e) => e.toLowerCase().contains(kereses.toLowerCase())).toList();
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.6,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: Text('Táska / Doboz kiválasztása', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextField(
+                        controller: keresoCtrl,
+                        autofocus: true,
+                        onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+                        decoration: InputDecoration(
+                          hintText: 'Keresés...',
+                          prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.redAccent),
+                            onPressed: () {
+                              keresoCtrl.clear();
+                              setModalState(() => kereses = '');
+                            },
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onChanged: (val) => setModalState(() => kereses = val),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      leading: const Icon(Icons.add_circle, color: Colors.greenAccent),
+                      title: const Text('Új Táska/Doboz hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _ujTaskaHozzaadaskor();
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.clear, color: Colors.redAccent),
+                      title: const Text('-- Nincs megadva --', style: TextStyle(color: Colors.redAccent)),
+                      onTap: () {
+                        setState(() => _kivalasztottTaska = null);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const Divider(color: Colors.white24),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: szurt.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            title: Text(szurt[index]),
+                            onTap: () {
+                              setState(() => _kivalasztottTaska = szurt[index]);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _mentes() async {
@@ -612,16 +825,24 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             ),
             const Divider(height: 32, color: Colors.white24),
 
-            DropdownButtonFormField<String?>(
-              value: _kivalasztottTaska,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Táska / Doboz (opcionális)', border: OutlineInputBorder()),
-              items: [
-                const DropdownMenuItem<String?>(value: null, child: Text('-- Nincs megadva --')),
-                ..._elerhetoTaskak.map((t) => DropdownMenuItem(value: t, child: Text(t))),
-              ],
-              onChanged: (val) => setState(() => _kivalasztottTaska = val),
+            // OKOS TÁSKA KIVÁLASZTÓ
+            const Text('Táska és Pozíció', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _mutasTaskaKereso,
+              borderRadius: BorderRadius.circular(4),
+              child: InputDecorator(
+                decoration: const InputDecoration(labelText: 'Táska / Doboz (opcionális)', border: OutlineInputBorder()),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(_kivalasztottTaska ?? '-- Nincs megadva --', style: TextStyle(color: _kivalasztottTaska == null ? Colors.white54 : Colors.white))),
+                    const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  ],
+                ),
+              ),
             ),
+            
             const SizedBox(height: 16),
             TextField(controller: _pozicioCtrl, decoration: const InputDecoration(labelText: 'Pozíció / Rekesz (opcionális)', border: OutlineInputBorder())),
             const Divider(height: 32, color: Colors.white24),
