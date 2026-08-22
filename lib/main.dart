@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'adattarolo.dart'; 
 import 'turak.dart';
@@ -188,6 +187,15 @@ class _FomenuScreenState extends State<FomenuScreen> {
   List<Widget> _buildAppBarActions() {
     if (_currentIndex == 2) {
       return [
+        // Ide került az Oda-vissza nyíl
+        IconButton(
+          icon: const Icon(Icons.compare_arrows, color: Colors.greenAccent),
+          tooltip: 'Nézet váltása',
+          onPressed: () {
+            _felszerelesKey.currentState?.toggleNezet();
+          },
+        ),
+        // Ide került a 3 pontos menü (kategória és táska szerkesztővel)
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert, color: Colors.greenAccent),
           color: const Color(0xFF1E1E1E),
@@ -202,17 +210,36 @@ class _FomenuScreenState extends State<FomenuScreen> {
                     kategoriak: kategoriak,
                     mentesCallback: () {
                       setState(() {});
+                      _felszerelesKey.currentState?.adatokBetoltese();
                     },
                   ),
                 ),
               );
-              _felszerelesKey.currentState?.adatokBetoltese();
+            } else if (value == 'taskak') {
+              final taskak = await AdatTarolo.taskakBetoltese();
+              if (!mounted) return;
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TaskakSzerkesztoScreen(
+                    taskak: taskak,
+                    mentesCallback: () {
+                      setState(() {});
+                      _felszerelesKey.currentState?.adatokBetoltese();
+                    },
+                  ),
+                ),
+              );
             }
           },
           itemBuilder: (context) => [
             const PopupMenuItem(
               value: 'kategoriak',
               child: Text('Kategóriák szerkesztése'),
+            ),
+            const PopupMenuItem(
+              value: 'taskak',
+              child: Text('Táskák szerkesztése'),
             ),
           ],
         )
@@ -249,7 +276,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                 children: [
                   Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                   SizedBox(height: 4),
-                  Text('Verzió 1.1.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)), // FRISSÍTVE
+                  Text('Verzió 1.1.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
                 ],
               ),
             ),
@@ -328,7 +355,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                       children: [
                         Text('Készítette: Google Gemini & B2', style: TextStyle(color: Colors.white, fontSize: 16)),
                         SizedBox(height: 8),
-                        Text('Verzió: 1.1.0', style: TextStyle(color: Colors.white70, fontSize: 14)), // FRISSÍTVE
+                        Text('Verzió: 1.1.0', style: TextStyle(color: Colors.white70, fontSize: 14)),
                       ],
                     ),
                     actions: [
