@@ -28,7 +28,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     'Horgásztársak',
     'Időjárás',
     'Hal sorsa',
-    'Táskák' // ÚJ KATEGÓRIA
+    'Táskák' 
   ];
   
   String _kivKategoria = 'Halfaj';
@@ -72,7 +72,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
         case 'Horgásztársak': _simaLista = await AdatTarolo.tarsakBetoltese(); break;
         case 'Időjárás': _simaLista = await AdatTarolo.idojarasBetoltese(); break;
         case 'Hal sorsa': _simaLista = await AdatTarolo.sorsBetoltese(); break;
-        case 'Táskák': _simaLista = await AdatTarolo.taskakBetoltese(); break; // ÚJ BEKÖTÉS
+        case 'Táskák': _simaLista = await AdatTarolo.taskakBetoltese(); break;
       }
       _simaLista.sort(); 
     }
@@ -89,7 +89,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
       case 'Horgásztársak': await AdatTarolo.tarsakMentes(_simaLista); break;
       case 'Időjárás': await AdatTarolo.idojarasMentes(_simaLista); break;
       case 'Hal sorsa': await AdatTarolo.sorsMentes(_simaLista); break;
-      case 'Táskák': await AdatTarolo.taskakMentes(_simaLista); break; // ÚJ BEKÖTÉS
+      case 'Táskák': await AdatTarolo.taskakMentes(_simaLista); break; 
     }
   }
 
@@ -653,6 +653,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
     }
   }
 
+  // ÚJ: MULTIPLE IMAGE PICKER
   Future<void> _kepHozzaadasa() async {
     if (_kepek.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 képet adhatsz hozzá!')));
@@ -660,12 +661,24 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
     }
     
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
-      setState(() {
-        _kepek.add(biztonsagosUtvonal);
-      });
+    final images = await picker.pickMultiImage();
+    if (images.isNotEmpty) {
+      int szabadHely = 5 - _kepek.length;
+      int hozzaadandoSzam = images.length > szabadHely ? szabadHely : images.length;
+      
+      for (int i = 0; i < hozzaadandoSzam; i++) {
+        String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(images[i].path);
+        setState(() {
+          _kepek.add(biztonsagosUtvonal);
+        });
+      }
+      
+      if (images.length > szabadHely && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Csak $szabadHely képet lehetett még hozzáadni a limit miatt!'),
+          backgroundColor: Colors.orange,
+        ));
+      }
     }
   }
 
@@ -769,6 +782,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             TextField(controller: _nevCtrl, autofocus: widget.szerkeszthetoHalfaj == null, decoration: const InputDecoration(labelText: 'Halfaj neve *', border: OutlineInputBorder())),
             const SizedBox(height: 16),
             
+            // ÚJ: MULTIPLE IMAGE PICKER
             const Text('Fényképek (Maximum 5 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             Wrap(
