@@ -266,7 +266,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   final _homersekletCtrl = TextEditingController();
   final _megjegyzesCtrl = TextEditingController();
   
-  List<String> _kepek = []; // ÚJ: 3 képes limit
+  List<String> _kepek = []; 
 
   bool _isIdojarasLekeresFolyamatban = false; 
 
@@ -525,7 +525,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     );
   }
 
-  // TISZTÍTOTT UI: NINCS "ÚJ" GOMB A MEZŐ MELLETT!
   Widget _buildTobbesKivalaszto({required String label, required String targyEset, required List<String> elerhetoElemek, required List<String> kivalasztottElemek}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,8 +615,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       idojaras: _kivalasztottIdojaras,
       homerseklet: double.tryParse(_homersekletCtrl.text.replaceAll(',', '.')),
       megjegyzes: _megjegyzesCtrl.text,
-      fenykep: _kepek.isNotEmpty ? _kepek.first : null, // Visszafelé kompatibilitás (biztosíték)
-      kepek: _kepek, // ÚJ 3 KÉPES LISTA
+      fenykep: _kepek.isNotEmpty ? _kepek.first : null, 
+      kepek: _kepek, 
       isKedvenc: widget.szerkeszthetoFogas?.isKedvenc ?? false,
     );
 
@@ -712,7 +711,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ÚJ: 3 KÉPES FOTÓTÖLTŐ
+            // ÚJ: MULTIPLE IMAGE PICKER FOGÁSOKHOZ
             const Text('Fényképek (Maximum 3 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             Wrap(
@@ -748,10 +747,22 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                   GestureDetector(
                     onTap: () async {
                       final picker = ImagePicker();
-                      final image = await picker.pickImage(source: ImageSource.gallery);
-                      if (image != null) {
-                        String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
-                        setState(() => _kepek.add(biztonsagosUtvonal));
+                      final images = await picker.pickMultiImage();
+                      if (images.isNotEmpty) {
+                        int szabadHely = 3 - _kepek.length;
+                        int hozzaadandoSzam = images.length > szabadHely ? szabadHely : images.length;
+                        
+                        for (int i = 0; i < hozzaadandoSzam; i++) {
+                          String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(images[i].path);
+                          setState(() => _kepek.add(biztonsagosUtvonal));
+                        }
+                        
+                        if (images.length > szabadHely && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Csak $szabadHely képet lehetett még hozzáadni a limit miatt!'),
+                            backgroundColor: Colors.orange,
+                          ));
+                        }
                       }
                     },
                     child: Container(
@@ -820,7 +831,6 @@ class _FogasReszletekScreenState extends State<FogasReszletekScreen> {
                   IconButton(
                     icon: const Icon(Icons.download, color: Colors.white),
                     onPressed: () {
-                      // AZ AKTUÁLIS KÉPET VÍZJELEZI
                       VizjelKeszito.fogasLetoltes(context, widget.fogas, widget.fogas.kepek[aktIndex], widget.helyszinNev);
                     },
                   ),
