@@ -1,0 +1,49 @@
+name: horgasznaplo
+description: Horgásznapló alkalmazás.
+publish_to: 'none' # Ezt ne módosítsd, amíg nem akarod publikálni a csomagot
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- ALAPVETŐ CSOMAGOK ---
+  cupertino_icons: ^1.0.6
+  shared_preferences: ^2.2.3
+  intl: ^0.19.0
+  
+  # --- KÉP- ÉS FÁJLKEZELÉS ---
+  image_picker: ^1.1.2
+  cached_network_image: ^3.3.1
+  path_provider: ^2.1.3
+  file_picker: ^8.0.3
+  archive: ^3.4.10
+  share_plus: ^7.2.2
+  open_file_plus: ^3.4.0 # <-- BEKERÜLT A PDF MEGNYITÁSHOZ
+  
+  # --- EGYÉB (Pl. Időjárás lekéréshez) ---
+  http: ^1.2.1
+  geolocator: ^13.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+# --- IKON GENERÁLÓ BEÁLLÍTÁSOK ---
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false # iOS kikapcsolva a korábbi build hiba miatt
+  image_path: "assets/small_logo.png" # <-- ITT JAVÍTVA AZ IKON ELÉRÉSI ÚTJA!
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
