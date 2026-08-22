@@ -149,6 +149,12 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                       final tetel = mutathatoTetelek[index];
                       final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
                       
+                      // Okkersárga szöveg összeállítása
+                      List<String> taskaPozicioReszek = [];
+                      if (tetel.taska != null && tetel.taska!.isNotEmpty) taskaPozicioReszek.add(tetel.taska!);
+                      if (tetel.pozicio != null && tetel.pozicio!.isNotEmpty) taskaPozicioReszek.add(tetel.pozicio!);
+                      final taskaPozicioSzoveg = taskaPozicioReszek.join(' - ');
+
                       return Card(
                         color: const Color(0xFF1E1E1E),
                         margin: const EdgeInsets.only(bottom: 12),
@@ -181,7 +187,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                                   ),
                                   Expanded(
                                     child: Padding(
-                                      padding: const EdgeInsets.only(top: 12, bottom: 32, right: 40),
+                                      padding: const EdgeInsets.only(top: 12, bottom: 12, right: 40),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -192,6 +198,26 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                                             const SizedBox(height: 4),
                                             Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
                                           ],
+                                          
+                                          // ÚJ: Táska/Pozíció és Mennyiség egy sorban
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  taskaPozicioSzoveg,
+                                                  style: const TextStyle(fontSize: 13, color: Colors.amber),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (tetel.mennyiseg != null || tetel.mertekegyseg.isNotEmpty)
+                                                Text(
+                                                  '${tetel.mennyiseg != null ? tetel.mennyiseg!.toString().replaceAll('.0', '') : ''} ${tetel.mertekegyseg}'.trim(),
+                                                  style: const TextStyle(fontSize: 13, color: Colors.white54),
+                                                ),
+                                            ],
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -214,15 +240,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                                   ],
                                 ),
                               ),
-                              if (tetel.mennyiseg != null || tetel.mertekegyseg.isNotEmpty)
-                                Positioned(
-                                  bottom: 12,
-                                  right: 12,
-                                  child: Text(
-                                    '${tetel.mennyiseg != null ? tetel.mennyiseg!.toString().replaceAll('.0', '') : ''} ${tetel.mertekegyseg}'.trim(),
-                                    style: const TextStyle(fontSize: 13, color: Colors.white54),
-                                  ),
-                                ),
                             ],
                           ),
                         ),
@@ -241,17 +258,62 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   }
 }
 
-class TetelReszletekScreen extends StatelessWidget {
+class TetelReszletekScreen extends StatefulWidget {
   final FelszerelesTetel tetel;
 
   const TetelReszletekScreen({super.key, required this.tetel});
 
   @override
+  State<TetelReszletekScreen> createState() => _TetelReszletekScreenState();
+}
+
+class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
+  final PageController _pageCtrl = PageController();
+
+  void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex) {
+    final PageController fullPageCtrl = PageController(initialPage: kezdoIndex);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          body: PageView.builder(
+            controller: fullPageCtrl,
+            itemCount: widget.tetel.kepek.length,
+            itemBuilder: (context, i) {
+              final utvonal = widget.tetel.kepek[i];
+              return InteractiveViewer(
+                minScale: 1.0,
+                maxScale: 5.0,
+                child: Center(
+                  child: utvonal.startsWith('http')
+                    ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.contain)
+                    : Image.file(File(utvonal), fit: BoxFit.contain),
+                ),
+              );
+            }
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
+    final markaNev = widget.tetel.marka.trim().isEmpty ? '[N/A] - No Name' : widget.tetel.marka;
+    
+    List<String> taskaPozicioReszek = [];
+    if (widget.tetel.taska != null && widget.tetel.taska!.isNotEmpty) taskaPozicioReszek.add(widget.tetel.taska!);
+    if (widget.tetel.pozicio != null && widget.tetel.pozicio!.isNotEmpty) taskaPozicioReszek.add(widget.tetel.pozicio!);
+    final taskaPozicioSzoveg = taskaPozicioReszek.join(' - ');
 
     return Scaffold(
-      appBar: AppBar(title: Text(tetel.nev)),
+      appBar: AppBar(title: Text(widget.tetel.nev)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -266,10 +328,20 @@ class TetelReszletekScreen extends StatelessWidget {
                 children: [
                   Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text(tetel.nev, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                  if (tetel.jellemzo.isNotEmpty) ...[
+                  Text(widget.tetel.nev, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                  if (widget.tetel.jellemzo.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text(tetel.jellemzo, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                    Text(widget.tetel.jellemzo, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                  ],
+                  if (taskaPozicioSzoveg.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.business_center, color: Colors.amber, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(taskaPozicioSzoveg, style: const TextStyle(fontSize: 16, color: Colors.amber))),
+                      ],
+                    )
                   ],
                   const Divider(color: Colors.white24, height: 32),
                   Row(
@@ -277,7 +349,7 @@ class TetelReszletekScreen extends StatelessWidget {
                     children: [
                       const Text('Mennyiség:', style: TextStyle(fontSize: 16, color: Colors.white54)),
                       Text(
-                        '${tetel.mennyiseg != null ? tetel.mennyiseg!.toString().replaceAll('.0', '') : '-'} ${tetel.mertekegyseg}'.trim(),
+                        '${widget.tetel.mennyiseg != null ? widget.tetel.mennyiseg!.toString().replaceAll('.0', '') : '-'} ${widget.tetel.mertekegyseg}'.trim(),
                         style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -286,7 +358,7 @@ class TetelReszletekScreen extends StatelessWidget {
               ),
             ),
             
-            if (tetel.leiras.isNotEmpty) ...[
+            if (widget.tetel.leiras.isNotEmpty) ...[
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
@@ -297,35 +369,71 @@ class TetelReszletekScreen extends StatelessWidget {
                   children: [
                     const Text('Leírás', style: TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text(tetel.leiras, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.4)),
+                    Text(widget.tetel.leiras, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.4)),
                   ],
                 ),
               ),
             ],
 
-            if (tetel.kepek.isNotEmpty) ...[
+            if (widget.tetel.kepek.isNotEmpty) ...[
               const SizedBox(height: 24),
               const Text('Fényképek', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 12),
+              
               SizedBox(
                 height: 250,
-                child: PageView.builder(
-                  itemCount: tetel.kepek.length,
-                  itemBuilder: (context, i) {
-                    final utvonal = tetel.kepek[i];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: (utvonal.startsWith('http'))
-                          ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
-                          : (File(utvonal).existsSync() ? Image.file(File(utvonal), fit: BoxFit.cover) : const Icon(Icons.broken_image)),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PageView.builder(
+                      controller: _pageCtrl,
+                      itemCount: widget.tetel.kepek.length,
+                      itemBuilder: (context, i) {
+                        final utvonal = widget.tetel.kepek[i];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: GestureDetector(
+                            onTap: () => _teljesKepernyosGaleria(context, i),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: (utvonal.startsWith('http'))
+                                ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
+                                : (File(utvonal).existsSync() ? Image.file(File(utvonal), fit: BoxFit.cover) : const Icon(Icons.broken_image, size: 50, color: Colors.white24)),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    if (widget.tetel.kepek.length > 1) ...[
+                      Positioned(
+                        left: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_left, color: Colors.white),
+                            onPressed: () {
+                              _pageCtrl.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                            },
+                          ),
+                        ),
                       ),
-                    );
-                  },
+                      Positioned(
+                        right: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_right, color: Colors.white),
+                            onPressed: () {
+                              _pageCtrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                            },
+                          ),
+                        ),
+                      ),
+                    ]
+                  ],
                 ),
               ),
-              if (tetel.kepek.length > 1)
+              if (widget.tetel.kepek.length > 1)
                 const Center(child: Padding(
                   padding: EdgeInsets.only(top: 8.0),
                   child: Text('Lapozz a többi képért ↔', style: TextStyle(color: Colors.white38, fontSize: 12)),
@@ -363,13 +471,18 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
   final _mennyisegCtrl = TextEditingController();
   final _mertekegysegCtrl = TextEditingController();
   final _leirasCtrl = TextEditingController();
+  final _pozicioCtrl = TextEditingController(); // ÚJ
   
   String? _kivalasztottKategoriaId;
+  String? _kivalasztottTaska; // ÚJ
   List<String> _kepek = [];
+  List<String> _elerhetoTaskak = []; // ÚJ
 
   @override
   void initState() {
     super.initState();
+    _adatokBetoltese();
+
     _kivalasztottKategoriaId = widget.alapertelmezettKategoriaId;
     
     if (widget.szerkeszthetoTetel != null) {
@@ -382,14 +495,29 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       _mertekegysegCtrl.text = t.mertekegyseg;
       _leirasCtrl.text = t.leiras;
       _kepek = List.from(t.kepek);
+      
+      _kivalasztottTaska = t.taska;
+      if (t.pozicio != null) _pozicioCtrl.text = t.pozicio!;
     } else if (widget.kategoriak.isNotEmpty && _kivalasztottKategoriaId == null) {
       _kivalasztottKategoriaId = widget.kategoriak.first.id;
     }
   }
 
+  Future<void> _adatokBetoltese() async {
+    final taskak = await AdatTarolo.taskakBetoltese();
+    taskak.sort();
+    setState(() {
+      _elerhetoTaskak = taskak;
+      // Biztosítás, hogy a kiválasztott táska benne legyen a listában, ha törölték volna a törzsadatból
+      if (_kivalasztottTaska != null && _kivalasztottTaska!.isNotEmpty && !_elerhetoTaskak.contains(_kivalasztottTaska)) {
+        _kivalasztottTaska = null;
+      }
+    });
+  }
+
   Future<void> _kepHozzaadasa() async {
-    if (_kepek.length >= 3) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 3 képet adhatsz hozzá!')));
+    if (_kepek.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 képet adhatsz hozzá!')));
       return;
     }
     final picker = ImagePicker();
@@ -422,6 +550,8 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       mertekegyseg: _mertekegysegCtrl.text.trim(),
       leiras: _leirasCtrl.text.trim(),
       kepek: _kepek,
+      taska: _kivalasztottTaska, // ÚJ
+      pozicio: _pozicioCtrl.text.trim(), // ÚJ
     );
 
     final osszesTetel = await AdatTarolo.felszerelesTetelekBetoltese();
@@ -469,11 +599,27 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                 Expanded(child: TextField(controller: _mertekegysegCtrl, decoration: const InputDecoration(labelText: 'Mértékegység (pl. db, csomag)', border: OutlineInputBorder()))),
               ],
             ),
+            const Divider(height: 32, color: Colors.white24),
+
+            // ÚJ: TÁSKÁK ÉS POZÍCIÓ
+            DropdownButtonFormField<String?>(
+              value: _kivalasztottTaska,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Táska / Doboz (opcionális)', border: OutlineInputBorder()),
+              items: [
+                const DropdownMenuItem<String?>(value: null, child: Text('-- Nincs megadva --')),
+                ..._elerhetoTaskak.map((t) => DropdownMenuItem(value: t, child: Text(t))),
+              ],
+              onChanged: (val) => setState(() => _kivalasztottTaska = val),
+            ),
             const SizedBox(height: 16),
+            TextField(controller: _pozicioCtrl, decoration: const InputDecoration(labelText: 'Pozíció / Rekesz (opcionális)', border: OutlineInputBorder())),
+            const Divider(height: 32, color: Colors.white24),
+
             TextField(controller: _leirasCtrl, maxLines: 4, decoration: const InputDecoration(labelText: 'Felszerelés leírása (opcionális)', border: OutlineInputBorder())),
             const SizedBox(height: 24),
 
-            const Text('Fényképek (Maximum 3 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+            const Text('Fényképek (Maximum 5 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 12,
@@ -504,7 +650,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                     ],
                   );
                 }),
-                if (_kepek.length < 3)
+                if (_kepek.length < 5)
                   GestureDetector(
                     onTap: _kepHozzaadasa,
                     child: Container(
