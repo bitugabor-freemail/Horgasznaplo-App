@@ -8,7 +8,7 @@ import 'lexikon.dart';
 import 'statisztika.dart';
 import 'adatkezeles.dart';
 import 'torzsadatok.dart';
-import 'dokumentumok.dart'; // ÚJ: Dokumentumok importálása
+import 'dokumentumok.dart'; 
 
 void main() {
   runApp(const HorgaszNaploApp());
@@ -86,7 +86,6 @@ class _FomenuScreenState extends State<FomenuScreen> {
   int _currentIndex = 0;
   final GlobalKey<FelszerelesScreenState> _felszerelesKey = GlobalKey<FelszerelesScreenState>();
   
-  // LEVETTÜK A FINAL JELZŐT, HOGY TUDJUK FRISSÍTENI A LISTÁT
   late List<Widget> _kepernyok; 
 
   @override
@@ -101,7 +100,6 @@ class _FomenuScreenState extends State<FomenuScreen> {
     ];
   }
 
-  // ÚJ FRISSÍTŐ FUNKCIÓ A MENÜPONTOKHOZ
   void _kepernyokFrissitese() {
     setState(() {
       _kepernyok = [
@@ -251,7 +249,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                 children: [
                   Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                   SizedBox(height: 4),
-                  Text('Verzió 1.0.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
+                  Text('Verzió 1.1.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)), // FRISSÍTVE
                 ],
               ),
             ),
@@ -281,7 +279,6 @@ class _FomenuScreenState extends State<FomenuScreen> {
               onTap: () { setState(() => _currentIndex = 4); Navigator.pop(context); },
             ),
             const Divider(color: Colors.white24),
-            // Dokumentumok menüpont
             ListTile(
               leading: const Icon(Icons.folder_shared_outlined, color: Colors.greenAccent),
               title: const Text('6. Dokumentumok'),
@@ -298,12 +295,10 @@ class _FomenuScreenState extends State<FomenuScreen> {
               title: const Text('7. Törzsadatok'),
               onTap: () async {
                 Navigator.pop(context);
-                // MEGVÁRJUK A TÖRZSDATOK BEZÁRÁSÁT
                 await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const TorzsadatokScreen()),
                 );
-                // MAJD AZONNAL FRISSÍTJÜK A KÉPERNYŐKET
                 _kepernyokFrissitese();
               },
             ),
@@ -312,9 +307,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
               title: const Text('8. Adatkezelés'),
               onTap: () async {
                 Navigator.pop(context);
-                // MEGVÁRJUK AZ ADATKEZELÉS BEZÁRÁSÁT
                 await Navigator.push(context, MaterialPageRoute(builder: (context) => const AdatkezelesScreen()));
-                // MAJD AZONNAL FRISSÍTJÜK A KÉPERNYŐKET (pl. Import után)
                 _kepernyokFrissitese();
               },
             ),
@@ -335,7 +328,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                       children: [
                         Text('Készítette: Google Gemini & B2', style: TextStyle(color: Colors.white, fontSize: 16)),
                         SizedBox(height: 8),
-                        Text('Verzió: 1.0.0', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        Text('Verzió: 1.1.0', style: TextStyle(color: Colors.white70, fontSize: 14)), // FRISSÍTVE
                       ],
                     ),
                     actions: [
