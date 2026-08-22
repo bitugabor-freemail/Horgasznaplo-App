@@ -229,7 +229,6 @@ class _TurakScreenState extends State<TurakScreen> {
   }
 }
 
-// --- ÚJ KÜLÖNÁLLÓ WIDGET A TÚRA KÁRTYÁHOZ (Hogy a galéria szépen működjön) ---
 class _TuraKartya extends StatefulWidget {
   final Tura tura;
   final Map<String, dynamic> stat;
@@ -525,7 +524,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
   final _horgaszhelyCtrl = TextEditingController();
   final _megjegyzesCtrl = TextEditingController();
   
-  List<String> _kepek = []; // ÚJ: 10 képes limit
+  List<String> _kepek = []; 
 
   List<String> _kivalasztottTarsak = [];
   List<Helyszin> _helyszinek = [];
@@ -850,8 +849,8 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
       helyszinId: _kivalasztottHelyszinId,
       horgaszhely: _horgaszhelyCtrl.text.trim(),
       horgasztarsak: _kivalasztottTarsak,
-      boritoKep: _kepek.isNotEmpty ? _kepek.first : null, // Visszafelé kompatibilitás
-      kepek: _kepek, // ÚJ
+      boritoKep: _kepek.isNotEmpty ? _kepek.first : null, 
+      kepek: _kepek, 
       megjegyzes: _megjegyzesCtrl.text.trim(),
     );
 
@@ -933,7 +932,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             TextField(controller: _horgaszhelyCtrl, decoration: const InputDecoration(labelText: 'Horgászhely / Állás', border: OutlineInputBorder())),
             const SizedBox(height: 20),
 
-            // TISZTÍTOTT UI: NINCS ÚJ GOMB
             const Text('Horgásztársak hozzáadása:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             InkWell(
@@ -972,7 +970,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ],
             const SizedBox(height: 20),
 
-            // ÚJ: 10 KÉPES FOTÓTÖLTŐ TÚRÁKHOZ
+            // ÚJ: MULTIPLE IMAGE PICKER
             const Text('Túra fotók (Maximum 10 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             Wrap(
@@ -1008,10 +1006,24 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                   GestureDetector(
                     onTap: () async {
                       final picker = ImagePicker();
-                      final image = await picker.pickImage(source: ImageSource.gallery);
-                      if (image != null) {
-                        String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
-                        setState(() => _kepek.add(biztonsagosUtvonal));
+                      final images = await picker.pickMultiImage();
+                      if (images.isNotEmpty) {
+                        int szabadHely = 10 - _kepek.length;
+                        int hozzaadandoSzam = images.length > szabadHely ? szabadHely : images.length;
+                        
+                        for (int i = 0; i < hozzaadandoSzam; i++) {
+                          String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(images[i].path);
+                          setState(() {
+                            _kepek.add(biztonsagosUtvonal);
+                          });
+                        }
+                        
+                        if (images.length > szabadHely && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Csak $szabadHely képet lehetett még hozzáadni a limit miatt!'),
+                            backgroundColor: Colors.orange,
+                          ));
+                        }
                       }
                     },
                     child: Container(
