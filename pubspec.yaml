@@ -2,7 +2,7 @@ name: horgasznaplo
 description: Horgásznapló alkalmazás.
 publish_to: 'none' # Ezt ne módosítsd, amíg nem akarod publikálni a csomagot
 
-version: 1.0.0+1
+version: 1.1.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -37,7 +37,7 @@ dev_dependencies:
 
 # --- IKON GENERÁLÓ BEÁLLÍTÁSOK ---
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: false # iOS kikapcsolva a korábbi build hiba miatt
   image_path: "assets/small_logo.png" # <-- ITT JAVÍTVA AZ IKON ELÉRÉSI ÚTJA!
   min_sdk_android: 21
