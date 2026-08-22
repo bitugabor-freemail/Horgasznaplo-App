@@ -20,7 +20,7 @@ class AdatTarolo {
   static const String _tarsakKulcs = 'torzs_tarsak';
   static const String _idojarasKulcs = 'torzs_idojaras';
   static const String _sorsKulcs = 'torzs_sors';
-  static const String _taskakKulcs = 'torzs_taskak'; // ÚJ TÖRZSDAT KULCS
+  static const String _taskakKulcs = 'torzs_taskak'; 
   static const String _felszerelesKategoriakKulcs = 'felszereles_kategoriak';
   static const String _felszerelesTetelekKulcs = 'felszereles_tetelek';
   
@@ -327,7 +327,7 @@ class AdatTarolo {
       'tarsak': await _betoltes(_tarsakKulcs),
       'idojaras': await _betoltes(_idojarasKulcs),
       'sors': await _betoltes(_sorsKulcs),
-      'taskak': await _betoltes(_taskakKulcs), // ÚJ
+      'taskak': await _betoltes(_taskakKulcs), 
       'dok_mappak': await _betoltes(_dokMappakKulcs),
       'dok_fajlok': await _betoltes(_dokFajlokKulcs),
     };
@@ -431,9 +431,15 @@ class AdatTarolo {
     if (data.containsKey('tarsak')) await prefs.setString(_tarsakKulcs, jsonEncode(data['tarsak']));
     if (data.containsKey('idojaras')) await prefs.setString(_idojarasKulcs, jsonEncode(data['idojaras']));
     if (data.containsKey('sors')) await prefs.setString(_sorsKulcs, jsonEncode(data['sors']));
-    if (data.containsKey('taskak')) await prefs.setString(_taskakKulcs, jsonEncode(data['taskak'])); // ÚJ
+    if (data.containsKey('taskak')) await prefs.setString(_taskakKulcs, jsonEncode(data['taskak'])); 
     if (data.containsKey('dok_mappak')) await prefs.setString(_dokMappakKulcs, jsonEncode(data['dok_mappak']));
     if (data.containsKey('dok_fajlok')) await prefs.setString(_dokFajlokKulcs, jsonEncode(data['dok_fajlok']));
+
+    // --- ÚJ RÉSZ: IMPORT UTÁNI VÉDELEM A GYÁRI ADATOK FELÜLÍRÁSA ELLEN ---
+    await prefs.setBool('felszereles_init', true);
+    await prefs.setBool('halfaj_init', true);
+    await prefs.setBool('idojaras_init', true);
+    await prefs.setBool('sors_init', true);
   }
 
   static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {}
