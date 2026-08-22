@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'fogasok.dart';
@@ -154,38 +155,6 @@ class _TurakScreenState extends State<TurakScreen> {
     };
   }
 
-  void _teljesKepernyosKep(BuildContext context, Tura tura, String kepUtvonal, String helyszinNev) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.download, color: Colors.white),
-                onPressed: () {
-                  VizjelKeszito.turaLetoltes(context, tura, kepUtvonal, helyszinNev);
-                },
-              ),
-            ],
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              minScale: 1.0,
-              maxScale: 5.0,
-              // Szabad vászon nagyítás engedélyezése
-              boundaryMargin: const EdgeInsets.all(double.infinity),
-              clipBehavior: Clip.none,
-              child: Image.file(File(kepUtvonal), fit: BoxFit.contain),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final evek = _getEvekListaja();
@@ -230,156 +199,21 @@ class _TurakScreenState extends State<TurakScreen> {
                     itemBuilder: (context, index) {
                       final tura = mutatottTurak[index];
                       final stat = _getStatisztika(tura.id);
-                      final vanMegjegyzes = tura.megjegyzes.isNotEmpty;
-
                       final helyszinObj = _helyszinek.cast<Helyszin?>().firstWhere((h) => h?.id == tura.helyszinId, orElse: () => null);
-                      final helyszinNev = helyszinObj?.nev ?? 'Ismeretlen helyszín';
-                      final vizterKod = helyszinObj?.vizterKod;
-
-                      final kezdo = DateTime(tura.kezdoDatum.year, tura.kezdoDatum.month, tura.kezdoDatum.day);
-                      final befejezo = DateTime(tura.befejezoDatum.year, tura.befejezoDatum.month, tura.befejezoDatum.day);
-                      final int diffDays = befejezo.difference(kezdo).inDays;
-                      final String extraNapok = diffDays > 0 ? ' (${diffDays + 1} nap)' : '';
-                      final String fejlecCim = '${DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum)}$extraNapok';
-
-                      return Card(
-                        color: const Color(0xFF1E1E1E),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        clipBehavior: Clip.antiAlias,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              color: Colors.green[900]?.withOpacity(0.4),
-                              child: Text(
-                                fejlecCim,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold, 
-                                  color: Colors.greenAccent
-                                ),
-                              ),
-                            ),
-                            
-                            if (tura.boritoKep != null && File(tura.boritoKep!).existsSync())
-                              GestureDetector(
-                                onTap: () => _teljesKepernyosKep(context, tura, tura.boritoKep!, helyszinNev),
-                                child: Image.file(File(tura.boritoKep!), height: 180, width: double.infinity, fit: BoxFit.cover),
-                              ),
-
-                            Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(helyszinNev, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                                  if (vizterKod != null && vizterKod.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text('Víztérkód: $vizterKod', style: const TextStyle(fontSize: 16, color: Colors.white70)),
-                                  ],
-                                  if (tura.horgaszhely.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text('Horgászhely: ${tura.horgaszhely}', style: const TextStyle(fontSize: 16, color: Colors.white70)),
-                                  ],
-                                  const Divider(height: 20, color: Colors.white12),
-                                  
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                    children: [
-                                      _StatisztikaElem(cim: 'Darab', ertek: '${stat['darab']} db'),
-                                      _StatisztikaElem(cim: 'Összsúly', ertek: '${(stat['osszsuly'] as double).toStringAsFixed(1)} kg'),
-                                      _StatisztikaElem(cim: 'Átlag', ertek: '${(stat['atlag'] as double).toStringAsFixed(1)} kg'),
-                                    ],
-                                  ),
-                                  
-                                  const SizedBox(height: 12),
-                                  
-                                  if (stat['bigFishNev'] != null) ...[
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.workspace_premium, size: 18, color: Colors.amber),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            'Big Fish: ${stat['bigFishNev']} (${stat['bigFishSuly']} kg)',
-                                            style: const TextStyle(fontSize: 16, color: Colors.amber, fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                  ],
-
-                                  if (tura.horgasztarsak.isNotEmpty) ...[
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.people, size: 18, color: Colors.greenAccent),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            'Társak: ${tura.horgasztarsak.join(', ')}',
-                                            style: const TextStyle(fontSize: 16, color: Colors.white),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-
-                                  const Divider(height: 20, color: Colors.white12),
-
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                            tooltip: 'Túra törlése',
-                                            onPressed: () => _turaTorlese(tura),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.edit_outlined, color: Colors.white70),
-                                            tooltip: 'Túra szerkesztése',
-                                            onPressed: () => _turaSzerkesztes(tura),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(
-                                              vanMegjegyzes ? Icons.note_alt : Icons.note_alt_outlined,
-                                              color: vanMegjegyzes ? Colors.greenAccent : Colors.white38,
-                                            ),
-                                            tooltip: vanMegjegyzes ? 'Megjegyzés megtekintése' : 'Nincs megjegyzés',
-                                            onPressed: () => _megjegyzresMutatasa(context, tura),
-                                          ),
-                                        ],
-                                      ),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => FogasokScreen(tura: tura)),
-                                          ).then((_) => _adatokBetoltese());
-                                        },
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: const [
-                                            Text('FOGÁSOK', style: TextStyle(color: Colors.white)),
-                                            SizedBox(width: 8),
-                                            Icon(Icons.phishing, color: Colors.white, size: 18),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      
+                      return _TuraKartya(
+                        tura: tura,
+                        stat: stat,
+                        helyszinObj: helyszinObj,
+                        onSzerkesztes: () => _turaSzerkesztes(tura),
+                        onTorles: () => _turaTorlese(tura),
+                        onMegjegyzes: () => _megjegyzresMutatasa(context, tura),
+                        onFogasok: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => FogasokScreen(tura: tura)),
+                          ).then((_) => _adatokBetoltese());
+                        },
                       );
                     },
                   ),
@@ -390,6 +224,268 @@ class _TurakScreenState extends State<TurakScreen> {
         backgroundColor: Colors.green[600],
         onPressed: () => _turaSzerkesztes(),
         child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+}
+
+// --- ÚJ KÜLÖNÁLLÓ WIDGET A TÚRA KÁRTYÁHOZ (Hogy a galéria szépen működjön) ---
+class _TuraKartya extends StatefulWidget {
+  final Tura tura;
+  final Map<String, dynamic> stat;
+  final Helyszin? helyszinObj;
+  final VoidCallback onSzerkesztes;
+  final VoidCallback onTorles;
+  final VoidCallback onMegjegyzes;
+  final VoidCallback onFogasok;
+
+  const _TuraKartya({
+    required this.tura,
+    required this.stat,
+    required this.helyszinObj,
+    required this.onSzerkesztes,
+    required this.onTorles,
+    required this.onMegjegyzes,
+    required this.onFogasok,
+  });
+
+  @override
+  State<_TuraKartya> createState() => _TuraKartyaState();
+}
+
+class _TuraKartyaState extends State<_TuraKartya> {
+  final PageController _pageCtrl = PageController();
+
+  void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex, String helyszinNev) {
+    int aktIndex = kezdoIndex;
+    final PageController fullPageCtrl = PageController(initialPage: kezdoIndex);
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StatefulBuilder(
+          builder: (context, setFullState) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.download, color: Colors.white),
+                    onPressed: () {
+                      VizjelKeszito.turaLetoltes(context, widget.tura, widget.tura.kepek[aktIndex], helyszinNev);
+                    },
+                  ),
+                ],
+              ),
+              body: PageView.builder(
+                controller: fullPageCtrl,
+                itemCount: widget.tura.kepek.length,
+                onPageChanged: (idx) => setFullState(() => aktIndex = idx),
+                itemBuilder: (context, i) {
+                  final utvonal = widget.tura.kepek[i];
+                  return InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 5.0,
+                    boundaryMargin: const EdgeInsets.all(double.infinity),
+                    clipBehavior: Clip.none,
+                    child: Center(
+                      child: utvonal.startsWith('http')
+                          ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.contain)
+                          : Image.file(File(utvonal), fit: BoxFit.contain),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tura = widget.tura;
+    final stat = widget.stat;
+    final helyszinNev = widget.helyszinObj?.nev ?? 'Ismeretlen helyszín';
+    final vizterKod = widget.helyszinObj?.vizterKod;
+    final vanMegjegyzes = tura.megjegyzes.isNotEmpty;
+
+    final kezdo = DateTime(tura.kezdoDatum.year, tura.kezdoDatum.month, tura.kezdoDatum.day);
+    final befejezo = DateTime(tura.befejezoDatum.year, tura.befejezoDatum.month, tura.befejezoDatum.day);
+    final int diffDays = befejezo.difference(kezdo).inDays;
+    final String extraNapok = diffDays > 0 ? ' (${diffDays + 1} nap)' : '';
+    final String fejlecCim = '${DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum)}$extraNapok';
+
+    return Card(
+      color: const Color(0xFF1E1E1E),
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            color: Colors.green[900]?.withOpacity(0.4),
+            child: Text(
+              fejlecCim,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.greenAccent),
+            ),
+          ),
+          
+          if (tura.kepek.isNotEmpty)
+            SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  PageView.builder(
+                    controller: _pageCtrl,
+                    itemCount: tura.kepek.length,
+                    itemBuilder: (context, i) {
+                      final utvonal = tura.kepek[i];
+                      return GestureDetector(
+                        onTap: () => _teljesKepernyosGaleria(context, i, helyszinNev),
+                        child: utvonal.startsWith('http')
+                            ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
+                            : (File(utvonal).existsSync() ? Image.file(File(utvonal), fit: BoxFit.cover) : const Icon(Icons.broken_image, size: 50)),
+                      );
+                    },
+                  ),
+                  if (tura.kepek.length > 1) ...[
+                    Positioned(
+                      left: 8,
+                      child: CircleAvatar(
+                        backgroundColor: Colors.black54,
+                        child: IconButton(
+                          icon: const Icon(Icons.chevron_left, color: Colors.white),
+                          onPressed: () => _pageCtrl.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 8,
+                      child: CircleAvatar(
+                        backgroundColor: Colors.black54,
+                        child: IconButton(
+                          icon: const Icon(Icons.chevron_right, color: Colors.white),
+                          onPressed: () => _pageCtrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                        ),
+                      ),
+                    ),
+                  ]
+                ],
+              ),
+            ),
+
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(helyszinNev, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                if (vizterKod != null && vizterKod.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text('Víztérkód: $vizterKod', style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                ],
+                if (tura.horgaszhely.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text('Horgászhely: ${tura.horgaszhely}', style: const TextStyle(fontSize: 16, color: Colors.white70)),
+                ],
+                const Divider(height: 20, color: Colors.white12),
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _StatisztikaElem(cim: 'Darab', ertek: '${stat['darab']} db'),
+                    _StatisztikaElem(cim: 'Összsúly', ertek: '${(stat['osszsuly'] as double).toStringAsFixed(1)} kg'),
+                    _StatisztikaElem(cim: 'Átlag', ertek: '${(stat['atlag'] as double).toStringAsFixed(1)} kg'),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                if (stat['bigFishNev'] != null) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.workspace_premium, size: 18, color: Colors.amber),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Big Fish: ${stat['bigFishNev']} (${stat['bigFishSuly']} kg)',
+                          style: const TextStyle(fontSize: 16, color: Colors.amber, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                ],
+
+                if (tura.horgasztarsak.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.people, size: 18, color: Colors.greenAccent),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Társak: ${tura.horgasztarsak.join(', ')}',
+                          style: const TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                const Divider(height: 20, color: Colors.white12),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          tooltip: 'Túra törlése',
+                          onPressed: widget.onTorles,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, color: Colors.white70),
+                          tooltip: 'Túra szerkesztése',
+                          onPressed: widget.onSzerkesztes,
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            vanMegjegyzes ? Icons.note_alt : Icons.note_alt_outlined,
+                            color: vanMegjegyzes ? Colors.greenAccent : Colors.white38,
+                          ),
+                          tooltip: vanMegjegyzes ? 'Megjegyzés megtekintése' : 'Nincs megjegyzés',
+                          onPressed: widget.onMegjegyzes,
+                        ),
+                      ],
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+                      onPressed: widget.onFogasok,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Text('FOGÁSOK', style: TextStyle(color: Colors.white)),
+                          SizedBox(width: 8),
+                          Icon(Icons.phishing, color: Colors.white, size: 18),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -428,7 +524,8 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
   String? _kivalasztottHelyszinId;
   final _horgaszhelyCtrl = TextEditingController();
   final _megjegyzesCtrl = TextEditingController();
-  String? _boritokepUtvonal;
+  
+  List<String> _kepek = []; // ÚJ: 10 képes limit
 
   List<String> _kivalasztottTarsak = [];
   List<Helyszin> _helyszinek = [];
@@ -447,7 +544,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
       _horgaszhelyCtrl.text = t.horgaszhely;
       _kivalasztottTarsak = List.from(t.horgasztarsak);
       _megjegyzesCtrl.text = t.megjegyzes;
-      _boritokepUtvonal = t.boritoKep;
+      _kepek = List.from(t.kepek);
     }
   }
 
@@ -753,7 +850,8 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
       helyszinId: _kivalasztottHelyszinId,
       horgaszhely: _horgaszhelyCtrl.text.trim(),
       horgasztarsak: _kivalasztottTarsak,
-      boritoKep: _boritokepUtvonal,
+      boritoKep: _kepek.isNotEmpty ? _kepek.first : null, // Visszafelé kompatibilitás
+      kepek: _kepek, // ÚJ
       megjegyzes: _megjegyzesCtrl.text.trim(),
     );
 
@@ -835,35 +933,24 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             TextField(controller: _horgaszhelyCtrl, decoration: const InputDecoration(labelText: 'Horgászhely / Állás', border: OutlineInputBorder())),
             const SizedBox(height: 20),
 
+            // TISZTÍTOTT UI: NINCS ÚJ GOMB
             const Text('Horgásztársak hozzáadása:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: _mutasTarsKereso,
-                    borderRadius: BorderRadius.circular(4),
-                    child: InputDecorator(
-                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text('Válassz horgásztársat...', style: TextStyle(color: Colors.white54)),
-                          Icon(Icons.arrow_drop_down, color: Colors.white70),
-                        ],
-                      ),
-                    ),
-                  ),
+            InkWell(
+              onTap: _mutasTarsKereso,
+              borderRadius: BorderRadius.circular(4),
+              child: InputDecorator(
+                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Válassz horgásztársat...', style: TextStyle(color: Colors.white54)),
+                    Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green[800], padding: const EdgeInsets.symmetric(vertical: 14)),
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text('Új', style: TextStyle(color: Colors.white)),
-                  onPressed: _ujTarsHozzaadaskor,
-                ),
-              ],
+              ),
             ),
+            
             const SizedBox(height: 12),
             if (_kivalasztottTarsak.isNotEmpty) ...[
               const Text('Kiválasztott társak (kattintásra törölhető):', style: TextStyle(fontSize: 12, color: Colors.white54)),
@@ -885,29 +972,60 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ],
             const SizedBox(height: 20),
 
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800], padding: const EdgeInsets.all(12)),
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('Borítókép kiválasztása'),
-              onPressed: () async {
-                final picker = ImagePicker();
-                final image = await picker.pickImage(source: ImageSource.gallery);
-                if (image != null) {
-                  String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
-                  setState(() => _boritokepUtvonal = biztonsagosUtvonal);
-                }
-              },
+            // ÚJ: 10 KÉPES FOTÓTÖLTŐ TÚRÁKHOZ
+            const Text('Túra fotók (Maximum 10 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                ..._kepek.asMap().entries.map((entry) {
+                  int idx = entry.key;
+                  String utvonal = entry.value;
+                  return Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Container(
+                        width: 100, height: 100,
+                        decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+                        clipBehavior: Clip.antiAlias,
+                        child: utvonal.startsWith('http')
+                            ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
+                            : Image.file(File(utvonal), fit: BoxFit.cover),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() => _kepek.removeAt(idx)),
+                        child: Container(
+                          margin: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                          child: const Icon(Icons.close, color: Colors.redAccent, size: 24),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+                if (_kepek.length < 10)
+                  GestureDetector(
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final image = await picker.pickImage(source: ImageSource.gallery);
+                      if (image != null) {
+                        String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
+                        setState(() => _kepek.add(biztonsagosUtvonal));
+                      }
+                    },
+                    child: Container(
+                      width: 100, height: 100,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.greenAccent, width: 2),
+                      ),
+                      child: const Center(child: Icon(Icons.add_a_photo, color: Colors.greenAccent, size: 30)),
+                    ),
+                  ),
+              ],
             ),
-            if (_boritokepUtvonal != null) ...[
-              const SizedBox(height: 8),
-              Stack(
-                alignment: Alignment.topRight,
-                children: [
-                  ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(_boritokepUtvonal!), height: 150, width: double.infinity, fit: BoxFit.cover)),
-                  IconButton(icon: const Icon(Icons.cancel, color: Colors.red), onPressed: () => setState(() => _boritokepUtvonal = null)),
-                ],
-              )
-            ],
             const SizedBox(height: 16),
 
             TextField(controller: _megjegyzesCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Megjegyzés', border: OutlineInputBorder())),
@@ -918,6 +1036,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
               onPressed: _mentes,
               child: const Text('TÚRA MENTÉSE', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
             ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
