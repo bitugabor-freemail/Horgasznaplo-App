@@ -27,7 +27,8 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     'Helyszín',
     'Horgásztársak',
     'Időjárás',
-    'Hal sorsa'
+    'Hal sorsa',
+    'Táskák' // ÚJ KATEGÓRIA
   ];
   
   String _kivKategoria = 'Halfaj';
@@ -50,7 +51,6 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   Future<void> _adatokBetoltese() async {
     if (_kivKategoria == 'Halfaj') {
       _halfajok = await AdatTarolo.halfajokBetoltese();
-      // Itt most már tisztán ABC sorrendbe rendezi a halakat (kis/nagybetű függetlenül)
       _halfajok.sort((a, b) => a.nev.toLowerCase().compareTo(b.nev.toLowerCase()));
       
     } else if (_kivKategoria == 'Helyszín') {
@@ -72,6 +72,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
         case 'Horgásztársak': _simaLista = await AdatTarolo.tarsakBetoltese(); break;
         case 'Időjárás': _simaLista = await AdatTarolo.idojarasBetoltese(); break;
         case 'Hal sorsa': _simaLista = await AdatTarolo.sorsBetoltese(); break;
+        case 'Táskák': _simaLista = await AdatTarolo.taskakBetoltese(); break; // ÚJ BEKÖTÉS
       }
       _simaLista.sort(); 
     }
@@ -88,6 +89,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
       case 'Horgásztársak': await AdatTarolo.tarsakMentes(_simaLista); break;
       case 'Időjárás': await AdatTarolo.idojarasMentes(_simaLista); break;
       case 'Hal sorsa': await AdatTarolo.sorsMentes(_simaLista); break;
+      case 'Táskák': await AdatTarolo.taskakMentes(_simaLista); break; // ÚJ BEKÖTÉS
     }
   }
 
