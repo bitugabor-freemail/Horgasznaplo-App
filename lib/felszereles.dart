@@ -39,7 +39,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     final kat = await AdatTarolo.felszerelesKategoriakBetoltese();
     final tet = await AdatTarolo.felszerelesTetelekBetoltese();
     final taskak = await AdatTarolo.taskakBetoltese();
-    taskak.sort();
+    // Itt kivettük a taskak.sort() részt, hogy maradjon a Drag & Drop sorrend!
     
     setState(() {
       _kategoriak = kat;
@@ -53,6 +53,16 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
         _kivalasztottTaska = _taskak.first;
       }
     });
+  }
+
+  // Ezt a függvényt hívja meg a main.dart a nyíl ikonra kattintva
+  void toggleNezet() {
+    setState(() {
+      _isTaskaNezet = !_isTaskaNezet;
+    });
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
   }
 
   void _tetelSzerkesztokMegnyitasa([FelszerelesTetel? tetel]) {
@@ -233,33 +243,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     int oldalszam = _isTaskaNezet ? _taskak.length : _kategoriak.length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isTaskaNezet ? 'Táskák' : 'Felszerelések'),
-        backgroundColor: const Color(0xFF161616),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.compare_arrows, color: Colors.greenAccent),
-            tooltip: 'Nézet váltása',
-            color: const Color(0xFF1E1E1E),
-            onSelected: (val) {
-              setState(() {
-                if (val == 'kategoria') {
-                  _isTaskaNezet = false;
-                } else {
-                  _isTaskaNezet = true;
-                }
-              });
-              if (_pageController.hasClients) {
-                _pageController.jumpToPage(0);
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'kategoria', child: Row(children: [Icon(Icons.category, size: 20, color: !_isTaskaNezet ? Colors.greenAccent : Colors.white70), const SizedBox(width: 8), Text('Kategória nézet', style: TextStyle(color: !_isTaskaNezet ? Colors.greenAccent : Colors.white))])),
-              PopupMenuItem(value: 'taska', child: Row(children: [Icon(Icons.business_center, size: 20, color: _isTaskaNezet ? Colors.greenAccent : Colors.white70), const SizedBox(width: 8), Text('Táska nézet', style: TextStyle(color: _isTaskaNezet ? Colors.greenAccent : Colors.white))])),
-            ],
-          ),
-        ],
-      ),
+      // A belső (dupla) fejléc teljesen eltávolítva!
       body: Column(
         children: [
           Container(
@@ -444,7 +428,6 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
               ),
             ),
             
-            // KÉPEK ELŐRE HOZVA
             if (widget.tetel.kepek.isNotEmpty) ...[
               const SizedBox(height: 24),
               const Text('Fényképek', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -510,7 +493,6 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
                 )),
             ],
 
-            // LEÍRÁS ALULRA TOLVA
             if (widget.tetel.leiras.isNotEmpty) ...[
               const SizedBox(height: 24),
               Container(
@@ -595,7 +577,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
   Future<void> _adatokBetoltese() async {
     final taskak = await AdatTarolo.taskakBetoltese();
-    taskak.sort();
+    // Itt is kivettük a sort()-ot!
     setState(() {
       _elerhetoTaskak = taskak;
       if (_kivalasztottTaska != null && _kivalasztottTaska!.isNotEmpty && !_elerhetoTaskak.contains(_kivalasztottTaska)) {
@@ -653,7 +635,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                 final nev = ctrl.text.trim();
                 if (!_elerhetoTaskak.contains(nev)) {
                   _elerhetoTaskak.add(nev);
-                  _elerhetoTaskak.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
                   await AdatTarolo.taskakMentes(_elerhetoTaskak);
                 }
                 setState(() => _kivalasztottTaska = nev);
@@ -825,7 +806,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             ),
             const Divider(height: 32, color: Colors.white24),
 
-            // OKOS TÁSKA KIVÁLASZTÓ
             const Text('Táska és Pozíció', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             InkWell(
@@ -1082,6 +1062,173 @@ class _KategoriakSzerkesztoScreenState extends State<KategoriakSzerkesztoScreen>
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green[600],
         onPressed: _ujKategoria,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+}
+
+// --- ÚJ: TÁSKÁK SZERKESZTÉSE KÉPERNYŐ (DRAG & DROP) ---
+class TaskakSzerkesztoScreen extends StatefulWidget {
+  final List<String> taskak;
+  final VoidCallback mentesCallback;
+
+  const TaskakSzerkesztoScreen({super.key, required this.taskak, required this.mentesCallback});
+
+  @override
+  State<TaskakSzerkesztoScreen> createState() => _TaskakSzerkesztoScreenState();
+}
+
+class _TaskakSzerkesztoScreenState extends State<TaskakSzerkesztoScreen> {
+  late List<String> _helyiTaskak;
+
+  @override
+  void initState() {
+    super.initState();
+    _helyiTaskak = List.from(widget.taskak);
+  }
+
+  Future<void> _mentes() async {
+    await AdatTarolo.taskakMentes(_helyiTaskak);
+    widget.mentesCallback();
+  }
+
+  void _taskaSzerkesztes(int index) {
+    final ctrl = TextEditingController(text: _helyiTaskak[index]);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Táska szerkesztése'),
+        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Név')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+            onPressed: () {
+              if (ctrl.text.trim().isNotEmpty) {
+                setState(() {
+                  _helyiTaskak[index] = ctrl.text.trim();
+                });
+                _mentes();
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Mentés', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _taskaTorles(int index) async {
+    final tet = await AdatTarolo.felszerelesTetelekBetoltese();
+    bool vanBenneTetel = tet.any((t) => t.taska == _helyiTaskak[index]);
+
+    if (vanBenneTetel) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ez a táska nem törölhető, mert vannak benne tételek!'), backgroundColor: Colors.redAccent));
+      return;
+    }
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Törlés'),
+        content: const Text('Biztosan törölni szeretnéd ezt a táskát?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégsem')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
+            onPressed: () {
+              setState(() => _helyiTaskak.removeAt(index));
+              _mentes();
+              Navigator.pop(context);
+            },
+            child: const Text('Törlés', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _ujTaska() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Új Táska / Doboz'),
+        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Név')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+            onPressed: () {
+              if (ctrl.text.trim().isNotEmpty) {
+                setState(() {
+                  _helyiTaskak.add(ctrl.text.trim());
+                });
+                _mentes();
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Mentés', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Táskák Szerkesztése')),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text('Tartsd lenyomva a jobb oldali ikont a táskák sorrendjének átrendezéséhez!', style: TextStyle(color: Colors.white54)),
+          ),
+          Expanded(
+            child: ReorderableListView(
+              onReorder: (int oldIndex, int newIndex) {
+                setState(() {
+                  if (newIndex > oldIndex) newIndex -= 1;
+                  final item = _helyiTaskak.removeAt(oldIndex);
+                  _helyiTaskak.insert(newIndex, item);
+                });
+                _mentes();
+              },
+              children: [
+                for (int i = 0; i < _helyiTaskak.length; i++)
+                  Card(
+                    key: ValueKey(_helyiTaskak[i]),
+                    color: const Color(0xFF1E1E1E),
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: ListTile(
+                      title: Text(_helyiTaskak[i], style: const TextStyle(fontWeight: FontWeight.bold)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(icon: const Icon(Icons.edit, color: Colors.white70), onPressed: () => _taskaSzerkesztes(i)),
+                          IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: () => _taskaTorles(i)),
+                          const SizedBox(width: 16),
+                          const Icon(Icons.drag_handle, color: Colors.greenAccent),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green[600],
+        onPressed: _ujTaska,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
