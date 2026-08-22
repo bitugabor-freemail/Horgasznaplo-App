@@ -199,7 +199,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                                             Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
                                           ],
                                           
-                                          // ÚJ: Táska/Pozíció és Mennyiség egy sorban
                                           const SizedBox(height: 8),
                                           Row(
                                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -471,12 +470,12 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
   final _mennyisegCtrl = TextEditingController();
   final _mertekegysegCtrl = TextEditingController();
   final _leirasCtrl = TextEditingController();
-  final _pozicioCtrl = TextEditingController(); // ÚJ
+  final _pozicioCtrl = TextEditingController(); 
   
   String? _kivalasztottKategoriaId;
-  String? _kivalasztottTaska; // ÚJ
+  String? _kivalasztottTaska; 
   List<String> _kepek = [];
-  List<String> _elerhetoTaskak = []; // ÚJ
+  List<String> _elerhetoTaskak = []; 
 
   @override
   void initState() {
@@ -508,25 +507,37 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     taskak.sort();
     setState(() {
       _elerhetoTaskak = taskak;
-      // Biztosítás, hogy a kiválasztott táska benne legyen a listában, ha törölték volna a törzsadatból
       if (_kivalasztottTaska != null && _kivalasztottTaska!.isNotEmpty && !_elerhetoTaskak.contains(_kivalasztottTaska)) {
         _kivalasztottTaska = null;
       }
     });
   }
 
+  // ÚJ: MULTIPLE IMAGE PICKER
   Future<void> _kepHozzaadasa() async {
     if (_kepek.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 képet adhatsz hozzá!')));
       return;
     }
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(image.path);
-      setState(() {
-        _kepek.add(biztonsagosUtvonal);
-      });
+    final images = await picker.pickMultiImage();
+    if (images.isNotEmpty) {
+      int szabadHely = 5 - _kepek.length;
+      int hozzaadandoSzam = images.length > szabadHely ? szabadHely : images.length;
+      
+      for (int i = 0; i < hozzaadandoSzam; i++) {
+        String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(images[i].path);
+        setState(() {
+          _kepek.add(biztonsagosUtvonal);
+        });
+      }
+      
+      if (images.length > szabadHely && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Csak $szabadHely képet lehetett még hozzáadni a limit miatt!'),
+          backgroundColor: Colors.orange,
+        ));
+      }
     }
   }
 
@@ -550,8 +561,8 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       mertekegyseg: _mertekegysegCtrl.text.trim(),
       leiras: _leirasCtrl.text.trim(),
       kepek: _kepek,
-      taska: _kivalasztottTaska, // ÚJ
-      pozicio: _pozicioCtrl.text.trim(), // ÚJ
+      taska: _kivalasztottTaska, 
+      pozicio: _pozicioCtrl.text.trim(), 
     );
 
     final osszesTetel = await AdatTarolo.felszerelesTetelekBetoltese();
@@ -601,7 +612,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             ),
             const Divider(height: 32, color: Colors.white24),
 
-            // ÚJ: TÁSKÁK ÉS POZÍCIÓ
             DropdownButtonFormField<String?>(
               value: _kivalasztottTaska,
               isExpanded: true,
