@@ -6,7 +6,7 @@ class Tura {
   final String horgaszhely;
   final List<String> horgasztarsak;
   final String? boritoKep;
-  final List<String> kepek; // ÚJ: Túra galéria képei
+  final List<String> kepek; 
   final String megjegyzes;
 
   Tura({
@@ -17,7 +17,7 @@ class Tura {
     this.horgaszhely = '',
     this.horgasztarsak = const [],
     this.boritoKep,
-    this.kepek = const [], // ÚJ
+    this.kepek = const [], 
     this.megjegyzes = '',
   });
 
@@ -29,21 +29,29 @@ class Tura {
     'horgaszhely': horgaszhely,
     'horgasztarsak': horgasztarsak,
     'boritoKep': boritoKep,
-    'kepek': kepek, // ÚJ
+    'kepek': kepek, 
     'megjegyzes': megjegyzes,
   };
 
-  factory Tura.fromJson(Map<String, dynamic> json) => Tura(
-    id: json['id'],
-    kezdoDatum: DateTime.parse(json['kezdoDatum']),
-    befejezoDatum: DateTime.parse(json['befejezoDatum']),
-    helyszinId: json['helyszinId'],
-    horgaszhely: json['horgaszhely'] ?? '',
-    horgasztarsak: List<String>.from(json['horgasztarsak'] ?? []),
-    boritoKep: json['boritoKep'],
-    kepek: List<String>.from(json['kepek'] ?? []), // ÚJ (Visszafelé kompatibilis)
-    megjegyzes: json['megjegyzes'] ?? '',
-  );
+  factory Tura.fromJson(Map<String, dynamic> json) {
+    // ÚJ: A HIÁNYZÓ VISSZAFELÉ KOMPATIBILITÁS A TÚRÁKHOZ
+    List<String> betoltottKepek = List<String>.from(json['kepek'] ?? []);
+    if (betoltottKepek.isEmpty && json['boritoKep'] != null && json['boritoKep'].toString().isNotEmpty) {
+      betoltottKepek.add(json['boritoKep']);
+    }
+
+    return Tura(
+      id: json['id'],
+      kezdoDatum: DateTime.parse(json['kezdoDatum']),
+      befejezoDatum: DateTime.parse(json['befejezoDatum']),
+      helyszinId: json['helyszinId'],
+      horgaszhely: json['horgaszhely'] ?? '',
+      horgasztarsak: List<String>.from(json['horgasztarsak'] ?? []),
+      boritoKep: json['boritoKep'],
+      kepek: betoltottKepek, // OKOS BETÖLTÉS HASZNÁLATA
+      megjegyzes: json['megjegyzes'] ?? '',
+    );
+  }
 }
 
 class FogasModel {
@@ -64,7 +72,7 @@ class FogasModel {
   final String? idojaras;
   final double? homerseklet;
   final String? fenykep; 
-  final List<String> kepek; // ÚJ: Fogás galéria képei
+  final List<String> kepek; 
   final String megjegyzes;
   bool isKedvenc;
 
@@ -86,7 +94,7 @@ class FogasModel {
     this.idojaras,
     this.homerseklet,
     this.fenykep,
-    this.kepek = const [], // ÚJ
+    this.kepek = const [], 
     this.megjegyzes = '',
     this.isKedvenc = false,
   });
@@ -109,13 +117,12 @@ class FogasModel {
     'idojaras': idojaras,
     'homerseklet': homerseklet,
     'fenykep': fenykep,
-    'kepek': kepek, // ÚJ
+    'kepek': kepek, 
     'megjegyzes': megjegyzes,
     'isKedvenc': isKedvenc,
   };
 
   factory FogasModel.fromJson(Map<String, dynamic> json) {
-    // VISSZAFELÉ KOMPATIBILITÁS LOGIKA: Ha van régi 'fenykep', de nincs 'kepek' lista, akkor konvertáljuk.
     List<String> betoltottKepek = List<String>.from(json['kepek'] ?? []);
     if (betoltottKepek.isEmpty && json['fenykep'] != null && json['fenykep'].toString().isNotEmpty) {
       betoltottKepek.add(json['fenykep']);
@@ -138,8 +145,8 @@ class FogasModel {
       vegszerelek: json['vegszerelek'],
       idojaras: json['idojaras'],
       homerseklet: json['homerseklet']?.toDouble(),
-      fenykep: json['fenykep'], // Megtartjuk a biztonság kedvéért
-      kepek: betoltottKepek, // ÚJ (Okos betöltés)
+      fenykep: json['fenykep'], 
+      kepek: betoltottKepek, 
       megjegyzes: json['megjegyzes'] ?? '',
       isKedvenc: json['isKedvenc'] ?? false,
     );
@@ -256,8 +263,8 @@ class FelszerelesTetel {
   final String mertekegyseg;
   final String leiras;
   final List<String> kepek;
-  final String? taska; // ÚJ
-  final String? pozicio; // ÚJ
+  final String? taska; 
+  final String? pozicio; 
 
   FelszerelesTetel({
     required this.id,
@@ -269,8 +276,8 @@ class FelszerelesTetel {
     this.mertekegyseg = '',
     this.leiras = '',
     this.kepek = const [],
-    this.taska, // ÚJ
-    this.pozicio, // ÚJ
+    this.taska, 
+    this.pozicio, 
   });
 
   Map<String, dynamic> toJson() => {
@@ -283,8 +290,8 @@ class FelszerelesTetel {
     'mertekegyseg': mertekegyseg,
     'leiras': leiras,
     'kepek': kepek,
-    'taska': taska, // ÚJ
-    'pozicio': pozicio, // ÚJ
+    'taska': taska, 
+    'pozicio': pozicio, 
   };
 
   factory FelszerelesTetel.fromJson(Map<String, dynamic> json) => FelszerelesTetel(
@@ -297,12 +304,10 @@ class FelszerelesTetel {
     mertekegyseg: json['mertekegyseg'] ?? '',
     leiras: json['leiras'] ?? '',
     kepek: List<String>.from(json['kepek'] ?? []),
-    taska: json['taska'], // ÚJ
-    pozicio: json['pozicio'], // ÚJ
+    taska: json['taska'], 
+    pozicio: json['pozicio'], 
   );
 }
-
-// --- ÚJ DOKUMENTUM MODELLEK ---
 
 class DokumentumMappa {
   String id;
