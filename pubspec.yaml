@@ -37,9 +37,11 @@ dev_dependencies:
 
 # --- IKON GENERÁLÓ BEÁLLÍTÁSOK ---
 flutter_launcher_icons:
-  android: true
-  ios: false # iOS kikapcsolva a korábbi build hiba miatt
-  image_path: "assets/small_logo.png" # <-- ITT JAVÍTVA AZ IKON ELÉRÉSI ÚTJA!
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/small_logo.png"
+  adaptive_icon_background: "#121212"
+  adaptive_icon_foreground: "assets/small_logo.png"
   min_sdk_android: 21
 
 flutter:
