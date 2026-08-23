@@ -271,13 +271,11 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     int oldalszam = _isTaskaNezet ? _taskak.length : _kategoriak.length;
 
     return Scaffold(
-      // 12%-os sárga háttér a Táska nézetben, különben átlátszó (hogy maradjon a sötét téma)
       backgroundColor: _isTaskaNezet ? Colors.amber.withOpacity(0.12) : Colors.transparent,
       body: Column(
         children: [
           Container(
             height: 50,
-            // 20%-os sárga ráhúzva a sötétszürkére a Táska nézet felső sávjában
             color: _isTaskaNezet ? Color.alphaBlend(Colors.amber.withOpacity(0.20), const Color(0xFF161616)) : const Color(0xFF161616),
             child: oldalszam == 0 
                 ? const SizedBox() 
@@ -306,7 +304,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                     }
                   },
                   child: Container(
-                    key: gKey, // Ide kötöttük be a kulcsot a görgetéshez!
+                    key: gKey,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
                       border: Border(
@@ -345,7 +343,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                         _kivalasztottKategoriaId = _kategoriak[index].id;
                       }
                     });
-                    // Ha lapozunk, automatikusan középre húzzuk a fenti gombot is
                     _KozepreGorget(index);
                   },
                   itemBuilder: (context, index) {
@@ -843,7 +840,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
             const Text('Táska és Pozíció', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            Inkങ്ക്Well(
+            InkWell(
               onTap: _mutasTaskaKereso,
               borderRadius: BorderRadius.circular(4),
               child: InputDecorator(
