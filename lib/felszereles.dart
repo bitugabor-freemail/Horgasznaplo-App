@@ -17,6 +17,9 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   List<FelszerelesTetel> _tetelek = [];
   List<String> _taskak = [];
   
+  List<GlobalKey> _kategoriaKeys = [];
+  List<GlobalKey> _taskaKeys = [];
+  
   String? _kivalasztottKategoriaId;
   String? _kivalasztottTaska;
   bool _isTaskaNezet = false;
@@ -45,6 +48,9 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       _tetelek = tet;
       _taskak = taskak;
       
+      _kategoriaKeys = List.generate(kat.length, (index) => GlobalKey());
+      _taskaKeys = List.generate(taskak.length, (index) => GlobalKey());
+      
       if (_kategoriak.isNotEmpty && _kivalasztottKategoriaId == null) {
         _kivalasztottKategoriaId = _kategoriak.first.id;
       }
@@ -52,6 +58,27 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
         _kivalasztottTaska = _taskak.first;
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_kategoriak.isNotEmpty || _taskak.isNotEmpty) {
+        _KozepreGorget(_pageController.hasClients ? _pageController.page?.round() ?? 0 : 0);
+      }
+    });
+  }
+
+  void _KozepreGorget(int index) {
+    final keys = _isTaskaNezet ? _taskaKeys : _kategoriaKeys;
+    if (keys.isEmpty || index >= keys.length) return;
+    
+    final key = keys[index];
+    if (key.currentContext != null) {
+      Scrollable.ensureVisible(
+        key.currentContext!,
+        alignment: 0.5, // 0.5 = pontosan középre igazítja
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void toggleNezet() {
@@ -61,6 +88,9 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     if (_pageController.hasClients) {
       _pageController.jumpToPage(0);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _KozepreGorget(0);
+    });
   }
 
   void _tetelSzerkesztokMegnyitasa([FelszerelesTetel? tetel]) {
@@ -241,13 +271,14 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     int oldalszam = _isTaskaNezet ? _taskak.length : _kategoriak.length;
 
     return Scaffold(
-      // ÚJ: Halvány sárga (borostyán) háttér a Táska nézethez!
-      backgroundColor: _isTaskaNezet ? Colors.amber.withOpacity(0.08) : Colors.transparent,
+      // 12%-os sárga háttér a Táska nézetben, különben átlátszó (hogy maradjon a sötét téma)
+      backgroundColor: _isTaskaNezet ? Colors.amber.withOpacity(0.12) : Colors.transparent,
       body: Column(
         children: [
           Container(
             height: 50,
-            color: const Color(0xFF161616),
+            // 20%-os sárga ráhúzva a sötétszürkére a Táska nézet felső sávjában
+            color: _isTaskaNezet ? Color.alphaBlend(Colors.amber.withOpacity(0.20), const Color(0xFF161616)) : const Color(0xFF161616),
             child: oldalszam == 0 
                 ? const SizedBox() 
                 : ListView.builder(
@@ -256,13 +287,16 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
               itemBuilder: (context, index) {
                 String nev;
                 bool isSelected;
+                GlobalKey? gKey;
                 
                 if (_isTaskaNezet) {
                   nev = _taskak[index];
                   isSelected = nev == _kivalasztottTaska;
+                  if (index < _taskaKeys.length) gKey = _taskaKeys[index];
                 } else {
                   nev = _kategoriak[index].nev;
                   isSelected = _kategoriak[index].id == _kivalasztottKategoriaId;
+                  if (index < _kategoriaKeys.length) gKey = _kategoriaKeys[index];
                 }
                 
                 return GestureDetector(
@@ -272,6 +306,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                     }
                   },
                   child: Container(
+                    key: gKey, // Ide kötöttük be a kulcsot a görgetéshez!
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
                       border: Border(
@@ -310,6 +345,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                         _kivalasztottKategoriaId = _kategoriak[index].id;
                       }
                     });
+                    // Ha lapozunk, automatikusan középre húzzuk a fenti gombot is
+                    _KozepreGorget(index);
                   },
                   itemBuilder: (context, index) {
                     return _buildListaOldal(index);
@@ -806,7 +843,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
             const Text('Táska és Pozíció', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            InkWell(
+            Inkങ്ക്Well(
               onTap: _mutasTaskaKereso,
               borderRadius: BorderRadius.circular(4),
               child: InputDecorator(
