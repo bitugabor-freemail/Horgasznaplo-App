@@ -39,7 +39,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     final kat = await AdatTarolo.felszerelesKategoriakBetoltese();
     final tet = await AdatTarolo.felszerelesTetelekBetoltese();
     final taskak = await AdatTarolo.taskakBetoltese();
-    // Itt kivettük a taskak.sort() részt, hogy maradjon a Drag & Drop sorrend!
     
     setState(() {
       _kategoriak = kat;
@@ -55,7 +54,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     });
   }
 
-  // Ezt a függvényt hívja meg a main.dart a nyíl ikonra kattintva
   void toggleNezet() {
     setState(() {
       _isTaskaNezet = !_isTaskaNezet;
@@ -243,7 +241,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     int oldalszam = _isTaskaNezet ? _taskak.length : _kategoriak.length;
 
     return Scaffold(
-      // A belső (dupla) fejléc teljesen eltávolítva!
+      // ÚJ: Halvány sárga (borostyán) háttér a Táska nézethez!
+      backgroundColor: _isTaskaNezet ? Colors.amber.withOpacity(0.08) : Colors.transparent,
       body: Column(
         children: [
           Container(
@@ -577,7 +576,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
   Future<void> _adatokBetoltese() async {
     final taskak = await AdatTarolo.taskakBetoltese();
-    // Itt is kivettük a sort()-ot!
     setState(() {
       _elerhetoTaskak = taskak;
       if (_kivalasztottTaska != null && _kivalasztottTaska!.isNotEmpty && !_elerhetoTaskak.contains(_kivalasztottTaska)) {
@@ -1068,7 +1066,6 @@ class _KategoriakSzerkesztoScreenState extends State<KategoriakSzerkesztoScreen>
   }
 }
 
-// --- ÚJ: TÁSKÁK SZERKESZTÉSE KÉPERNYŐ (DRAG & DROP) ---
 class TaskakSzerkesztoScreen extends StatefulWidget {
   final List<String> taskak;
   final VoidCallback mentesCallback;
