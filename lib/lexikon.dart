@@ -87,7 +87,8 @@ class _LexikonScreenState extends State<LexikonScreen> {
                 : szurtLista.isEmpty
                     ? const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)))
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        // ÚJ: 100 pixeles alsó távtartó a lebegő gomb miatt!
+                        padding: const EdgeInsets.only(left: 12, right: 12, bottom: 100),
                         itemCount: szurtLista.length,
                         itemBuilder: (context, index) {
                           final hal = szurtLista[index];
@@ -294,24 +295,17 @@ class _KvizScreenState extends State<KvizScreen> {
     if (_osszesHal.length >= 2) _ujKerdes();
   }
 
-  // SZIGORÚ ELLENŐRZÉS: Csak a tényleges, fizikai képeket engedjük a Képes módba!
   bool _ervenyestKep(String kep) {
     if (kep.isEmpty) return false;
-    // Letiltjuk a webes linkeket a kvíznél (hogy ne lehessen halott linkekkel elindítani)
     if (kep.startsWith('http')) return false; 
-    
-    // Csak a valóban létező fizikai fájlokat engedjük át
     return File(kep).existsSync();
   }
 
-  // Ez a függvény fut le, amikor átpöccinted a "Képes" kapcsolót
   void _onKepesModValtas(bool ujErtek) {
     if (ujErtek) {
-      // Megszámoljuk, hány halnak van TÉNYLEGESEN érvényes fizikai képe
       int kepesHalakSzama = _osszesHal.where((h) => h.kepek.any((k) => _ervenyestKep(k))).length;
       
       if (kepesHalakSzama < 4) {
-        // Ha nincs elég kép, kiírjuk a hibaüzenetet, és visszadobjuk a kapcsolót!
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Nincs elég fotóval rendelkező halfaj (min. 4 kell)! Kérlek, tölts fel saját képeket a Törzsadatoknál!'),
@@ -324,7 +318,6 @@ class _KvizScreenState extends State<KvizScreen> {
       }
     }
     
-    // Ha van elég kép, engedjük az átváltást
     setState(() { 
       _kepesMod = ujErtek; 
       _pontszam = 0; 
@@ -403,7 +396,7 @@ class _KvizScreenState extends State<KvizScreen> {
               Switch(
                 value: _kepesMod,
                 activeColor: Colors.greenAccent,
-                onChanged: _onKepesModValtas, // <--- Itt hívjuk meg a védett kapcsolót
+                onChanged: _onKepesModValtas, 
               ),
             ],
           )
@@ -443,7 +436,6 @@ class _KvizScreenState extends State<KvizScreen> {
                                   List<String> validKepek = _aktualisKerdes.kepek.where((kep) => _ervenyestKep(kep)).toList();
                                   validKepek.shuffle();
                                   
-                                  // Biztonsági ellenőrzés
                                   if (validKepek.isEmpty) {
                                      return const Icon(Icons.error, color: Colors.red, size: 50);
                                   }
@@ -457,7 +449,6 @@ class _KvizScreenState extends State<KvizScreen> {
                                       fit: BoxFit.cover, 
                                       width: double.infinity, 
                                       height: double.infinity,
-                                      // Golyóálló védelem, ha a fájl az utolsó pillanatban tűnne el:
                                       errorBuilder: (context, error, stackTrace) {
                                         return const Center(
                                           child: Column(
