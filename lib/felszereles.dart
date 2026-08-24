@@ -74,7 +74,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     if (key.currentContext != null) {
       Scrollable.ensureVisible(
         key.currentContext!,
-        alignment: 0.5, // 0.5 = pontosan középre igazítja
+        alignment: 0.5,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
@@ -137,10 +137,12 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     if (_isTaskaNezet) {
       if (_taskak.isEmpty) return const Center(child: Text('Nincsenek rögzített táskák.', style: TextStyle(color: Colors.white54)));
       String aktTaska = _taskak[index];
-      mutathato = _tetelek.where((t) => t.taska == aktTaska).toList();
+      mutathato = _tetelek.where((t) => t.elhelyezesek.any((e) => e.taska == aktTaska)).toList();
       
       mutathato.sort((a, b) {
-        int pozCmp = (a.pozicio ?? '').compareTo(b.pozicio ?? '');
+        var eA = a.elhelyezesek.firstWhere((e) => e.taska == aktTaska, orElse: () => FelszerelesElhelyezes());
+        var eB = b.elhelyezesek.firstWhere((e) => e.taska == aktTaska, orElse: () => FelszerelesElhelyezes());
+        int pozCmp = (eA.pozicio ?? '').compareTo(eB.pozicio ?? '');
         if (pozCmp != 0) return pozCmp;
         return a.nev.compareTo(b.nev);
       });
@@ -169,10 +171,56 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
         final tetel = mutathato[idx];
         final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
         
-        List<String> taskaPozicioReszek = [];
-        if (tetel.taska != null && tetel.taska!.isNotEmpty) taskaPozicioReszek.add(tetel.taska!);
-        if (tetel.pozicio != null && tetel.pozicio!.isNotEmpty) taskaPozicioReszek.add(tetel.pozicio!);
-        final taskaPozicioSzoveg = taskaPozicioReszek.join(' - ');
+        List<Widget> helyWidgetek = [];
+        double osszesen = 0;
+        int darabosHelyek = 0;
+
+        List<FelszerelesElhelyezes> megjelenitendoHelyek = _isTaskaNezet 
+            ? tetel.elhelyezesek.where((e) => e.taska == _taskak[index]).toList() 
+            : tetel.elhelyezesek;
+
+        for (var hely in megjelenitendoHelyek) {
+          if (hely.taska == null && hely.pozicio == null && hely.mennyiseg == null) continue;
+          
+          List<String> tp = [];
+          if (hely.taska != null && hely.taska!.isNotEmpty) tp.add(hely.taska!);
+          if (hely.pozicio != null && hely.pozicio!.isNotEmpty) tp.add(hely.pozicio!);
+          
+          String balSzoveg = tp.isEmpty ? 'Nincs megadva' : tp.join(' - ');
+          String jobbSzoveg = '';
+          
+          if (hely.mennyiseg != null) {
+            jobbSzoveg = '${hely.mennyiseg.toString().replaceAll('.0', '')} ${tetel.mertekegyseg}'.trim();
+            osszesen += hely.mennyiseg!;
+            darabosHelyek++;
+          }
+
+          helyWidgetek.add(
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 13, color: Colors.amber), overflow: TextOverflow.ellipsis)),
+                  if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 13, color: Colors.white)),
+                ],
+              ),
+            )
+          );
+        }
+
+        if (!_isTaskaNezet && darabosHelyek > 1) {
+          helyWidgetek.add(const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Divider(color: Colors.white24, height: 1)));
+          helyWidgetek.add(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Összesen:', style: TextStyle(fontSize: 13, color: Colors.white54, fontStyle: FontStyle.italic)),
+                Text('${osszesen.toString().replaceAll('.0', '')} ${tetel.mertekegyseg}'.trim(), style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.bold)),
+              ]
+            )
+          );
+        }
 
         return Card(
           color: const Color(0xFF1E1E1E),
@@ -217,25 +265,11 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                               const SizedBox(height: 4),
                               Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
                             ],
-                            
                             const SizedBox(height: 8),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    taskaPozicioSzoveg,
-                                    style: const TextStyle(fontSize: 13, color: Colors.amber),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (tetel.mennyiseg != null || tetel.mertekegyseg.isNotEmpty)
-                                  Text(
-                                    '${tetel.mennyiseg != null ? tetel.mennyiseg!.toString().replaceAll('.0', '') : ''} ${tetel.mertekegyseg}'.trim(),
-                                    style: const TextStyle(fontSize: 13, color: Colors.white54),
-                                  ),
-                              ],
-                            ),
+                            if (helyWidgetek.isNotEmpty)
+                              Column(children: helyWidgetek)
+                            else if (tetel.elhelyezesek.isEmpty)
+                               const Text('Nincs megadva tárolási hely', style: TextStyle(fontSize: 13, color: Colors.white38))
                           ],
                         ),
                       ),
@@ -410,10 +444,39 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
   Widget build(BuildContext context) {
     final markaNev = widget.tetel.marka.trim().isEmpty ? '[N/A] - No Name' : widget.tetel.marka;
     
-    List<String> taskaPozicioReszek = [];
-    if (widget.tetel.taska != null && widget.tetel.taska!.isNotEmpty) taskaPozicioReszek.add(widget.tetel.taska!);
-    if (widget.tetel.pozicio != null && widget.tetel.pozicio!.isNotEmpty) taskaPozicioReszek.add(widget.tetel.pozicio!);
-    final taskaPozicioSzoveg = taskaPozicioReszek.join(' - ');
+    List<Widget> helyWidgetekReszletes = [];
+    double osszesen = 0;
+    int darabosHelyek = 0;
+
+    for (var hely in widget.tetel.elhelyezesek) {
+      if (hely.taska == null && hely.pozicio == null && hely.mennyiseg == null) continue;
+      
+      List<String> tp = [];
+      if (hely.taska != null && hely.taska!.isNotEmpty) tp.add(hely.taska!);
+      if (hely.pozicio != null && hely.pozicio!.isNotEmpty) tp.add(hely.pozicio!);
+      String balSzoveg = tp.isEmpty ? 'Nincs megadva' : tp.join(' - ');
+      String jobbSzoveg = '';
+      if (hely.mennyiseg != null) {
+        jobbSzoveg = '${hely.mennyiseg.toString().replaceAll('.0', '')} ${widget.tetel.mertekegyseg}'.trim();
+        osszesen += hely.mennyiseg!;
+        darabosHelyek++;
+      }
+
+      helyWidgetekReszletes.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Icon(Icons.location_on, color: Colors.amber, size: 16),
+              const SizedBox(width: 8),
+              Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 15, color: Colors.amber))),
+              if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        )
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.tetel.nev)),
@@ -436,27 +499,26 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
                     const SizedBox(height: 8),
                     Text(widget.tetel.jellemzo, style: const TextStyle(fontSize: 16, color: Colors.white70)),
                   ],
-                  if (taskaPozicioSzoveg.isNotEmpty) ...[
+                  
+                  if (helyWidgetekReszletes.isNotEmpty) ...[
+                    const Divider(color: Colors.white24, height: 32),
+                    const Text('Tárolási helyek', style: TextStyle(fontSize: 14, color: Colors.white54, fontStyle: FontStyle.italic)),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Icon(Icons.business_center, color: Colors.amber, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(taskaPozicioSzoveg, style: const TextStyle(fontSize: 16, color: Colors.amber))),
-                      ],
-                    )
-                  ],
-                  const Divider(color: Colors.white24, height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Mennyiség:', style: TextStyle(fontSize: 16, color: Colors.white54)),
-                      Text(
-                        '${widget.tetel.mennyiseg != null ? widget.tetel.mennyiseg!.toString().replaceAll('.0', '') : '-'} ${widget.tetel.mertekegyseg}'.trim(),
-                        style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                    ...helyWidgetekReszletes,
+                    if (darabosHelyek > 1) ...[
+                      const Divider(color: Colors.white24, height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Összesen:', style: TextStyle(fontSize: 16, color: Colors.white54)),
+                          Text(
+                            '${osszesen.toString().replaceAll('.0', '')} ${widget.tetel.mertekegyseg}'.trim(),
+                            style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ]
+                  ],
                 ],
               ),
             ),
@@ -551,6 +613,17 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
   }
 }
 
+class ElhelyezesVezerlo {
+  String? taska;
+  TextEditingController pozicioCtrl = TextEditingController();
+  TextEditingController mennyisegCtrl = TextEditingController();
+  
+  void dispose() {
+    pozicioCtrl.dispose();
+    mennyisegCtrl.dispose();
+  }
+}
+
 class TetelSzerkesztoScreen extends StatefulWidget {
   final List<FelszerelesKategoria> kategoriak;
   final String? alapertelmezettKategoriaId;
@@ -573,15 +646,14 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
   final _markaCtrl = TextEditingController();
   final _nevCtrl = TextEditingController();
   final _jellemzoCtrl = TextEditingController();
-  final _mennyisegCtrl = TextEditingController();
   final _mertekegysegCtrl = TextEditingController();
   final _leirasCtrl = TextEditingController();
-  final _pozicioCtrl = TextEditingController(); 
   
   String? _kivalasztottKategoriaId;
-  String? _kivalasztottTaska; 
   List<String> _kepek = [];
   List<String> _elerhetoTaskak = []; 
+  
+  List<ElhelyezesVezerlo> _helyek = [];
 
   @override
   void initState() {
@@ -590,30 +662,56 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
     _kivalasztottKategoriaId = widget.alapertelmezettKategoriaId;
     
+    _mertekegysegCtrl.addListener(() {
+      setState(() {});
+    });
+    
     if (widget.szerkeszthetoTetel != null) {
       final t = widget.szerkeszthetoTetel!;
       _kivalasztottKategoriaId = t.kategoriaId;
       _markaCtrl.text = t.marka;
       _nevCtrl.text = t.nev;
       _jellemzoCtrl.text = t.jellemzo;
-      if (t.mennyiseg != null) _mennyisegCtrl.text = t.mennyiseg.toString().replaceAll('.0', '');
       _mertekegysegCtrl.text = t.mertekegyseg;
       _leirasCtrl.text = t.leiras;
       _kepek = List.from(t.kepek);
       
-      _kivalasztottTaska = t.taska;
-      if (t.pozicio != null) _pozicioCtrl.text = t.pozicio!;
-    } else if (widget.kategoriak.isNotEmpty && _kivalasztottKategoriaId == null) {
-      _kivalasztottKategoriaId = widget.kategoriak.first.id;
+      if (t.elhelyezesek.isNotEmpty) {
+        for (var e in t.elhelyezesek) {
+          var v = ElhelyezesVezerlo();
+          v.taska = e.taska;
+          if (e.pozicio != null) v.pozicioCtrl.text = e.pozicio!;
+          if (e.mennyiseg != null) v.mennyisegCtrl.text = e.mennyiseg.toString().replaceAll('.0', '');
+          _helyek.add(v);
+        }
+      } else {
+        _helyek.add(ElhelyezesVezerlo()); 
+      }
+    } else {
+      if (widget.kategoriak.isNotEmpty && _kivalasztottKategoriaId == null) {
+        _kivalasztottKategoriaId = widget.kategoriak.first.id;
+      }
+      _helyek.add(ElhelyezesVezerlo()); 
     }
+  }
+
+  @override
+  void dispose() {
+    for (var v in _helyek) {
+      v.dispose();
+    }
+    _mertekegysegCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _adatokBetoltese() async {
     final taskak = await AdatTarolo.taskakBetoltese();
     setState(() {
       _elerhetoTaskak = taskak;
-      if (_kivalasztottTaska != null && _kivalasztottTaska!.isNotEmpty && !_elerhetoTaskak.contains(_kivalasztottTaska)) {
-        _kivalasztottTaska = null;
+      for (var v in _helyek) {
+        if (v.taska != null && v.taska!.isNotEmpty && !_elerhetoTaskak.contains(v.taska)) {
+          v.taska = null;
+        }
       }
     });
   }
@@ -645,7 +743,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     }
   }
   
-  void _ujTaskaHozzaadaskor() {
+  void _ujTaskaHozzaadaskor(int index) {
     final ctrl = TextEditingController();
     showDialog(
       context: context,
@@ -669,7 +767,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                   _elerhetoTaskak.add(nev);
                   await AdatTarolo.taskakMentes(_elerhetoTaskak);
                 }
-                setState(() => _kivalasztottTaska = nev);
+                setState(() => _helyek[index].taska = nev);
                 if (mounted) Navigator.pop(context);
               }
             },
@@ -680,7 +778,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     );
   }
 
-  Future<void> _mutasTaskaKereso() async {
+  Future<void> _mutasTaskaKereso(int index) async {
     String kereses = '';
     final keresoCtrl = TextEditingController();
 
@@ -731,14 +829,14 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                       title: const Text('Új Táska/Doboz hozzáadása', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
                       onTap: () {
                         Navigator.pop(context);
-                        _ujTaskaHozzaadaskor();
+                        _ujTaskaHozzaadaskor(index);
                       },
                     ),
                     ListTile(
                       leading: const Icon(Icons.clear, color: Colors.redAccent),
                       title: const Text('-- Nincs megadva --', style: TextStyle(color: Colors.redAccent)),
                       onTap: () {
-                        setState(() => _kivalasztottTaska = null);
+                        setState(() => _helyek[index].taska = null);
                         Navigator.pop(context);
                       },
                     ),
@@ -746,11 +844,11 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                     Expanded(
                       child: ListView.builder(
                         itemCount: szurt.length,
-                        itemBuilder: (context, index) {
+                        itemBuilder: (context, i) {
                           return ListTile(
-                            title: Text(szurt[index]),
+                            title: Text(szurt[i]),
                             onTap: () {
-                              setState(() => _kivalasztottTaska = szurt[index]);
+                              setState(() => _helyek[index].taska = szurt[i]);
                               Navigator.pop(context);
                             },
                           );
@@ -777,18 +875,27 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       return;
     }
 
+    List<FelszerelesElhelyezes> ujElhelyezesek = [];
+    for (var v in _helyek) {
+      double? menny = double.tryParse(v.mennyisegCtrl.text.replaceAll(',', '.'));
+      String? poz = v.pozicioCtrl.text.trim();
+      if (poz.isEmpty) poz = null;
+      
+      if (v.taska != null || poz != null || menny != null) {
+        ujElhelyezesek.add(FelszerelesElhelyezes(taska: v.taska, pozicio: poz, mennyiseg: menny));
+      }
+    }
+
     final ujTetel = FelszerelesTetel(
       id: widget.szerkeszthetoTetel?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       kategoriaId: _kivalasztottKategoriaId!,
       marka: _markaCtrl.text.trim(),
       nev: _nevCtrl.text.trim(),
       jellemzo: _jellemzoCtrl.text.trim(),
-      mennyiseg: double.tryParse(_mennyisegCtrl.text.replaceAll(',', '.')),
       mertekegyseg: _mertekegysegCtrl.text.trim(),
       leiras: _leirasCtrl.text.trim(),
       kepek: _kepek,
-      taska: _kivalasztottTaska, 
-      pozicio: _pozicioCtrl.text.trim(), 
+      elhelyezesek: ujElhelyezesek, 
     );
 
     final osszesTetel = await AdatTarolo.felszerelesTetelekBetoltese();
@@ -827,37 +934,94 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             TextField(controller: _nevCtrl, decoration: const InputDecoration(labelText: 'Név *', border: OutlineInputBorder())),
             const SizedBox(height: 16),
             TextField(controller: _jellemzoCtrl, decoration: const InputDecoration(labelText: 'Jellemző (opcionális)', border: OutlineInputBorder())),
-            const SizedBox(height: 16),
+            const Divider(height: 40, color: Colors.white24),
 
-            Row(
-              children: [
-                Expanded(child: TextField(controller: _mennyisegCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Mennyiség', border: OutlineInputBorder()))),
-                const SizedBox(width: 8),
-                Expanded(child: TextField(controller: _mertekegysegCtrl, decoration: const InputDecoration(labelText: 'Mértékegység (pl. db, csomag)', border: OutlineInputBorder()))),
-              ],
-            ),
-            const Divider(height: 32, color: Colors.white24),
-
-            const Text('Táska és Pozíció', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: _mutasTaskaKereso,
-              borderRadius: BorderRadius.circular(4),
-              child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'Táska / Doboz (opcionális)', border: OutlineInputBorder()),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(child: Text(_kivalasztottTaska ?? '-- Nincs megadva --', style: TextStyle(color: _kivalasztottTaska == null ? Colors.white54 : Colors.white))),
-                    const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                  ],
-                ),
-              ),
+            const Text('Tárolási helyek', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.amber)),
+            const SizedBox(height: 12),
+            
+            Column(
+              children: List.generate(_helyek.length, (index) {
+                var v = _helyek[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black12,
+                    border: Border.all(color: Colors.white24),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${index + 1}. Tárolási hely', style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                          if (index > 0)
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.redAccent),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => setState(() => _helyek.removeAt(index)),
+                            )
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () => _mutasTaskaKereso(index),
+                        borderRadius: BorderRadius.circular(4),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(labelText: 'Táska / Doboz (opcionális)', border: OutlineInputBorder()),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(child: Text(v.taska ?? '-- Nincs megadva --', style: TextStyle(color: v.taska == null ? Colors.white54 : Colors.white))),
+                              const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(controller: v.pozicioCtrl, decoration: const InputDecoration(labelText: 'Pozíció / Rekesz (opcionális)', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            flex: 1, 
+                            child: TextField(controller: v.mennyisegCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Mennyiség', border: OutlineInputBorder()))
+                          ),
+                          const SizedBox(width: 12),
+                          if (index == 0)
+                            Expanded(
+                              flex: 1, 
+                              child: TextField(controller: _mertekegysegCtrl, decoration: const InputDecoration(labelText: 'Mértékegység', border: OutlineInputBorder()))
+                            )
+                          else
+                            Expanded(
+                              flex: 1,
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: Text(_mertekegysegCtrl.text.isNotEmpty ? _mertekegysegCtrl.text : '', style: const TextStyle(color: Colors.white54, fontSize: 16)),
+                              )
+                            )
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
             
-            const SizedBox(height: 16),
-            TextField(controller: _pozicioCtrl, decoration: const InputDecoration(labelText: 'Pozíció / Rekesz (opcionális)', border: OutlineInputBorder())),
-            const Divider(height: 32, color: Colors.white24),
+            TextButton.icon(
+              onPressed: () {
+                setState(() => _helyek.add(ElhelyezesVezerlo()));
+              },
+              icon: const Icon(Icons.add_circle_outline, color: Colors.greenAccent),
+              label: const Text('ÚJ TÁROLÁSI HELY', style: TextStyle(color: Colors.greenAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+
+            const Divider(height: 40, color: Colors.white24),
 
             TextField(controller: _leirasCtrl, maxLines: 4, decoration: const InputDecoration(labelText: 'Felszerelés leírása (opcionális)', border: OutlineInputBorder())),
             const SizedBox(height: 24),
@@ -1154,7 +1318,7 @@ class _TaskakSzerkesztoScreenState extends State<TaskakSzerkesztoScreen> {
 
   void _taskaTorles(int index) async {
     final tet = await AdatTarolo.felszerelesTetelekBetoltese();
-    bool vanBenneTetel = tet.any((t) => t.taska == _helyiTaskak[index]);
+    bool vanBenneTetel = tet.any((t) => t.elhelyezesek.any((e) => e.taska == _helyiTaskak[index]));
 
     if (vanBenneTetel) {
       if (!mounted) return;
