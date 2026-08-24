@@ -165,7 +165,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      // ÚJ: 100 pixeles alsó távtartó a lebegő gomb miatt!
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
       itemCount: mutathato.length,
       itemBuilder: (context, idx) {
         final tetel = mutathato[idx];
@@ -186,7 +187,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
           if (hely.taska != null && hely.taska!.isNotEmpty) tp.add(hely.taska!);
           if (hely.pozicio != null && hely.pozicio!.isNotEmpty) tp.add(hely.pozicio!);
           
-          String balSzoveg = tp.isEmpty ? 'Nincs megadva' : tp.join(' - ');
+          String balSzoveg = tp.join(' - ');
           String jobbSzoveg = '';
           
           if (hely.mennyiseg != null) {
@@ -195,14 +196,20 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
             darabosHelyek++;
           }
 
+          if (balSzoveg.isEmpty && jobbSzoveg.isEmpty) continue; // Ha teljesen üres, ugrunk a következőre
+
           helyWidgetek.add(
             Padding(
               padding: const EdgeInsets.only(top: 4.0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 13, color: Colors.amber), overflow: TextOverflow.ellipsis)),
-                  if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 13, color: Colors.white)),
+                  if (balSzoveg.isNotEmpty) ...[
+                    Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 13, color: Colors.amber), overflow: TextOverflow.ellipsis)),
+                    if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 13, color: Colors.white)),
+                  ] else ...[
+                    Expanded(child: Text(jobbSzoveg, style: const TextStyle(fontSize: 13, color: Colors.white))),
+                  ]
                 ],
               ),
             )
@@ -231,7 +238,14 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TetelReszletekScreen(tetel: tetel)),
+                MaterialPageRoute(builder: (context) => TetelReszletekScreen(
+                  tetel: tetel,
+                  onEdit: () {
+                    // Ha a részletekben a szerkesztésre nyom, a részletek oldal bezárul, és megnyílik a szerkesztő
+                    Navigator.pop(context);
+                    _tetelSzerkesztokMegnyitasa(tetel);
+                  },
+                )),
               );
             },
             child: Stack(
@@ -268,8 +282,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                             const SizedBox(height: 8),
                             if (helyWidgetek.isNotEmpty)
                               Column(children: helyWidgetek)
-                            else if (tetel.elhelyezesek.isEmpty)
-                               const Text('Nincs megadva tárolási hely', style: TextStyle(fontSize: 13, color: Colors.white38))
+                            // A "Nincs megadva tárolási hely" feliratot teljesen kivettük a vizuális tisztaság érdekében
                           ],
                         ),
                       ),
@@ -397,8 +410,9 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
 
 class TetelReszletekScreen extends StatefulWidget {
   final FelszerelesTetel tetel;
+  final VoidCallback? onEdit; // Bekerült a szerkesztő hívója
 
-  const TetelReszletekScreen({super.key, required this.tetel});
+  const TetelReszletekScreen({super.key, required this.tetel, this.onEdit});
 
   @override
   State<TetelReszletekScreen> createState() => _TetelReszletekScreenState();
@@ -454,13 +468,16 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
       List<String> tp = [];
       if (hely.taska != null && hely.taska!.isNotEmpty) tp.add(hely.taska!);
       if (hely.pozicio != null && hely.pozicio!.isNotEmpty) tp.add(hely.pozicio!);
-      String balSzoveg = tp.isEmpty ? 'Nincs megadva' : tp.join(' - ');
+      String balSzoveg = tp.join(' - ');
       String jobbSzoveg = '';
+      
       if (hely.mennyiseg != null) {
         jobbSzoveg = '${hely.mennyiseg.toString().replaceAll('.0', '')} ${widget.tetel.mertekegyseg}'.trim();
         osszesen += hely.mennyiseg!;
         darabosHelyek++;
       }
+
+      if (balSzoveg.isEmpty && jobbSzoveg.isEmpty) continue;
 
       helyWidgetekReszletes.add(
         Padding(
@@ -468,10 +485,16 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Icon(Icons.location_on, color: Colors.amber, size: 16),
-              const SizedBox(width: 8),
-              Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 15, color: Colors.amber))),
-              if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+              if (balSzoveg.isNotEmpty) ...[
+                const Icon(Icons.location_on, color: Colors.amber, size: 16),
+                const SizedBox(width: 8),
+                Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 15, color: Colors.amber))),
+                if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+              ] else ...[
+                const Icon(Icons.inventory_2, color: Colors.white54, size: 16),
+                const SizedBox(width: 8),
+                Expanded(child: Text(jobbSzoveg, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold))),
+              ]
             ],
           ),
         )
@@ -480,8 +503,16 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.tetel.nev)),
+      floatingActionButton: widget.onEdit != null 
+        ? FloatingActionButton(
+            backgroundColor: Colors.green[600],
+            onPressed: widget.onEdit,
+            child: const Icon(Icons.edit, color: Colors.white),
+          )
+        : null,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        // ÚJ: 100 pixeles alsó távtartó a lebegő gomb miatt!
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
