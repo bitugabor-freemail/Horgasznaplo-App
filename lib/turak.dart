@@ -194,7 +194,8 @@ class _TurakScreenState extends State<TurakScreen> {
             child: mutatottTurak.isEmpty
                 ? const Center(child: Text('Nincs rögzített túra.\nKattints a + gombra!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 16)))
                 : ListView.builder(
-                    padding: const EdgeInsets.all(12),
+                    // ÚJ: 100 pixeles alsó távtartó a lebegő gomb miatt!
+                    padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
                     itemCount: mutatottTurak.length,
                     itemBuilder: (context, index) {
                       final tura = mutatottTurak[index];
@@ -970,7 +971,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ],
             const SizedBox(height: 20),
 
-            // ÚJ: MULTIPLE IMAGE PICKER
             const Text('Túra fotók (Maximum 10 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             Wrap(
