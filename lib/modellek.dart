@@ -34,7 +34,6 @@ class Tura {
   };
 
   factory Tura.fromJson(Map<String, dynamic> json) {
-    // ÚJ: A HIÁNYZÓ VISSZAFELÉ KOMPATIBILITÁS A TÚRÁKHOZ
     List<String> betoltottKepek = List<String>.from(json['kepek'] ?? []);
     if (betoltottKepek.isEmpty && json['boritoKep'] != null && json['boritoKep'].toString().isNotEmpty) {
       betoltottKepek.add(json['boritoKep']);
@@ -48,7 +47,7 @@ class Tura {
       horgaszhely: json['horgaszhely'] ?? '',
       horgasztarsak: List<String>.from(json['horgasztarsak'] ?? []),
       boritoKep: json['boritoKep'],
-      kepek: betoltottKepek, // OKOS BETÖLTÉS HASZNÁLATA
+      kepek: betoltottKepek,
       megjegyzes: json['megjegyzes'] ?? '',
     );
   }
@@ -253,62 +252,6 @@ class FelszerelesKategoria {
   );
 }
 
-class FelszerelesTetel {
-  final String id;
-  final String kategoriaId;
-  final String marka; 
-  final String nev;
-  final String jellemzo;
-  final double? mennyiseg;
-  final String mertekegyseg;
-  final String leiras;
-  final List<String> kepek;
-  final String? taska; 
-  final String? pozicio; 
-
-  FelszerelesTetel({
-    required this.id,
-    required this.kategoriaId,
-    this.marka = '',
-    required this.nev,
-    this.jellemzo = '',
-    this.mennyiseg,
-    this.mertekegyseg = '',
-    this.leiras = '',
-    this.kepek = const [],
-    this.taska, 
-    this.pozicio, 
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'kategoriaId': kategoriaId,
-    'marka': marka,
-    'nev': nev,
-    'jellemzo': jellemzo,
-    'mennyiseg': mennyiseg,
-    'mertekegyseg': mertekegyseg,
-    'leiras': leiras,
-    'kepek': kepek,
-    'taska': taska, 
-    'pozicio': pozicio, 
-  };
-
-  factory FelszerelesTetel.fromJson(Map<String, dynamic> json) => FelszerelesTetel(
-    id: json['id'],
-    kategoriaId: json['kategoriaId'],
-    marka: json['marka'] ?? '',
-    nev: json['nev'],
-    jellemzo: json['jellemzo'] ?? '',
-    mennyiseg: json['mennyiseg']?.toDouble(),
-    mertekegyseg: json['mertekegyseg'] ?? '',
-    leiras: json['leiras'] ?? '',
-    kepek: List<String>.from(json['kepek'] ?? []),
-    taska: json['taska'], 
-    pozicio: json['pozicio'], 
-  );
-}
-
 class DokumentumMappa {
   String id;
   String nev;
@@ -331,4 +274,115 @@ class DokumentumFajl {
   Map<String, dynamic> toJson() => {'id': id, 'mappaId': mappaId, 'nev': nev, 'utvonal': utvonal};
   factory DokumentumFajl.fromJson(Map<String, dynamic> json) => 
       DokumentumFajl(id: json['id'], mappaId: json['mappaId'], nev: json['nev'], utvonal: json['utvonal']);
+}
+
+// --- ÚJ OSZTÁLYOK A FELSZERELÉSHEZ ---
+
+class FelszerelesElhelyezes {
+  String? taska;
+  String? pozicio;
+  double? mennyiseg;
+
+  FelszerelesElhelyezes({this.taska, this.pozicio, this.mennyiseg});
+
+  Map<String, dynamic> toJson() => {
+    'taska': taska,
+    'pozicio': pozicio,
+    'mennyiseg': mennyiseg,
+  };
+
+  factory FelszerelesElhelyezes.fromJson(Map<String, dynamic> json) {
+    return FelszerelesElhelyezes(
+      taska: json['taska'],
+      pozicio: json['pozicio'],
+      mennyiseg: json['mennyiseg']?.toDouble(),
+    );
+  }
+}
+
+class FelszerelesTetel {
+  final String id;
+  final String kategoriaId;
+  final String marka;
+  final String nev;
+  final String jellemzo;
+  final String mertekegyseg;
+  final String leiras;
+  final List<String> kepek;
+  final List<FelszerelesElhelyezes> elhelyezesek;
+
+  // --- VISSZAFELÉ KOMPATIBILITÁS MÁS KÉPERNYŐKNEK ---
+  // Ezek a "get" függvények megvédik a többi fájlt a hibáktól.
+  double? get mennyiseg {
+    if (elhelyezesek.isEmpty) return null;
+    double sum = 0;
+    bool hasValue = false;
+    for (var e in elhelyezesek) {
+      if (e.mennyiseg != null) {
+        sum += e.mennyiseg!;
+        hasValue = true;
+      }
+    }
+    return hasValue ? sum : null;
+  }
+
+  String? get taska => elhelyezesek.isNotEmpty ? elhelyezesek.first.taska : null;
+  String? get pozicio => elhelyezesek.isNotEmpty ? elhelyezesek.first.pozicio : null;
+
+  FelszerelesTetel({
+    required this.id,
+    required this.kategoriaId,
+    this.marka = '',
+    required this.nev,
+    this.jellemzo = '',
+    this.mertekegyseg = '',
+    this.leiras = '',
+    this.kepek = const [],
+    this.elhelyezesek = const [],
+  });
+
+  factory FelszerelesTetel.fromJson(Map<String, dynamic> json) {
+    List<FelszerelesElhelyezes> helyek = [];
+
+    if (json['elhelyezesek'] != null) {
+      helyek = (json['elhelyezesek'] as List).map((e) => FelszerelesElhelyezes.fromJson(e)).toList();
+    } else if (json['taska'] != null || json['pozicio'] != null || json['mennyiseg'] != null) {
+      // Ha régi adatot talál, csinál belőle egy új listát!
+      helyek.add(FelszerelesElhelyezes(
+        taska: json['taska'],
+        pozicio: json['pozicio'],
+        mennyiseg: json['mennyiseg']?.toDouble(),
+      ));
+    }
+
+    return FelszerelesTetel(
+      id: json['id'] ?? '',
+      kategoriaId: json['kategoriaId'] ?? '',
+      marka: json['marka'] ?? '',
+      nev: json['nev'] ?? '',
+      jellemzo: json['jellemzo'] ?? '',
+      mertekegyseg: json['mertekegyseg'] ?? '',
+      leiras: json['leiras'] ?? '',
+      kepek: json['kepek'] != null ? List<String>.from(json['kepek']) : [],
+      elhelyezesek: helyek,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'kategoriaId': kategoriaId,
+      'marka': marka,
+      'nev': nev,
+      'jellemzo': jellemzo,
+      'mertekegyseg': mertekegyseg,
+      'leiras': leiras,
+      'kepek': kepek,
+      'elhelyezesek': elhelyezesek.map((e) => e.toJson()).toList(),
+      // Mentsük el a régi adatokat is biztonsági okokból:
+      'mennyiseg': mennyiseg,
+      'taska': taska,
+      'pozicio': pozicio,
+    };
+  }
 }
