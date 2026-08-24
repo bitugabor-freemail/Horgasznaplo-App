@@ -115,7 +115,8 @@ class _FogasokScreenState extends State<FogasokScreen> {
       body: _fogasok.isEmpty
           ? const Center(child: Text('Nincs még rögzített fogás ehhez a túrához.', style: TextStyle(color: Colors.white54)))
           : ListView.builder(
-              padding: const EdgeInsets.all(12),
+              // ÚJ: 100 pixeles alsó padding a gomb túlfutása miatt
+              padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
               itemCount: _fogasok.length,
               itemBuilder: (context, index) {
                 final fogas = _fogasok[index];
@@ -711,7 +712,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ÚJ: MULTIPLE IMAGE PICKER FOGÁSOKHOZ
             const Text('Fényképek (Maximum 3 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             Wrap(
