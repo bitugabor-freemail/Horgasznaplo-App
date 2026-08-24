@@ -165,7 +165,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     }
 
     return ListView.builder(
-      // ÚJ: 100 pixeles alsó távtartó a lebegő gomb miatt!
       padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
       itemCount: mutathato.length,
       itemBuilder: (context, idx) {
@@ -196,7 +195,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
             darabosHelyek++;
           }
 
-          if (balSzoveg.isEmpty && jobbSzoveg.isEmpty) continue; // Ha teljesen üres, ugrunk a következőre
+          if (balSzoveg.isEmpty && jobbSzoveg.isEmpty) continue;
 
           helyWidgetek.add(
             Padding(
@@ -208,7 +207,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                     Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 13, color: Colors.amber), overflow: TextOverflow.ellipsis)),
                     if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 13, color: Colors.white)),
                   ] else ...[
-                    Expanded(child: Text(jobbSzoveg, style: const TextStyle(fontSize: 13, color: Colors.white))),
+                    // ÚJ: Itt kapta meg a TextAlign.right beállítást az üres táska!
+                    Expanded(child: Text(jobbSzoveg, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, color: Colors.white))),
                   ]
                 ],
               ),
@@ -241,7 +241,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                 MaterialPageRoute(builder: (context) => TetelReszletekScreen(
                   tetel: tetel,
                   onEdit: () {
-                    // Ha a részletekben a szerkesztésre nyom, a részletek oldal bezárul, és megnyílik a szerkesztő
                     Navigator.pop(context);
                     _tetelSzerkesztokMegnyitasa(tetel);
                   },
@@ -282,7 +281,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                             const SizedBox(height: 8),
                             if (helyWidgetek.isNotEmpty)
                               Column(children: helyWidgetek)
-                            // A "Nincs megadva tárolási hely" feliratot teljesen kivettük a vizuális tisztaság érdekében
                           ],
                         ),
                       ),
@@ -410,7 +408,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
 
 class TetelReszletekScreen extends StatefulWidget {
   final FelszerelesTetel tetel;
-  final VoidCallback? onEdit; // Bekerült a szerkesztő hívója
+  final VoidCallback? onEdit; 
 
   const TetelReszletekScreen({super.key, required this.tetel, this.onEdit});
 
@@ -511,7 +509,6 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
           )
         : null,
       body: SingleChildScrollView(
-        // ÚJ: 100 pixeles alsó távtartó a lebegő gomb miatt!
         padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
