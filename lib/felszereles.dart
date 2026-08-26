@@ -22,7 +22,12 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   
   String? _kivalasztottKategoriaId;
   String? _kivalasztottTaska;
+  
   bool _isTaskaNezet = false;
+  
+  // ÚJ: Kereső állapotok
+  bool _isKeresoMod = false;
+  String _keresoKifejezes = '';
   
   final PageController _pageController = PageController();
 
@@ -60,13 +65,15 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_kategoriak.isNotEmpty || _taskak.isNotEmpty) {
+      if (!_isKeresoMod && (_kategoriak.isNotEmpty || _taskak.isNotEmpty)) {
         _KozepreGorget(_pageController.hasClients ? _pageController.page?.round() ?? 0 : 0);
       }
     });
   }
 
   void _KozepreGorget(int index) {
+    if (_isKeresoMod) return;
+    
     final keys = _isTaskaNezet ? _taskaKeys : _kategoriaKeys;
     if (keys.isEmpty || index >= keys.length) return;
     
@@ -82,6 +89,9 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   }
 
   void toggleNezet() {
+    if (_isKeresoMod) {
+      toggleKereso(); // Ha keresésben vagyunk, kapcsoljuk ki, és utána váltsunk nézetet
+    }
     setState(() {
       _isTaskaNezet = !_isTaskaNezet;
     });
@@ -91,6 +101,23 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _KozepreGorget(0);
     });
+  }
+
+  // ÚJ: Kereső mód kapcsoló
+  void toggleKereso() {
+    setState(() {
+      _isKeresoMod = !_isKeresoMod;
+      if (!_isKeresoMod) {
+        _keresoKifejezes = ''; // Kereső bezárásakor töröljük a szöveget
+      }
+    });
+    
+    if (!_isKeresoMod) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _KozepreGorget(_pageController.hasClients ? _pageController.page?.round() ?? 0 : 0);
+      });
+    }
   }
 
   void _tetelSzerkesztokMegnyitasa([FelszerelesTetel? tetel]) {
@@ -131,12 +158,198 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
+  // ÚJ: A kártyát megépítő részt kiszerveztem, hogy a Kereső listája és a Sima lista is használhassa
+  Widget _buildTetelKartya(FelszerelesTetel tetel, String? aktivTaskaNezet) {
+    final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
+    List<Widget> helyWidgetek = [];
+    double osszesen = 0;
+    int darabosHelyek = 0;
+
+    List<FelszerelesElhelyezes> megjelenitendoHelyek = aktivTaskaNezet != null 
+        ? tetel.elhelyezesek.where((e) => e.taska == aktivTaskaNezet).toList() 
+        : tetel.elhelyezesek;
+
+    for (var hely in megjelenitendoHelyek) {
+      if (hely.taska == null && hely.pozicio == null && hely.mennyiseg == null) continue;
+      
+      List<String> tp = [];
+      if (hely.taska != null && hely.taska!.isNotEmpty) tp.add(hely.taska!);
+      if (hely.pozicio != null && hely.pozicio!.isNotEmpty) tp.add(hely.pozicio!);
+      
+      String balSzoveg = tp.join(' - ');
+      String jobbSzoveg = '';
+      
+      if (hely.mennyiseg != null) {
+        jobbSzoveg = '${hely.mennyiseg.toString().replaceAll('.0', '')} ${tetel.mertekegyseg}'.trim();
+        osszesen += hely.mennyiseg!;
+        darabosHelyek++;
+      }
+
+      if (balSzoveg.isEmpty && jobbSzoveg.isEmpty) continue;
+
+      helyWidgetek.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (balSzoveg.isNotEmpty) ...[
+                Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 13, color: Colors.amber), overflow: TextOverflow.ellipsis)),
+                if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 13, color: Colors.white)),
+              ] else ...[
+                Expanded(child: Text(jobbSzoveg, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, color: Colors.white))),
+              ]
+            ],
+          ),
+        )
+      );
+    }
+
+    if (aktivTaskaNezet == null && darabosHelyek > 1) {
+      helyWidgetek.add(const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Divider(color: Colors.white24, height: 1)));
+      helyWidgetek.add(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Összesen:', style: TextStyle(fontSize: 13, color: Colors.white54, fontStyle: FontStyle.italic)),
+            Text('${osszesen.toString().replaceAll('.0', '')} ${tetel.mertekegyseg}'.trim(), style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.bold)),
+          ]
+        )
+      );
+    }
+
+    return Card(
+      color: const Color(0xFF1E1E1E),
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => TetelReszletekScreen(
+              tetel: tetel,
+              onEdit: () {
+                Navigator.pop(context);
+                _tetelSzerkesztokMegnyitasa(tetel);
+              },
+            )),
+          );
+        },
+        child: Stack(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  margin: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: tetel.kepek.isNotEmpty && File(tetel.kepek.first).existsSync()
+                      ? Image.file(File(tetel.kepek.first), fit: BoxFit.cover)
+                      : const Icon(Icons.image_not_supported, color: Colors.white24, size: 30),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 12, right: 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text(tetel.nev, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        if (tetel.jellemzo.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
+                        ],
+                        const SizedBox(height: 8),
+                        if (helyWidgetek.isNotEmpty)
+                          Column(children: helyWidgetek)
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white54),
+                color: const Color(0xFF1E1E1E),
+                onSelected: (value) {
+                  if (value == 'edit') _tetelSzerkesztokMegnyitasa(tetel);
+                  if (value == 'delete') _tetelTorlese(tetel);
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'edit', child: Text('Szerkesztés')),
+                  const PopupMenuItem(value: 'delete', child: Text('Törlés', style: TextStyle(color: Colors.redAccent))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ÚJ: A Globális Kereső Lista generálása
+  Widget _buildKeresoEredmenyek() {
+    List<FelszerelesTetel> eredmeny = List.from(_tetelek);
+
+    // Keresés logika (Többszavas ÉS kapcsolat)
+    if (_keresoKifejezes.trim().isNotEmpty) {
+      List<String> kulcsszavak = _keresoKifejezes.toLowerCase().split(' ').where((s) => s.isNotEmpty).toList();
+      
+      eredmeny = eredmeny.where((tetel) {
+        String fullSzoveg = '${tetel.marka} ${tetel.nev} ${tetel.jellemzo} ${tetel.leiras}'.toLowerCase();
+        for (String szo in kulcsszavak) {
+          if (!fullSzoveg.contains(szo)) return false; // Ha bármelyik szó hiányzik, kiesik!
+        }
+        return true;
+      }).toList();
+    }
+
+    // Dupla rendezés: Kategória sorrend -> Márka -> Név
+    eredmeny.sort((a, b) {
+      int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
+      int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
+      
+      if (katA != katB) return katA.compareTo(katB);
+
+      String markaA = a.marka.trim().isEmpty ? '[N/A] - No Name' : a.marka.trim();
+      String markaB = b.marka.trim().isEmpty ? '[N/A] - No Name' : b.marka.trim();
+      int markaCmp = markaA.compareTo(markaB);
+      
+      if (markaCmp != 0) return markaCmp;
+      return a.nev.compareTo(b.nev);
+    });
+
+    if (eredmeny.isEmpty) {
+      return const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
+      itemCount: eredmeny.length,
+      itemBuilder: (context, idx) {
+        return _buildTetelKartya(eredmeny[idx], null); // Keresőnél teljes bontás kell, null a táskaszűrő
+      },
+    );
+  }
+
   Widget _buildListaOldal(int index) {
     List<FelszerelesTetel> mutathato;
+    String? aktTaska;
     
     if (_isTaskaNezet) {
       if (_taskak.isEmpty) return const Center(child: Text('Nincsenek rögzített táskák.', style: TextStyle(color: Colors.white54)));
-      String aktTaska = _taskak[index];
+      aktTaska = _taskak[index];
       mutathato = _tetelek.where((t) => t.elhelyezesek.any((e) => e.taska == aktTaska)).toList();
       
       mutathato.sort((a, b) {
@@ -168,145 +381,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
       itemCount: mutathato.length,
       itemBuilder: (context, idx) {
-        final tetel = mutathato[idx];
-        final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
-        
-        List<Widget> helyWidgetek = [];
-        double osszesen = 0;
-        int darabosHelyek = 0;
-
-        List<FelszerelesElhelyezes> megjelenitendoHelyek = _isTaskaNezet 
-            ? tetel.elhelyezesek.where((e) => e.taska == _taskak[index]).toList() 
-            : tetel.elhelyezesek;
-
-        for (var hely in megjelenitendoHelyek) {
-          if (hely.taska == null && hely.pozicio == null && hely.mennyiseg == null) continue;
-          
-          List<String> tp = [];
-          if (hely.taska != null && hely.taska!.isNotEmpty) tp.add(hely.taska!);
-          if (hely.pozicio != null && hely.pozicio!.isNotEmpty) tp.add(hely.pozicio!);
-          
-          String balSzoveg = tp.join(' - ');
-          String jobbSzoveg = '';
-          
-          if (hely.mennyiseg != null) {
-            jobbSzoveg = '${hely.mennyiseg.toString().replaceAll('.0', '')} ${tetel.mertekegyseg}'.trim();
-            osszesen += hely.mennyiseg!;
-            darabosHelyek++;
-          }
-
-          if (balSzoveg.isEmpty && jobbSzoveg.isEmpty) continue;
-
-          helyWidgetek.add(
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (balSzoveg.isNotEmpty) ...[
-                    Expanded(child: Text(balSzoveg, style: const TextStyle(fontSize: 13, color: Colors.amber), overflow: TextOverflow.ellipsis)),
-                    if (jobbSzoveg.isNotEmpty) Text(jobbSzoveg, style: const TextStyle(fontSize: 13, color: Colors.white)),
-                  ] else ...[
-                    // ÚJ: Itt kapta meg a TextAlign.right beállítást az üres táska!
-                    Expanded(child: Text(jobbSzoveg, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, color: Colors.white))),
-                  ]
-                ],
-              ),
-            )
-          );
-        }
-
-        if (!_isTaskaNezet && darabosHelyek > 1) {
-          helyWidgetek.add(const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Divider(color: Colors.white24, height: 1)));
-          helyWidgetek.add(
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Összesen:', style: TextStyle(fontSize: 13, color: Colors.white54, fontStyle: FontStyle.italic)),
-                Text('${osszesen.toString().replaceAll('.0', '')} ${tetel.mertekegyseg}'.trim(), style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.bold)),
-              ]
-            )
-          );
-        }
-
-        return Card(
-          color: const Color(0xFF1E1E1E),
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TetelReszletekScreen(
-                  tetel: tetel,
-                  onEdit: () {
-                    Navigator.pop(context);
-                    _tetelSzerkesztokMegnyitasa(tetel);
-                  },
-                )),
-              );
-            },
-            child: Stack(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      margin: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black26,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: tetel.kepek.isNotEmpty && File(tetel.kepek.first).existsSync()
-                          ? Image.file(File(tetel.kepek.first), fit: BoxFit.cover)
-                          : const Icon(Icons.image_not_supported, color: Colors.white24, size: 30),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 12, bottom: 12, right: 40),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text(tetel.nev, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                            if (tetel.jellemzo.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(tetel.jellemzo, style: const TextStyle(fontSize: 13, color: Colors.white70)),
-                            ],
-                            const SizedBox(height: 8),
-                            if (helyWidgetek.isNotEmpty)
-                              Column(children: helyWidgetek)
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, color: Colors.white54),
-                    color: const Color(0xFF1E1E1E),
-                    onSelected: (value) {
-                      if (value == 'edit') _tetelSzerkesztokMegnyitasa(tetel);
-                      if (value == 'delete') _tetelTorlese(tetel);
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'edit', child: Text('Szerkesztés')),
-                      const PopupMenuItem(value: 'delete', child: Text('Törlés', style: TextStyle(color: Colors.redAccent))),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        return _buildTetelKartya(mutathato[idx], aktTaska);
       },
     );
   }
@@ -316,84 +391,127 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     int oldalszam = _isTaskaNezet ? _taskak.length : _kategoriak.length;
 
     return Scaffold(
-      backgroundColor: _isTaskaNezet ? Colors.amber.withOpacity(0.12) : Colors.transparent,
+      backgroundColor: _isTaskaNezet && !_isKeresoMod ? Colors.amber.withOpacity(0.12) : Colors.transparent,
       body: Column(
         children: [
-          Container(
-            height: 50,
-            color: _isTaskaNezet ? Color.alphaBlend(Colors.amber.withOpacity(0.20), const Color(0xFF161616)) : const Color(0xFF161616),
-            child: oldalszam == 0 
-                ? const SizedBox() 
-                : ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: oldalszam,
-              itemBuilder: (context, index) {
-                String nev;
-                bool isSelected;
-                GlobalKey? gKey;
-                
-                if (_isTaskaNezet) {
-                  nev = _taskak[index];
-                  isSelected = nev == _kivalasztottTaska;
-                  if (index < _taskaKeys.length) gKey = _taskaKeys[index];
-                } else {
-                  nev = _kategoriak[index].nev;
-                  isSelected = _kategoriak[index].id == _kivalasztottKategoriaId;
-                  if (index < _kategoriaKeys.length) gKey = _kategoriaKeys[index];
-                }
-                
-                return GestureDetector(
-                  onTap: () {
-                    if (_pageController.hasClients) {
-                      _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                    }
-                  },
-                  child: Container(
-                    key: gKey,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isSelected ? Colors.greenAccent : Colors.transparent,
-                          width: 3,
+          // FEJLÉC (Vagy a Kereső sáv, vagy a Kategória sáv)
+          if (_isKeresoMod)
+            Container(
+              height: 55,
+              color: const Color(0xFF161616),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: TextField(
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Keresés márka, név, jellemző, leírás alapján...',
+                  hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  filled: true,
+                  fillColor: const Color(0xFF1E1E1E),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
+                  prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => setState(() => _keresoKifejezes = ''),
+                  ),
+                ),
+                onChanged: (val) => setState(() => _keresoKifejezes = val),
+              ),
+            )
+          else
+            Container(
+              height: 50,
+              color: _isTaskaNezet ? Color.alphaBlend(Colors.amber.withOpacity(0.20), const Color(0xFF161616)) : const Color(0xFF161616),
+              child: oldalszam == 0 
+                  ? const SizedBox() 
+                  : ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: oldalszam,
+                itemBuilder: (context, index) {
+                  String nev;
+                  bool isSelected;
+                  GlobalKey? gKey;
+                  
+                  if (_isTaskaNezet) {
+                    nev = _taskak[index];
+                    isSelected = nev == _kivalasztottTaska;
+                    if (index < _taskaKeys.length) gKey = _taskaKeys[index];
+                  } else {
+                    nev = _kategoriak[index].nev;
+                    isSelected = _kategoriak[index].id == _kivalasztottKategoriaId;
+                    if (index < _kategoriaKeys.length) gKey = _kategoriaKeys[index];
+                  }
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      if (_pageController.hasClients) {
+                        _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                      }
+                    },
+                    child: Container(
+                      key: gKey,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: isSelected ? Colors.greenAccent : Colors.transparent,
+                            width: 3,
+                          ),
                         ),
                       ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      nev,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? Colors.greenAccent : Colors.white54,
+                      alignment: Alignment.center,
+                      // ÚJ: A gumiszöveg javítása (láthatatlan térkitöltő vastag betűvel)!
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Text(
+                            nev,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold, // Mindig vastag, így kitartja a helyet
+                              color: Colors.transparent,   // De láthatatlan!
+                            ),
+                          ),
+                          Text(
+                            nev,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? Colors.greenAccent : Colors.white54,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
           
+          // TARTALOM (Keresési lista VAGY Lapozható oldalak)
           Expanded(
-            child: oldalszam == 0 
-              ? Center(child: Text(_isTaskaNezet ? 'Nincsenek rögzített táskák.' : 'Nincsenek kategóriák. Hozz létre egyet!'))
-              : PageView.builder(
-                  controller: _pageController,
-                  itemCount: oldalszam,
-                  onPageChanged: (index) {
-                    setState(() {
-                      if (_isTaskaNezet) {
-                        _kivalasztottTaska = _taskak[index];
-                      } else {
-                        _kivalasztottKategoriaId = _kategoriak[index].id;
-                      }
-                    });
-                    _KozepreGorget(index);
-                  },
-                  itemBuilder: (context, index) {
-                    return _buildListaOldal(index);
-                  },
-                ),
+            child: _isKeresoMod
+              ? _buildKeresoEredmenyek()
+              : oldalszam == 0 
+                ? Center(child: Text(_isTaskaNezet ? 'Nincsenek rögzített táskák.' : 'Nincsenek kategóriák. Hozz létre egyet!'))
+                : PageView.builder(
+                    controller: _pageController,
+                    itemCount: oldalszam,
+                    onPageChanged: (index) {
+                      setState(() {
+                        if (_isTaskaNezet) {
+                          _kivalasztottTaska = _taskak[index];
+                        } else {
+                          _kivalasztottKategoriaId = _kategoriak[index].id;
+                        }
+                      });
+                      _KozepreGorget(index);
+                    },
+                    itemBuilder: (context, index) {
+                      return _buildListaOldal(index);
+                    },
+                  ),
           ),
         ],
       ),
