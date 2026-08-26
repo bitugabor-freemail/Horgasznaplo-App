@@ -22,10 +22,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   
   String? _kivalasztottKategoriaId;
   String? _kivalasztottTaska;
-  
   bool _isTaskaNezet = false;
   
-  // ÚJ: Kereső állapotok
   bool _isKeresoMod = false;
   String _keresoKifejezes = '';
   
@@ -90,7 +88,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
 
   void toggleNezet() {
     if (_isKeresoMod) {
-      toggleKereso(); // Ha keresésben vagyunk, kapcsoljuk ki, és utána váltsunk nézetet
+      toggleKereso(); 
     }
     setState(() {
       _isTaskaNezet = !_isTaskaNezet;
@@ -103,19 +101,33 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     });
   }
 
-  // ÚJ: Kereső mód kapcsoló
   void toggleKereso() {
     setState(() {
       _isKeresoMod = !_isKeresoMod;
       if (!_isKeresoMod) {
-        _keresoKifejezes = ''; // Kereső bezárásakor töröljük a szöveget
+        _keresoKifejezes = ''; 
       }
     });
     
     if (!_isKeresoMod) {
       FocusManager.instance.primaryFocus?.unfocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _KozepreGorget(_pageController.hasClients ? _pageController.page?.round() ?? 0 : 0);
+        // ÚJ: Kiszámoljuk a korábban aktív fül indexét
+        int celIndex = 0;
+        if (_isTaskaNezet) {
+          celIndex = _taskak.indexOf(_kivalasztottTaska ?? '');
+        } else {
+          celIndex = _kategoriak.indexWhere((k) => k.id == _kivalasztottKategoriaId);
+        }
+        
+        // Ha valamiért nem találja (pl. törölték a táskát), 0. oldalra ugrik
+        if (celIndex == -1) celIndex = 0;
+
+        // Kifejezetten a kiszámolt oldalra ugrunk, hogy a lista elemei passzoljanak a fülhöz
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(celIndex);
+        }
+        _KozepreGorget(celIndex);
       });
     }
   }
@@ -158,7 +170,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
-  // ÚJ: A kártyát megépítő részt kiszerveztem, hogy a Kereső listája és a Sima lista is használhassa
   Widget _buildTetelKartya(FelszerelesTetel tetel, String? aktivTaskaNezet) {
     final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
     List<Widget> helyWidgetek = [];
@@ -298,24 +309,21 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
-  // ÚJ: A Globális Kereső Lista generálása
   Widget _buildKeresoEredmenyek() {
     List<FelszerelesTetel> eredmeny = List.from(_tetelek);
 
-    // Keresés logika (Többszavas ÉS kapcsolat)
     if (_keresoKifejezes.trim().isNotEmpty) {
       List<String> kulcsszavak = _keresoKifejezes.toLowerCase().split(' ').where((s) => s.isNotEmpty).toList();
       
       eredmeny = eredmeny.where((tetel) {
         String fullSzoveg = '${tetel.marka} ${tetel.nev} ${tetel.jellemzo} ${tetel.leiras}'.toLowerCase();
         for (String szo in kulcsszavak) {
-          if (!fullSzoveg.contains(szo)) return false; // Ha bármelyik szó hiányzik, kiesik!
+          if (!fullSzoveg.contains(szo)) return false; 
         }
         return true;
       }).toList();
     }
 
-    // Dupla rendezés: Kategória sorrend -> Márka -> Név
     eredmeny.sort((a, b) {
       int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
       int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
@@ -338,7 +346,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
       itemCount: eredmeny.length,
       itemBuilder: (context, idx) {
-        return _buildTetelKartya(eredmeny[idx], null); // Keresőnél teljes bontás kell, null a táskaszűrő
+        return _buildTetelKartya(eredmeny[idx], null); 
       },
     );
   }
@@ -394,7 +402,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       backgroundColor: _isTaskaNezet && !_isKeresoMod ? Colors.amber.withOpacity(0.12) : Colors.transparent,
       body: Column(
         children: [
-          // FEJLÉC (Vagy a Kereső sáv, vagy a Kategória sáv)
           if (_isKeresoMod)
             Container(
               height: 55,
@@ -461,7 +468,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                         ),
                       ),
                       alignment: Alignment.center,
-                      // ÚJ: A gumiszöveg javítása (láthatatlan térkitöltő vastag betűvel)!
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
@@ -469,8 +475,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                             nev,
                             style: const TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold, // Mindig vastag, így kitartja a helyet
-                              color: Colors.transparent,   // De láthatatlan!
+                              fontWeight: FontWeight.bold, 
+                              color: Colors.transparent,   
                             ),
                           ),
                           Text(
@@ -489,7 +495,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
               ),
             ),
           
-          // TARTALOM (Keresési lista VAGY Lapozható oldalak)
           Expanded(
             child: _isKeresoMod
               ? _buildKeresoEredmenyek()
