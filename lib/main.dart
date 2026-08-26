@@ -187,7 +187,14 @@ class _FomenuScreenState extends State<FomenuScreen> {
   List<Widget> _buildAppBarActions() {
     if (_currentIndex == 2) {
       return [
-        // Ide került az Oda-vissza nyíl
+        // ÚJ: Kereső ikon
+        IconButton(
+          icon: const Icon(Icons.search, color: Colors.greenAccent),
+          tooltip: 'Keresés',
+          onPressed: () {
+            _felszerelesKey.currentState?.toggleKereso();
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.compare_arrows, color: Colors.greenAccent),
           tooltip: 'Nézet váltása',
@@ -195,7 +202,6 @@ class _FomenuScreenState extends State<FomenuScreen> {
             _felszerelesKey.currentState?.toggleNezet();
           },
         ),
-        // Ide került a 3 pontos menü (kategória és táska szerkesztővel)
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert, color: Colors.greenAccent),
           color: const Color(0xFF1E1E1E),
