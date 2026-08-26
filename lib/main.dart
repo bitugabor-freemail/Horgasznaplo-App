@@ -187,7 +187,6 @@ class _FomenuScreenState extends State<FomenuScreen> {
   List<Widget> _buildAppBarActions() {
     if (_currentIndex == 2) {
       return [
-        // ÚJ: Kereső ikon
         IconButton(
           icon: const Icon(Icons.search, color: Colors.greenAccent),
           tooltip: 'Keresés',
@@ -282,7 +281,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                 children: [
                   Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                   SizedBox(height: 4),
-                  Text('Verzió 1.1.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
+                  Text('Verzió 1.3.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
                 ],
               ),
             ),
@@ -361,7 +360,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                       children: [
                         Text('Készítette: Google Gemini & B2', style: TextStyle(color: Colors.white, fontSize: 16)),
                         SizedBox(height: 8),
-                        Text('Verzió: 1.1.0', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        Text('Verzió: 1.3.0', style: TextStyle(color: Colors.white70, fontSize: 14)),
                       ],
                     ),
                     actions: [
