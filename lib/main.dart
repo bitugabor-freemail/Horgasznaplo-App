@@ -186,23 +186,29 @@ class _FomenuScreenState extends State<FomenuScreen> {
 
   List<Widget> _buildAppBarActions() {
     if (_currentIndex == 2) {
+      // ÚJ: Lekérdezzük a Felszerelés képernyőtől, hogy táska nézetben van-e, és eszerint adunk szint az ikonoknak
+      bool isTaskaNezet = _felszerelesKey.currentState?.isTaskaNezet ?? false;
+      Color aktivSzin = isTaskaNezet ? Colors.orangeAccent : Colors.greenAccent;
+
       return [
         IconButton(
-          icon: const Icon(Icons.search, color: Colors.greenAccent),
+          icon: Icon(Icons.search, color: aktivSzin),
           tooltip: 'Keresés',
           onPressed: () {
             _felszerelesKey.currentState?.toggleKereso();
+            setState(() {}); 
           },
         ),
         IconButton(
-          icon: const Icon(Icons.compare_arrows, color: Colors.greenAccent),
+          icon: Icon(Icons.compare_arrows, color: aktivSzin),
           tooltip: 'Nézet váltása',
           onPressed: () {
             _felszerelesKey.currentState?.toggleNezet();
+            setState(() {}); // Frissíti a felső menü ikonjainak színét is!
           },
         ),
         PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: Colors.greenAccent),
+          icon: Icon(Icons.more_vert, color: aktivSzin),
           color: const Color(0xFF1E1E1E),
           onSelected: (value) async {
             if (value == 'kategoriak') {
