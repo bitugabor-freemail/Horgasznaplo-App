@@ -29,6 +29,9 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   
   final PageController _pageController = PageController();
 
+  // Getter, hogy a main.dart is tudja, mi a helyzet, és be tudja színezni az ikonjait!
+  bool get isTaskaNezet => _isTaskaNezet;
+
   @override
   void initState() {
     super.initState();
@@ -112,7 +115,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     if (!_isKeresoMod) {
       FocusManager.instance.primaryFocus?.unfocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // ÚJ: Kiszámoljuk a korábban aktív fül indexét
         int celIndex = 0;
         if (_isTaskaNezet) {
           celIndex = _taskak.indexOf(_kivalasztottTaska ?? '');
@@ -120,10 +122,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
           celIndex = _kategoriak.indexWhere((k) => k.id == _kivalasztottKategoriaId);
         }
         
-        // Ha valamiért nem találja (pl. törölték a táskát), 0. oldalra ugrik
         if (celIndex == -1) celIndex = 0;
 
-        // Kifejezetten a kiszámolt oldalra ugrunk, hogy a lista elemei passzoljanak a fülhöz
         if (_pageController.hasClients) {
           _pageController.jumpToPage(celIndex);
         }
@@ -397,6 +397,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   @override
   Widget build(BuildContext context) {
     int oldalszam = _isTaskaNezet ? _taskak.length : _kategoriak.length;
+    // A Táska fül színe narancs lesz, a kategória zöld
+    Color aktivSzin = _isTaskaNezet ? Colors.orangeAccent : Colors.greenAccent;
 
     return Scaffold(
       backgroundColor: _isTaskaNezet && !_isKeresoMod ? Colors.amber.withOpacity(0.12) : Colors.transparent,
@@ -417,7 +419,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                   filled: true,
                   fillColor: const Color(0xFF1E1E1E),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
-                  prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
+                  prefixIcon: Icon(Icons.search, color: aktivSzin),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.close, color: Colors.white54),
                     onPressed: () => setState(() => _keresoKifejezes = ''),
@@ -429,7 +431,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
           else
             Container(
               height: 50,
-              color: _isTaskaNezet ? Color.alphaBlend(Colors.amber.withOpacity(0.20), const Color(0xFF161616)) : const Color(0xFF161616),
+              // ÚJ: Itt tartjuk a gyári sötétszürke sávot, csak az ikonok és az aláhúzás változik a design kedvéért!
+              color: const Color(0xFF161616),
               child: oldalszam == 0 
                   ? const SizedBox() 
                   : ListView.builder(
@@ -462,7 +465,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
-                            color: isSelected ? Colors.greenAccent : Colors.transparent,
+                            color: isSelected ? aktivSzin : Colors.transparent,
                             width: 3,
                           ),
                         ),
@@ -484,7 +487,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? Colors.greenAccent : Colors.white54,
+                              color: isSelected ? aktivSzin : Colors.white54,
                             ),
                           ),
                         ],
