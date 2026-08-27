@@ -29,7 +29,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   
   final PageController _pageController = PageController();
 
-  // Getter, hogy a main.dart is tudja, mi a helyzet, és be tudja színezni az ikonjait!
   bool get isTaskaNezet => _isTaskaNezet;
 
   @override
@@ -171,7 +170,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   }
 
   Widget _buildTetelKartya(FelszerelesTetel tetel, String? aktivTaskaNezet) {
-    final markaNev = tetel.marka.trim().isEmpty ? '[N/A] - No Name' : tetel.marka;
+    final markaNev = tetel.marka.trim();
     List<Widget> helyWidgetek = [];
     double osszesen = 0;
     int darabosHelyek = 0;
@@ -271,8 +270,10 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
+                        if (markaNev.isNotEmpty) ...[
+                          Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                        ],
                         Text(tetel.nev, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                         if (tetel.jellemzo.isNotEmpty) ...[
                           const SizedBox(height: 4),
@@ -330,10 +331,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       
       if (katA != katB) return katA.compareTo(katB);
 
-      String markaA = a.marka.trim().isEmpty ? '[N/A] - No Name' : a.marka.trim();
-      String markaB = b.marka.trim().isEmpty ? '[N/A] - No Name' : b.marka.trim();
-      int markaCmp = markaA.compareTo(markaB);
-      
+      int markaCmp = a.marka.trim().compareTo(b.marka.trim());
       if (markaCmp != 0) return markaCmp;
       return a.nev.compareTo(b.nev);
     });
@@ -360,11 +358,15 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       aktTaska = _taskak[index];
       mutathato = _tetelek.where((t) => t.elhelyezesek.any((e) => e.taska == aktTaska)).toList();
       
+      // ÚJ: Táska nézet rendezés - Kategória sorrend -> Márka -> Név
       mutathato.sort((a, b) {
-        var eA = a.elhelyezesek.firstWhere((e) => e.taska == aktTaska, orElse: () => FelszerelesElhelyezes());
-        var eB = b.elhelyezesek.firstWhere((e) => e.taska == aktTaska, orElse: () => FelszerelesElhelyezes());
-        int pozCmp = (eA.pozicio ?? '').compareTo(eB.pozicio ?? '');
-        if (pozCmp != 0) return pozCmp;
+        int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
+        int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
+
+        if (katA != katB) return katA.compareTo(katB);
+
+        int markaCmp = a.marka.trim().compareTo(b.marka.trim());
+        if (markaCmp != 0) return markaCmp;
         return a.nev.compareTo(b.nev);
       });
     } else {
@@ -373,9 +375,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       mutathato = _tetelek.where((t) => t.kategoriaId == aktKat).toList();
       
       mutathato.sort((a, b) {
-        String markaA = a.marka.trim().isEmpty ? '[N/A] - No Name' : a.marka.trim();
-        String markaB = b.marka.trim().isEmpty ? '[N/A] - No Name' : b.marka.trim();
-        int markaCmp = markaA.compareTo(markaB);
+        int markaCmp = a.marka.trim().compareTo(b.marka.trim());
         if (markaCmp != 0) return markaCmp;
         return a.nev.compareTo(b.nev);
       });
@@ -397,7 +397,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   @override
   Widget build(BuildContext context) {
     int oldalszam = _isTaskaNezet ? _taskak.length : _kategoriak.length;
-    // A Táska fül színe narancs lesz, a kategória zöld
     Color aktivSzin = _isTaskaNezet ? Colors.orangeAccent : Colors.greenAccent;
 
     return Scaffold(
@@ -431,7 +430,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
           else
             Container(
               height: 50,
-              // ÚJ: Itt tartjuk a gyári sötétszürke sávot, csak az ikonok és az aláhúzás változik a design kedvéért!
               color: const Color(0xFF161616),
               child: oldalszam == 0 
                   ? const SizedBox() 
@@ -580,7 +578,7 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final markaNev = widget.tetel.marka.trim().isEmpty ? '[N/A] - No Name' : widget.tetel.marka;
+    final markaNev = widget.tetel.marka.trim();
     
     List<Widget> helyWidgetekReszletes = [];
     double osszesen = 0;
@@ -646,8 +644,10 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
+                  if (markaNev.isNotEmpty) ...[
+                    Text(markaNev, style: const TextStyle(fontSize: 16, color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                  ],
                   Text(widget.tetel.nev, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
                   if (widget.tetel.jellemzo.isNotEmpty) ...[
                     const SizedBox(height: 8),
