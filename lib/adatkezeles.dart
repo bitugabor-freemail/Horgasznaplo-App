@@ -18,7 +18,9 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   int _halfajokSzama = 0;
   int _felszerelesSzama = 0;
   int _dokumentumokSzama = 0;
+  
   bool _toltesFolyamatban = false;
+  String _toltesSzoveg = 'Művelet folyamatban...\nKérlek, várj!'; // ÚJ: Dinamikus töltőszöveg
 
   @override
   void initState() {
@@ -125,14 +127,21 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
             ),
             onPressed: () async {
               Navigator.pop(context);
-              setState(() => _toltesFolyamatban = true);
+              setState(() {
+                _toltesFolyamatban = true;
+                _toltesSzoveg = 'A fotók és adatok becsomagolása eltarthat pár másodpercig...\n\nKérlek, ne zárd be az alkalmazást!';
+              });
+              
+              // Hagyunk egy pillanatot a Flutternek, hogy kirajzolja a töltőképernyőt, mielőtt nekiáll a kemény munkának
+              await Future.delayed(const Duration(milliseconds: 300));
+              
               try {
                 final path = await AdatTarolo.letrehozTeljesExportZIPFajl();
                 await _fajlMenteseLetoltesekbe(path);
-                setState(() => _toltesFolyamatban = false);
               } catch (e) {
-                setState(() => _toltesFolyamatban = false);
                 _mutassUzenetet('Hiba a ZIP mentés során: $e', hiba: true);
+              } finally {
+                if (mounted) setState(() => _toltesFolyamatban = false);
               }
             },
             child: const Text('Teljes Mentés (.zip)\n(Szöveges adatok + Fotók)', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
@@ -145,14 +154,20 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
             ),
             onPressed: () async {
               Navigator.pop(context);
-              setState(() => _toltesFolyamatban = true);
+              setState(() {
+                _toltesFolyamatban = true;
+                _toltesSzoveg = 'Fájl generálása...';
+              });
+              
+              await Future.delayed(const Duration(milliseconds: 300));
+              
               try {
                 final path = await AdatTarolo.letrehozGyorsExportJSONFajl();
                 await _fajlMenteseLetoltesekbe(path);
-                setState(() => _toltesFolyamatban = false);
               } catch (e) {
-                setState(() => _toltesFolyamatban = false);
                 _mutassUzenetet('Hiba a JSON mentés során: $e', hiba: true);
+              } finally {
+                if (mounted) setState(() => _toltesFolyamatban = false);
               }
             },
             child: const Text('Gyors Mentés (.json)\n(Csak szöveges adatok)', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
@@ -187,15 +202,21 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[700]),
               onPressed: () async {
                 Navigator.pop(context);
-                setState(() => _toltesFolyamatban = true);
+                setState(() {
+                  _toltesFolyamatban = true;
+                  _toltesSzoveg = 'Adatok betöltése és kicsomagolása...\n\nKérlek, várj!';
+                });
+                
+                await Future.delayed(const Duration(milliseconds: 300));
+                
                 try {
                   await AdatTarolo.importalas(fajlUtvonal);
-                  _statisztikakFrissitese();
-                  setState(() => _toltesFolyamatban = false);
+                  await _statisztikakFrissitese();
                   _mutassUzenetet('Adatbázis sikeresen betöltve és visszaállítva!');
                 } catch (e) {
-                  setState(() => _toltesFolyamatban = false);
                   _mutassUzenetet('Hiba az importálás során: $e', hiba: true);
+                } finally {
+                  if (mounted) setState(() => _toltesFolyamatban = false);
                 }
               },
               child: const Text('Importálás indítása', style: TextStyle(color: Colors.white)),
@@ -272,14 +293,14 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
           
           if (_toltesFolyamatban)
             Container(
-              color: Colors.black.withOpacity(0.7),
-              child: const Center(
+              color: Colors.black.withOpacity(0.85),
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: Colors.greenAccent),
-                    SizedBox(height: 16),
-                    Text('Művelet folyamatban...\nKérlek, várj!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 16)),
+                    const CircularProgressIndicator(color: Colors.greenAccent),
+                    const SizedBox(height: 24),
+                    Text(_toltesSzoveg, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5)),
                   ],
                 ),
               ),
