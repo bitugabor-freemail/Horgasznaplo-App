@@ -145,13 +145,13 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
-  // ÚJ FÜGGVÉNY: Tétel lemásolása
-  void _tetelMasolasa(FelszerelesTetel eredeti) async {
+  // ÚJ FÜGGVÉNY: Azonnal megnyitja a szerkesztőt a klónozott tétellel!
+  void _tetelMasolasa(FelszerelesTetel eredeti) {
     final ujTetel = FelszerelesTetel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // Teljesen új egyedi azonosító
       kategoriaId: eredeti.kategoriaId,
       marka: eredeti.marka,
-      nev: 'Másolat - ${eredeti.nev}', // Itt kerül elé a "Másolat - "
+      nev: 'Másolat - ${eredeti.nev}', // Névbe biggyesztjük
       jellemzo: eredeti.jellemzo,
       mertekegyseg: eredeti.mertekegyseg,
       leiras: eredeti.leiras,
@@ -163,16 +163,24 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       )).toList(),
     );
 
-    final osszes = await AdatTarolo.felszerelesTetelekBetoltese();
-    osszes.add(ujTetel);
-    await AdatTarolo.felszerelesTetelekMentes(osszes);
-    adatokBetoltese();
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tétel sikeresen lemásolva!'), backgroundColor: Colors.green),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TetelSzerkesztoScreen(
+          kategoriak: _kategoriak,
+          szerkeszthetoTetel: ujTetel,
+          isMasolat: true, // Jelezzük a szerkesztőnek, hogy ez egy új másolat!
+          mentesCallback: () {
+            adatokBetoltese();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tétel sikeresen lemásolva és mentve!'), backgroundColor: Colors.green),
+              );
+            }
+          },
+        ),
+      ),
+    );
   }
 
   void _tetelTorlese(FelszerelesTetel tetel) {
@@ -210,6 +218,36 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       .replaceAll('ú', 'u~')
       .replaceAll('ü', 'u~~')
       .replaceAll('ű', 'u~~~');
+  }
+
+  // ÚJ: Okos "Natural Sort" algoritmus. Feldarabolja a szöveget, és a számokat érték szerint hasonlítja (150 < 1000).
+  int _naturalHuCompare(String a, String b) {
+    String aHu = _huSort(a);
+    String bHu = _huSort(b);
+
+    final RegExp regExp = RegExp(r'(\d+)|([^\d]+)');
+    final List<String> partsA = regExp.allMatches(aHu).map((m) => m.group(0)!).toList();
+    final List<String> partsB = regExp.allMatches(bHu).map((m) => m.group(0)!).toList();
+
+    int minLen = partsA.length < partsB.length ? partsA.length : partsB.length;
+    for (int i = 0; i < minLen; i++) {
+      String pA = partsA[i];
+      String pB = partsB[i];
+      
+      bool isNumA = RegExp(r'^\d+$').hasMatch(pA);
+      bool isNumB = RegExp(r'^\d+$').hasMatch(pB);
+
+      if (isNumA && isNumB) {
+        int numA = int.parse(pA);
+        int numB = int.parse(pB);
+        int cmp = numA.compareTo(numB);
+        if (cmp != 0) return cmp;
+      } else {
+        int cmp = pA.compareTo(pB);
+        if (cmp != 0) return cmp;
+      }
+    }
+    return partsA.length.compareTo(partsB.length);
   }
 
   Widget _buildTetelKartya(FelszerelesTetel tetel, String? aktivTaskaNezet) {
@@ -339,12 +377,12 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                 color: const Color(0xFF1E1E1E),
                 onSelected: (value) {
                   if (value == 'edit') _tetelSzerkesztokMegnyitasa(tetel);
-                  if (value == 'copy') _tetelMasolasa(tetel); // Másolás hívása
+                  if (value == 'copy') _tetelMasolasa(tetel); 
                   if (value == 'delete') _tetelTorlese(tetel);
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'edit', child: Text('Szerkesztés')),
-                  const PopupMenuItem(value: 'copy', child: Text('Másolás')), // Új gomb a menüben
+                  const PopupMenuItem(value: 'copy', child: Text('Másolás')), 
                   const PopupMenuItem(value: 'delete', child: Text('Törlés', style: TextStyle(color: Colors.redAccent))),
                 ],
               ),
@@ -373,16 +411,16 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     eredmeny.sort((a, b) {
       int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
       int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
-      
       if (katA != katB) return katA.compareTo(katB);
 
-      int markaCmp = _huSort(a.marka.trim()).compareTo(_huSort(b.marka.trim()));
+      // ÚJ: A Természetes Rendezést használjuk minden mezőre!
+      int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
       if (markaCmp != 0) return markaCmp;
       
-      int nevCmp = _huSort(a.nev.trim()).compareTo(_huSort(b.nev.trim()));
+      int nevCmp = _naturalHuCompare(a.nev.trim(), b.nev.trim());
       if (nevCmp != 0) return nevCmp;
       
-      return _huSort(a.jellemzo.trim()).compareTo(_huSort(b.jellemzo.trim()));
+      return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
     });
 
     if (eredmeny.isEmpty) {
@@ -410,16 +448,15 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       mutathato.sort((a, b) {
         int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
         int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
-
         if (katA != katB) return katA.compareTo(katB);
 
-        int markaCmp = _huSort(a.marka.trim()).compareTo(_huSort(b.marka.trim()));
+        int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
         if (markaCmp != 0) return markaCmp;
         
-        int nevCmp = _huSort(a.nev.trim()).compareTo(_huSort(b.nev.trim()));
+        int nevCmp = _naturalHuCompare(a.nev.trim(), b.nev.trim());
         if (nevCmp != 0) return nevCmp;
 
-        return _huSort(a.jellemzo.trim()).compareTo(_huSort(b.jellemzo.trim()));
+        return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
       });
     } else {
       if (_kategoriak.isEmpty) return const Center(child: Text('Nincsenek kategóriák. Hozz létre egyet!'));
@@ -427,13 +464,13 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       mutathato = _tetelek.where((t) => t.kategoriaId == aktKat).toList();
       
       mutathato.sort((a, b) {
-        int markaCmp = _huSort(a.marka.trim()).compareTo(_huSort(b.marka.trim()));
+        int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
         if (markaCmp != 0) return markaCmp;
         
-        int nevCmp = _huSort(a.nev.trim()).compareTo(_huSort(b.nev.trim()));
+        int nevCmp = _naturalHuCompare(a.nev.trim(), b.nev.trim());
         if (nevCmp != 0) return nevCmp;
 
-        return _huSort(a.jellemzo.trim()).compareTo(_huSort(b.jellemzo.trim()));
+        return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
       });
     }
 
@@ -839,6 +876,7 @@ class TetelSzerkesztoScreen extends StatefulWidget {
   final String? alapertelmezettKategoriaId;
   final FelszerelesTetel? szerkeszthetoTetel;
   final VoidCallback mentesCallback;
+  final bool isMasolat; // ÚJ: Jelezzük a képernyőnek, ha ez egy új másolat klónozás
 
   const TetelSzerkesztoScreen({
     super.key,
@@ -846,6 +884,7 @@ class TetelSzerkesztoScreen extends StatefulWidget {
     this.alapertelmezettKategoriaId,
     this.szerkeszthetoTetel,
     required this.mentesCallback,
+    this.isMasolat = false, // Alapértelmezetten nem másolat
   });
 
   @override
@@ -1109,7 +1148,9 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     );
 
     final osszesTetel = await AdatTarolo.felszerelesTetelekBetoltese();
-    if (widget.szerkeszthetoTetel != null) {
+    
+    // ÚJ: Ha másolatként nyitottuk meg, akkor mindenképp új tételként mentjük el, nem írjuk felül az eredetit!
+    if (widget.szerkeszthetoTetel != null && !widget.isMasolat) {
       final idx = osszesTetel.indexWhere((t) => t.id == ujTetel.id);
       if (idx != -1) osszesTetel[idx] = ujTetel;
     } else {
@@ -1123,8 +1164,13 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ÚJ: Fejléc szövegének cseréje, ha másolatot szerkesztünk!
+    String fejlecCim = widget.isMasolat 
+        ? 'Másolat Szerkesztése' 
+        : (widget.szerkeszthetoTetel == null ? 'Új Tétel Hozzáadása' : 'Tétel Szerkesztése');
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.szerkeszthetoTetel == null ? 'Új Tétel Hozzáadása' : 'Tétel Szerkesztése')),
+      appBar: AppBar(title: Text(fejlecCim)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1639,3 +1685,4 @@ class _TaskakSzerkesztoScreenState extends State<TaskakSzerkesztoScreen> {
     );
   }
 }
+]
