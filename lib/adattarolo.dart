@@ -353,7 +353,7 @@ class AdatTarolo {
     return zipPath;
   }
 
-  // ÚJ: Az importálás is kapott Progress bar-t, ami lefelé tölti a logót!
+  // ÚJ: Az importálás is kapott onProgress paramétert!
   static Future<void> importalas(String fajlUtvonal, {Function(double)? onProgress}) async {
     final prefs = await SharedPreferences.getInstance();
     String jsonTartalom = '';
@@ -422,4 +422,8 @@ class AdatTarolo {
     await prefs.setBool('idojaras_init', true);
     await prefs.setBool('sors_init', true);
   }
+
+  static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {}
+  static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {}
+  static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {}
 }
