@@ -87,7 +87,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
                 : szurtLista.isEmpty
                     ? const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)))
                     : ListView.builder(
-                        // ÚJ: 100 pixeles alsó távtartó a lebegő gomb miatt!
                         padding: const EdgeInsets.only(left: 12, right: 12, bottom: 100),
                         itemCount: szurtLista.length,
                         itemBuilder: (context, index) {
@@ -95,20 +94,24 @@ class _LexikonScreenState extends State<LexikonScreen> {
                           
                           Widget kepIkon = const Icon(Icons.set_meal, size: 40, color: Colors.white24);
                           
-                          if (hal.kepek.isNotEmpty) {
-                            String utvonal = hal.kepek.first;
+                          String? megjelenitendoUtvonal;
+                          if (hal.indexKep != null && (hal.indexKep!.startsWith('http') || File(hal.indexKep!).existsSync())) {
+                            megjelenitendoUtvonal = hal.indexKep;
+                          } else if (hal.kepek.isNotEmpty && (hal.kepek.first.startsWith('http') || File(hal.kepek.first).existsSync())) {
+                            megjelenitendoUtvonal = hal.kepek.first;
+                          }
+
+                          if (megjelenitendoUtvonal != null) {
                             kepIkon = ClipRRect(
                               borderRadius: BorderRadius.circular(6),
-                              child: utvonal.startsWith('http')
+                              child: megjelenitendoUtvonal.startsWith('http')
                                 ? CachedNetworkImage(
-                                    imageUrl: utvonal,
+                                    imageUrl: megjelenitendoUtvonal,
                                     width: 50, height: 50, fit: BoxFit.cover,
                                     placeholder: (context, url) => const SizedBox(width: 50, height: 50, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2))),
                                     errorWidget: (context, url, error) => const Icon(Icons.set_meal, size: 40, color: Colors.white24),
                                   )
-                                : (File(utvonal).existsSync() 
-                                    ? Image.file(File(utvonal), width: 50, height: 50, fit: BoxFit.cover)
-                                    : const Icon(Icons.set_meal, size: 40, color: Colors.white24)),
+                                : Image.file(File(megjelenitendoUtvonal), width: 50, height: 50, fit: BoxFit.cover),
                             );
                           }
 
