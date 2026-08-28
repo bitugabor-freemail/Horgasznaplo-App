@@ -124,7 +124,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
               itemBuilder: (context, index) {
                 final fogas = _fogasok[index];
 
-                // 1.5.0: Kép megjelenítése az indexKep alapján
                 Widget kepWidget = const Icon(Icons.set_meal, color: Colors.white24, size: 30);
                 if (fogas.indexKep != null && (fogas.indexKep!.startsWith('http') || File(fogas.indexKep!).existsSync())) {
                   kepWidget = fogas.indexKep!.startsWith('http')
@@ -812,11 +811,11 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const Divider(height: 40, color: Colors.white24),
 
-            // --- ÚJ: FOGÁS INDEXKÉP SZERKESZTŐ (120x120 ARÁNY) ---
+            // --- ÚJ JAVÍTOTT: FOGÁS INDEXKÉP SZERKESZTŐ (240x240 ARÁNY) ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('Ez jelenik meg a listákban kis kékként/dobozként. Két ujjal nagyíthatod, mozgathatod. Ha kisebbre veszed, a háttér fekete lesz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 8),
+            const Text('A szerkesztő doboz nagy, hogy könnyen beállíthasd, de a listában automatikusan a helyére fog igazodni. Két ujjal nagyíthatod, mozgathatod.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 12),
             
             Center(
               child: Container(
@@ -829,17 +828,15 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                   child: RepaintBoundary(
                     key: _cropperKey,
                     child: Container(
-                      width: 120,
-                      height: 120,
+                      width: 240, 
+                      height: 240, 
                       color: Colors.black, 
-                      clipBehavior: Clip.hardEdge, 
                       child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
                           ? InteractiveViewer(
                               transformationController: _transformationController,
                               minScale: 0.5,
                               maxScale: 4.0,
                               boundaryMargin: const EdgeInsets.all(100),
-                              clipBehavior: Clip.none, 
                               child: _kepek.first.startsWith('http')
                                   ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
                                   : Image.file(File(_kepek.first), fit: BoxFit.contain),
@@ -848,13 +845,13 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                               ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
                               : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
                                   ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
-                                  : const Icon(Icons.set_meal, color: Colors.white24, size: 40))),
+                                  : const Icon(Icons.set_meal, color: Colors.white24, size: 60))),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Center(
               child: _isThumbnailSzerkesztes
                   ? ElevatedButton.icon(
