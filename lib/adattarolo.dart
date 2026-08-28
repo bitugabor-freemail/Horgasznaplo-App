@@ -257,6 +257,7 @@ class AdatTarolo {
           statusz: gyHal.statusz, meretKorlatozas: gyHal.meretKorlatozas,
           darabKorlatozas: gyHal.darabKorlatozas, tilalmiIdoszak: gyHal.tilalmiIdoszak,
           szabalyozasEve: gyHal.szabalyozasEve, megjegyzes: gyHal.megjegyzes, kepek: ujKepek,
+          indexKep: jelenlegi[idx].indexKep,
         );
       }
     }
@@ -265,7 +266,7 @@ class AdatTarolo {
 
   static Future<String> letrehozExportJson() async {
     Map<String, dynamic> exportData = {
-      'verzio': 1,
+      'verzio': 1.5,
       'turak': await _betoltes(_turakKulcs),
       'fogasok': await _betoltes(_fogasokKulcs),
       'halfajok': await _betoltes(_halfajokKulcs),
@@ -353,7 +354,6 @@ class AdatTarolo {
     return zipPath;
   }
 
-  // ÚJ: Az importálás is kapott onProgress paramétert!
   static Future<void> importalas(String fajlUtvonal, {Function(double)? onProgress}) async {
     final prefs = await SharedPreferences.getInstance();
     String jsonTartalom = '';
