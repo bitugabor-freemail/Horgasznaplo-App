@@ -7,7 +7,7 @@ import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 
 import 'modellek.dart';
-import 'halfajok_adatok.dart'; // ÚJ: Behúztuk a külső lexikon fájlt!
+import 'halfajok_adatok.dart'; 
 
 class AdatTarolo {
   static const String _turakKulcs = 'turak_adatok';
@@ -25,48 +25,31 @@ class AdatTarolo {
   static const String _taskakKulcs = 'torzs_taskak'; 
   static const String _felszerelesKategoriakKulcs = 'felszereles_kategoriak';
   static const String _felszerelesTetelekKulcs = 'felszereles_tetelek';
-  
   static const String _dokMappakKulcs = 'dok_mappak';
   static const String _dokFajlokKulcs = 'dok_fajlok';
 
   static Future<String> biztonsagosKepMasolas(String eredetiUtvonal, {String? egyediNev}) async {
     if (eredetiUtvonal.startsWith('http')) return eredetiUtvonal; 
-    
     final eredetiFajl = File(eredetiUtvonal);
     if (!await eredetiFajl.exists()) return eredetiUtvonal;
-
     final appDir = await getApplicationDocumentsDirectory();
     final kepekMappa = Directory('${appDir.path}/kepek');
-    if (!await kepekMappa.exists()) {
-      await kepekMappa.create(recursive: true);
-    }
-
+    if (!await kepekMappa.exists()) await kepekMappa.create(recursive: true);
     final fajlNev = egyediNev ?? '${DateTime.now().millisecondsSinceEpoch}_${eredetiUtvonal.split('/').last}';
     final ujUtvonal = '${kepekMappa.path}/$fajlNev';
-
-    if (eredetiUtvonal != ujUtvonal) {
-      await eredetiFajl.copy(ujUtvonal);
-    }
-    
+    if (eredetiUtvonal != ujUtvonal) await eredetiFajl.copy(ujUtvonal);
     return ujUtvonal;
   }
 
   static Future<String> biztonsagosDokumentumMasolas(String eredetiUtvonal) async {
     final eredetiFajl = File(eredetiUtvonal);
     if (!await eredetiFajl.exists()) return eredetiUtvonal;
-
     final appDir = await getApplicationDocumentsDirectory();
     final dokMappa = Directory('${appDir.path}/dokumentumok');
-    if (!await dokMappa.exists()) {
-      await dokMappa.create(recursive: true);
-    }
-
+    if (!await dokMappa.exists()) await dokMappa.create(recursive: true);
     final fajlNev = '${DateTime.now().millisecondsSinceEpoch}_${eredetiUtvonal.split('/').last}';
     final ujUtvonal = '${dokMappa.path}/$fajlNev';
-
-    if (eredetiUtvonal != ujUtvonal) {
-      await eredetiFajl.copy(ujUtvonal);
-    }
+    if (eredetiUtvonal != ujUtvonal) await eredetiFajl.copy(ujUtvonal);
     return ujUtvonal;
   }
 
@@ -84,9 +67,7 @@ class AdatTarolo {
   static Future<List<dynamic>> _betoltes(String kulcs) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(kulcs);
-    if (jsonString != null) {
-      return jsonDecode(jsonString);
-    }
+    if (jsonString != null) return jsonDecode(jsonString);
     return [];
   }
 
@@ -133,17 +114,14 @@ class AdatTarolo {
   static Future<void> mappaTorles(DokumentumMappa mappa) async {
     final fajlok = await dokFajlokBetoltese();
     final mappaFajljai = fajlok.where((f) => f.mappaId == mappa.id).toList();
-    
     for(var f in mappaFajljai) {
       try {
         final file = File(f.utvonal);
         if (await file.exists()) await file.delete();
       } catch (_) {}
     }
-    
     fajlok.removeWhere((f) => f.mappaId == mappa.id);
     await dokFajlokMentes(fajlok);
-    
     final mappak = await dokMappakBetoltese();
     mappak.removeWhere((m) => m.id == mappa.id);
     await dokMappakMentes(mappak);
@@ -153,7 +131,6 @@ class AdatTarolo {
   static Future<List<FelszerelesKategoria>> felszerelesKategoriakBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
     bool init = prefs.getBool('felszereles_init') ?? false;
-    
     if (!init) {
       List<FelszerelesKategoria> alap = [
         FelszerelesKategoria(id: 'kat_1', nev: 'Botok', sorrend: 1),
@@ -167,7 +144,6 @@ class AdatTarolo {
       await prefs.setBool('felszereles_init', true);
       return alap;
     }
-    
     final adatok = await _betoltes(_felszerelesKategoriakKulcs);
     List<FelszerelesKategoria> list = adatok.map((e) => FelszerelesKategoria.fromJson(e)).toList();
     list.sort((a, b) => a.sorrend.compareTo(b.sorrend));
@@ -213,7 +189,6 @@ class AdatTarolo {
   static Future<List<String>> etetoanyagokBetoltese() async => List<String>.from(await _betoltes(_etetoanyagokKulcs));
   static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
   static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
-  
   static Future<void> taskakMentes(List<String> adatok) async => await _mentes(_taskakKulcs, adatok);
   static Future<List<String>> taskakBetoltese() async => List<String>.from(await _betoltes(_taskakKulcs));
 
@@ -228,11 +203,7 @@ class AdatTarolo {
     return List<String>.from(await _betoltes(_idojarasKulcs));
   }
   static Future<void> gyariIdojarasVisszaallitas() async {
-    List<String> gyari = [
-      'Derült, tiszta', 'Változóan felhős', 'Borult, felhős', 'Szemerkélő eső',
-      'Tartós eső', 'Zápor', 'Zivatar, vihar', 'Jégeső', 'Ködös, párás',
-      'Viharos szél', 'Havazás', 'Havas eső'
-    ];
+    List<String> gyari = ['Derült, tiszta', 'Változóan felhős', 'Borult, felhős', 'Szemerkélő eső', 'Tartós eső', 'Zápor', 'Zivatar, vihar', 'Jégeső', 'Ködös, párás', 'Viharos szél', 'Havazás', 'Havas eső'];
     List<String> jelenlegi = List<String>.from(await _betoltes(_idojarasKulcs));
     for (String g in gyari) { if (!jelenlegi.contains(g)) jelenlegi.add(g); }
     await idojarasMentes(jelenlegi);
@@ -256,26 +227,21 @@ class AdatTarolo {
   }
 
   static Future<void> halfajokMentes(List<Halfaj> halfajok) async => await _mentes(_halfajokKulcs, halfajok);
-  
-  // ÚJ: A betöltésnél a külső fájlra (HalfajAdatok) hivatkozunk
   static Future<List<Halfaj>> halfajokBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
     bool init = prefs.getBool('halfaj_init') ?? false;
-
     if (!init) {
       List<Halfaj> alapHalfajok = HalfajAdatok.getMagyarHalFauna();
       await halfajokMentes(alapHalfajok);
       await prefs.setBool('halfaj_init', true);
       return alapHalfajok;
     }
-
     return (await _betoltes(_halfajokKulcs)).map((e) => Halfaj.fromJson(e)).toList();
   }
 
   static Future<void> gyariHalfajokVisszaallitas() async {
     List<Halfaj> jelenlegi = await halfajokBetoltese();
     List<Halfaj> gyari = HalfajAdatok.getMagyarHalFauna();
-
     for (var gyHal in gyari) {
       int idx = jelenlegi.indexWhere((h) => h.id == gyHal.id);
       if (idx == -1) {
@@ -283,13 +249,9 @@ class AdatTarolo {
       } else {
         List<String> meglevoKepek = jelenlegi[idx].kepek;
         List<String> ujKepek = List.from(meglevoKepek);
-
         for (var gyKep in gyHal.kepek) {
-          if (!ujKepek.contains(gyKep) && ujKepek.length < 5) {
-            ujKepek.add(gyKep);
-          }
+          if (!ujKepek.contains(gyKep) && ujKepek.length < 5) ujKepek.add(gyKep);
         }
-
         jelenlegi[idx] = Halfaj(
           id: gyHal.id, nev: gyHal.nev, kategoria: gyHal.kategoria,
           statusz: gyHal.statusz, meretKorlatozas: gyHal.meretKorlatozas,
@@ -349,14 +311,12 @@ class AdatTarolo {
     zipEncoder.addFile(jsonFile, 'adatbazeis.json');
 
     List<File> csomagolandoFajlok = [];
-    
     final kepekMappa = Directory('${appDir.path}/kepek');
     if (await kepekMappa.exists()) {
       for (var f in kepekMappa.listSync()) {
         if (f is File) csomagolandoFajlok.add(f);
       }
     }
-
     final dokMappa = Directory('${appDir.path}/dokumentumok');
     if (await dokMappa.exists()) {
       for (var f in dokMappa.listSync()) {
@@ -384,18 +344,17 @@ class AdatTarolo {
         
         feldolgozva++;
         onProgress(feldolgozva / osszesFajl);
-        
         await Future.delayed(const Duration(milliseconds: 2)); 
       }
     }
 
     zipEncoder.close();
     if (await jsonFile.exists()) await jsonFile.delete();
-
     return zipPath;
   }
 
-  static Future<void> importalas(String fajlUtvonal) async {
+  // ÚJ: Az importálás is kapott Progress bar-t, ami lefelé tölti a logót!
+  static Future<void> importalas(String fajlUtvonal, {Function(double)? onProgress}) async {
     final prefs = await SharedPreferences.getInstance();
     String jsonTartalom = '';
 
@@ -410,6 +369,9 @@ class AdatTarolo {
       final dokMappa = Directory('${appDir.path}/dokumentumok');
       if (!await dokMappa.exists()) await dokMappa.create(recursive: true);
 
+      int osszes = archive.length;
+      int feldolgozva = 0;
+
       for (final file in archive) {
         if (file.isFile) {
           if (file.name == 'adatbazeis.json') {
@@ -422,9 +384,16 @@ class AdatTarolo {
             await File('${dokMappa.path}/$fileNev').writeAsBytes(file.content as List<int>);
           }
         }
+        feldolgozva++;
+        if (onProgress != null) {
+          onProgress(feldolgozva / osszes);
+          await Future.delayed(const Duration(milliseconds: 2));
+        }
       }
     } else if (fajlUtvonal.toLowerCase().endsWith('.json')) {
+      if (onProgress != null) onProgress(0.5);
       jsonTartalom = await File(fajlUtvonal).readAsString();
+      if (onProgress != null) onProgress(1.0);
     } else {
       throw Exception('Nem támogatott fájlformátum!');
     }
@@ -453,8 +422,4 @@ class AdatTarolo {
     await prefs.setBool('idojaras_init', true);
     await prefs.setBool('sors_init', true);
   }
-
-  static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {}
-  static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {}
-  static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {}
 }
