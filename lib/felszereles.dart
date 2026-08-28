@@ -145,6 +145,36 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
+  // ÚJ FÜGGVÉNY: Tétel lemásolása
+  void _tetelMasolasa(FelszerelesTetel eredeti) async {
+    final ujTetel = FelszerelesTetel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      kategoriaId: eredeti.kategoriaId,
+      marka: eredeti.marka,
+      nev: 'Másolat - ${eredeti.nev}', // Itt kerül elé a "Másolat - "
+      jellemzo: eredeti.jellemzo,
+      mertekegyseg: eredeti.mertekegyseg,
+      leiras: eredeti.leiras,
+      kepek: List.from(eredeti.kepek),
+      elhelyezesek: eredeti.elhelyezesek.map((e) => FelszerelesElhelyezes(
+        taska: e.taska,
+        pozicio: e.pozicio,
+        mennyiseg: e.mennyiseg,
+      )).toList(),
+    );
+
+    final osszes = await AdatTarolo.felszerelesTetelekBetoltese();
+    osszes.add(ujTetel);
+    await AdatTarolo.felszerelesTetelekMentes(osszes);
+    adatokBetoltese();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tétel sikeresen lemásolva!'), backgroundColor: Colors.green),
+      );
+    }
+  }
+
   void _tetelTorlese(FelszerelesTetel tetel) {
     showDialog(
       context: context,
@@ -309,10 +339,12 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                 color: const Color(0xFF1E1E1E),
                 onSelected: (value) {
                   if (value == 'edit') _tetelSzerkesztokMegnyitasa(tetel);
+                  if (value == 'copy') _tetelMasolasa(tetel); // Másolás hívása
                   if (value == 'delete') _tetelTorlese(tetel);
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'edit', child: Text('Szerkesztés')),
+                  const PopupMenuItem(value: 'copy', child: Text('Másolás')), // Új gomb a menüben
                   const PopupMenuItem(value: 'delete', child: Text('Törlés', style: TextStyle(color: Colors.redAccent))),
                 ],
               ),
