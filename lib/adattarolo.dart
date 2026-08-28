@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:archive/archive.dart';
@@ -173,7 +172,6 @@ class AdatTarolo {
     return list;
   }
 
-  // ÚJRA BETETTÜK AZ ELHAGYOTT FÜGGVÉNYT
   static Future<void> gyariFelszerelesKategoriakVisszaallitas() async {
     List<FelszerelesKategoria> gyari = [
       FelszerelesKategoria(id: 'kat_1', nev: 'Botok', sorrend: 1),
@@ -333,7 +331,8 @@ class AdatTarolo {
     return path;
   }
 
-  static Future<String> letrehozTeljesExportZIPFajl(Function(double) onProgress) async {
+  // ÚJ: Bekerült egy 'isCancelled' megszakítási lehetőség a függvénybe!
+  static Future<String?> letrehozTeljesExportZIPFajl(Function(double) onProgress, {bool Function()? isCancelled}) async {
     final appDir = await getApplicationDocumentsDirectory();
     final String idobelyeg = DateFormat('yyyy_MM_dd_HH_mm_ss').format(DateTime.now());
     final zipPath = '${appDir.path}/horgasznaplo_teljes_mentes_$idobelyeg.zip';
@@ -369,6 +368,15 @@ class AdatTarolo {
       onProgress(1.0);
     } else {
       for (var f in csomagolandoFajlok) {
+        // ELLENŐRIZZÜK A MEGSZAKÍTÁST MINDEN FÁJL ELŐTT!
+        if (isCancelled != null && isCancelled()) {
+          zipEncoder.close();
+          if (await jsonFile.exists()) await jsonFile.delete(); // Szemetet feltakarítjuk
+          final hibasZip = File(zipPath);
+          if (await hibasZip.exists()) await hibasZip.delete();
+          return null; // Visszaadunk null-t, jelezve, hogy nem sikerült (meg lett szakítva)
+        }
+
         String utvonalRendezes = f.path.contains('/kepek/') ? 'kepek' : 'dokumentumok';
         zipEncoder.addFile(f, '$utvonalRendezes/${f.path.split('/').last}');
         
