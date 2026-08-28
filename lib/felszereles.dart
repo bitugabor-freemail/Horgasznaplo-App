@@ -1354,7 +1354,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             TextField(controller: _leirasCtrl, maxLines: 4, decoration: const InputDecoration(labelText: 'Felszerelés leírása (opcionális)', border: OutlineInputBorder())),
             const SizedBox(height: 24),
 
-            // --- ÚJ JAVÍTOTT: INDEXKÉP / THUMBNAIL BEÁLLÍTÓ BLOKK ---
+            // --- INDEXKÉP / THUMBNAIL BEÁLLÍTÓ BLOKK ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('A szerkesztő doboz nagy, hogy könnyen beállíthasd, de a listában automatikusan a helyére fog igazodni. Két ujjal nagyíthatod, mozgathatod.', style: TextStyle(color: Colors.white54, fontSize: 12)),
@@ -1377,12 +1377,17 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                       child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
                           ? InteractiveViewer(
                               transformationController: _transformationController,
-                              minScale: 0.5,
+                              minScale: 1.0,
                               maxScale: 4.0,
-                              boundaryMargin: const EdgeInsets.all(100),
-                              child: _kepek.first.startsWith('http')
-                                  ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
-                                  : Image.file(File(_kepek.first), fit: BoxFit.contain),
+                              boundaryMargin: EdgeInsets.zero,
+                              clipBehavior: Clip.none, 
+                              child: SizedBox(
+                                width: double.infinity,
+                                height: double.infinity,
+                                child: _kepek.first.startsWith('http')
+                                    ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover)
+                                    : Image.file(File(_kepek.first), fit: BoxFit.cover),
+                              ),
                             )
                           : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
                               ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
