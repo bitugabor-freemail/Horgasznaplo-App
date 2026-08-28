@@ -331,9 +331,10 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       
       if (katA != katB) return katA.compareTo(katB);
 
-      int markaCmp = a.marka.trim().compareTo(b.marka.trim());
+      // Kis és nagybetű figyelmen kívül hagyása a rendezésnél
+      int markaCmp = a.marka.trim().toLowerCase().compareTo(b.marka.trim().toLowerCase());
       if (markaCmp != 0) return markaCmp;
-      return a.nev.compareTo(b.nev);
+      return a.nev.toLowerCase().compareTo(b.nev.toLowerCase());
     });
 
     if (eredmeny.isEmpty) {
@@ -358,16 +359,16 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       aktTaska = _taskak[index];
       mutathato = _tetelek.where((t) => t.elhelyezesek.any((e) => e.taska == aktTaska)).toList();
       
-      // ÚJ: Táska nézet rendezés - Kategória sorrend -> Márka -> Név
       mutathato.sort((a, b) {
         int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
         int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
 
         if (katA != katB) return katA.compareTo(katB);
 
-        int markaCmp = a.marka.trim().compareTo(b.marka.trim());
+        // Kis és nagybetű figyelmen kívül hagyása a rendezésnél
+        int markaCmp = a.marka.trim().toLowerCase().compareTo(b.marka.trim().toLowerCase());
         if (markaCmp != 0) return markaCmp;
-        return a.nev.compareTo(b.nev);
+        return a.nev.toLowerCase().compareTo(b.nev.toLowerCase());
       });
     } else {
       if (_kategoriak.isEmpty) return const Center(child: Text('Nincsenek kategóriák. Hozz létre egyet!'));
@@ -375,9 +376,10 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       mutathato = _tetelek.where((t) => t.kategoriaId == aktKat).toList();
       
       mutathato.sort((a, b) {
-        int markaCmp = a.marka.trim().compareTo(b.marka.trim());
+        // Kis és nagybetű figyelmen kívül hagyása a rendezésnél
+        int markaCmp = a.marka.trim().toLowerCase().compareTo(b.marka.trim().toLowerCase());
         if (markaCmp != 0) return markaCmp;
-        return a.nev.compareTo(b.nev);
+        return a.nev.toLowerCase().compareTo(b.nev.toLowerCase());
       });
     }
 
