@@ -341,59 +341,63 @@ class _TuraKartyaState extends State<_TuraKartya> {
           ),
           
           if (tura.indexKep != null && (tura.indexKep!.startsWith('http') || File(tura.indexKep!).existsSync()))
-            SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: GestureDetector(
-                onTap: () => _teljesKepernyosGaleria(context, 0, helyszinNev),
-                child: tura.indexKep!.startsWith('http')
-                    ? CachedNetworkImage(imageUrl: tura.indexKep!, fit: BoxFit.cover)
-                    : Image.file(File(tura.indexKep!), fit: BoxFit.cover),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: SizedBox(
+                width: double.infinity,
+                child: GestureDetector(
+                  onTap: () => _teljesKepernyosGaleria(context, 0, helyszinNev),
+                  child: tura.indexKep!.startsWith('http')
+                      ? CachedNetworkImage(imageUrl: tura.indexKep!, fit: BoxFit.cover)
+                      : Image.file(File(tura.indexKep!), fit: BoxFit.cover),
+                ),
               ),
             )
           else if (tura.kepek.isNotEmpty)
-            SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  PageView.builder(
-                    controller: _pageCtrl,
-                    itemCount: tura.kepek.length,
-                    itemBuilder: (context, i) {
-                      final utvonal = tura.kepek[i];
-                      return GestureDetector(
-                        onTap: () => _teljesKepernyosGaleria(context, i, helyszinNev),
-                        child: utvonal.startsWith('http')
-                            ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
-                            : (File(utvonal).existsSync() ? Image.file(File(utvonal), fit: BoxFit.cover) : const Icon(Icons.broken_image, size: 50)),
-                      );
-                    },
-                  ),
-                  if (tura.kepek.length > 1) ...[
-                    Positioned(
-                      left: 8,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.black54,
-                        child: IconButton(
-                          icon: const Icon(Icons.chevron_left, color: Colors.white),
-                          onPressed: () => _pageCtrl.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: SizedBox(
+                width: double.infinity,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PageView.builder(
+                      controller: _pageCtrl,
+                      itemCount: tura.kepek.length,
+                      itemBuilder: (context, i) {
+                        final utvonal = tura.kepek[i];
+                        return GestureDetector(
+                          onTap: () => _teljesKepernyosGaleria(context, i, helyszinNev),
+                          child: utvonal.startsWith('http')
+                              ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
+                              : (File(utvonal).existsSync() ? Image.file(File(utvonal), fit: BoxFit.cover) : const Icon(Icons.broken_image, size: 50)),
+                        );
+                      },
+                    ),
+                    if (tura.kepek.length > 1) ...[
+                      Positioned(
+                        left: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_left, color: Colors.white),
+                            onPressed: () => _pageCtrl.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      right: 8,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.black54,
-                        child: IconButton(
-                          icon: const Icon(Icons.chevron_right, color: Colors.white),
-                          onPressed: () => _pageCtrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                      Positioned(
+                        right: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_right, color: Colors.white),
+                            onPressed: () => _pageCtrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                          ),
                         ),
                       ),
-                    ),
-                  ]
-                ],
+                    ]
+                  ],
+                ),
               ),
             ),
 
@@ -1063,7 +1067,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ],
             const Divider(height: 40, color: Colors.white24),
 
-            // --- TÚRA BORÍTÓKÉP SZERKESZTŐ (16:9 ARÁNY) ---
+            // --- TÚRA BORÍTÓKÉP SZERKESZTŐ (16:9 ARÁNY, MÁGNESES) ---
             const Text('Túra Borítókép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('Ez jelenik meg a túra fejlécében. Az arány pontosan 16:9, ahogy a kártyán is látszani fog. Két ujjal nagyíthatod, mozgathatod.', style: TextStyle(color: Colors.white54, fontSize: 12)),
@@ -1087,12 +1091,17 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                         child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
                             ? InteractiveViewer(
                                 transformationController: _transformationController,
-                                minScale: 0.5,
+                                minScale: 1.0, // <-- Nem engedi a keretnél kisebbre
                                 maxScale: 4.0,
-                                boundaryMargin: const EdgeInsets.all(100),
-                                child: _kepek.first.startsWith('http')
-                                    ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
-                                    : Image.file(File(_kepek.first), fit: BoxFit.contain),
+                                boundaryMargin: EdgeInsets.zero, // <-- Mágneses fal (nem csúszik le)
+                                clipBehavior: Clip.none, 
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  child: _kepek.first.startsWith('http')
+                                      ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover)
+                                      : Image.file(File(_kepek.first), fit: BoxFit.cover),
+                                ),
                               )
                             : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
                                 ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
