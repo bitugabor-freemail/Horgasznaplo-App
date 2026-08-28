@@ -169,6 +169,20 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
+  // ÚJ: Magyar nyelvű, ékezeteket toleráló sorbarendező segédfüggvény
+  String _huSort(String text) {
+    return text.toLowerCase()
+      .replaceAll('á', 'a~')
+      .replaceAll('é', 'e~')
+      .replaceAll('í', 'i~')
+      .replaceAll('ó', 'o~')
+      .replaceAll('ö', 'o~~')
+      .replaceAll('ő', 'o~~~')
+      .replaceAll('ú', 'u~')
+      .replaceAll('ü', 'u~~')
+      .replaceAll('ű', 'u~~~');
+  }
+
   Widget _buildTetelKartya(FelszerelesTetel tetel, String? aktivTaskaNezet) {
     final markaNev = tetel.marka.trim();
     List<Widget> helyWidgetek = [];
@@ -331,10 +345,10 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       
       if (katA != katB) return katA.compareTo(katB);
 
-      // Kis és nagybetű figyelmen kívül hagyása a rendezésnél
-      int markaCmp = a.marka.trim().toLowerCase().compareTo(b.marka.trim().toLowerCase());
+      // ÚJ MAGYAR RENDEZÉS
+      int markaCmp = _huSort(a.marka.trim()).compareTo(_huSort(b.marka.trim()));
       if (markaCmp != 0) return markaCmp;
-      return a.nev.toLowerCase().compareTo(b.nev.toLowerCase());
+      return _huSort(a.nev).compareTo(_huSort(b.nev));
     });
 
     if (eredmeny.isEmpty) {
@@ -365,10 +379,10 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
 
         if (katA != katB) return katA.compareTo(katB);
 
-        // Kis és nagybetű figyelmen kívül hagyása a rendezésnél
-        int markaCmp = a.marka.trim().toLowerCase().compareTo(b.marka.trim().toLowerCase());
+        // ÚJ MAGYAR RENDEZÉS
+        int markaCmp = _huSort(a.marka.trim()).compareTo(_huSort(b.marka.trim()));
         if (markaCmp != 0) return markaCmp;
-        return a.nev.toLowerCase().compareTo(b.nev.toLowerCase());
+        return _huSort(a.nev).compareTo(_huSort(b.nev));
       });
     } else {
       if (_kategoriak.isEmpty) return const Center(child: Text('Nincsenek kategóriák. Hozz létre egyet!'));
@@ -376,10 +390,10 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       mutathato = _tetelek.where((t) => t.kategoriaId == aktKat).toList();
       
       mutathato.sort((a, b) {
-        // Kis és nagybetű figyelmen kívül hagyása a rendezésnél
-        int markaCmp = a.marka.trim().toLowerCase().compareTo(b.marka.trim().toLowerCase());
+        // ÚJ MAGYAR RENDEZÉS
+        int markaCmp = _huSort(a.marka.trim()).compareTo(_huSort(b.marka.trim()));
         if (markaCmp != 0) return markaCmp;
-        return a.nev.toLowerCase().compareTo(b.nev.toLowerCase());
+        return _huSort(a.nev).compareTo(_huSort(b.nev));
       });
     }
 
