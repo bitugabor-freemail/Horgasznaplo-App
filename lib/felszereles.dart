@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:ui' as ui; // ÚJ: a képgeneráláshoz szükséges
-import 'dart:typed_data'; // ÚJ: a bináris mentéshez
-import 'package:flutter/rendering.dart'; // ÚJ: a RepaintBoundary (képernyőkép) funkcióhoz
+import 'dart:ui' as ui; 
+import 'dart:typed_data'; 
+import 'package:flutter/rendering.dart'; 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -325,10 +325,18 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     }
 
     Widget kepWidget = const Icon(Icons.image_not_supported, color: Colors.white24, size: 30);
-    if (tetel.indexKep != null && File(tetel.indexKep!).existsSync()) {
-      kepWidget = Image.file(File(tetel.indexKep!), fit: BoxFit.cover);
-    } else if (tetel.kepek.isNotEmpty && File(tetel.kepek.first).existsSync()) {
-      kepWidget = Image.file(File(tetel.kepek.first), fit: BoxFit.cover);
+    if (tetel.indexKep != null) {
+      if (tetel.indexKep!.startsWith('http')) {
+        kepWidget = CachedNetworkImage(imageUrl: tetel.indexKep!, fit: BoxFit.cover);
+      } else if (File(tetel.indexKep!).existsSync()) {
+        kepWidget = Image.file(File(tetel.indexKep!), fit: BoxFit.cover);
+      }
+    } else if (tetel.kepek.isNotEmpty) {
+      if (tetel.kepek.first.startsWith('http')) {
+        kepWidget = CachedNetworkImage(imageUrl: tetel.kepek.first, fit: BoxFit.cover);
+      } else if (File(tetel.kepek.first).existsSync()) {
+        kepWidget = Image.file(File(tetel.kepek.first), fit: BoxFit.cover);
+      }
     }
 
     return Card(
@@ -1017,7 +1025,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     }
   }
 
-  // ÚJ MEGOLDÁS: Valódi "Képernyőkép" készítése a kivágó dobozról!
+  // TÉNYLEGES KÉPERNYŐKÉP MENTÉSE A FEKETE DOBOZRÓL
   Future<void> _thumbnailMentese() async {
     try {
       RenderRepaintBoundary? boundary = _cropperKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
@@ -1026,13 +1034,11 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
         return;
       }
 
-      // 1. Lefotózzuk a fekete dobozt (pontosan úgy, ahogy te beállítottad a zoomot/pozíciót)
-      ui.Image image = await boundary.toImage(pixelRatio: 3.0); // 3x felbontás a tűéles eredményért
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0); 
       ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) throw Exception('Nem sikerült a kép konvertálása.');
       Uint8List pngBytes = byteData.buffer.asUint8List();
 
-      // 2. Lementjük a telefonba
       final appDir = await getApplicationDocumentsDirectory();
       final thumbDir = Directory('${appDir.path}/kepek');
       if (!await thumbDir.exists()) await thumbDir.create(recursive: true);
@@ -1040,7 +1046,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       final thumbPath = '${thumbDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.png';
       await File(thumbPath).writeAsBytes(pngBytes);
 
-      // 3. Beállítjuk az új indexképet
       setState(() {
         _indexKep = thumbPath;
         _isThumbnailSzerkesztes = false;
@@ -1350,7 +1355,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             TextField(controller: _leirasCtrl, maxLines: 4, decoration: const InputDecoration(labelText: 'Felszerelés leírása (opcionális)', border: OutlineInputBorder())),
             const SizedBox(height: 24),
 
-            // --- ÚJ: INDEXKÉP / THUMBNAIL BEÁLLÍTÓ BLOKK ---
+            // --- ÚJ JAVÍTOTT: INDEXKÉP / THUMBNAIL BEÁLLÍTÓ BLOKK ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('Ez jelenik meg a listákban kis kékként/dobozként. Két ujjal nagyíthatod, mozgathatod. Ha kisebbre veszed, a háttér fekete lesz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
@@ -1363,27 +1368,29 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                   border: Border.all(color: Colors.greenAccent, width: 2), // Zöld keret KÍVÜL
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10), // Enyhén kisebb kerekítés a keret miatt
+                  borderRadius: BorderRadius.circular(10), // Kerekítés a keret miatt
                   child: RepaintBoundary(
                     key: _cropperKey,
                     child: Container(
                       width: 120,
                       height: 120,
-                      color: Colors.black, // FEKETE HÁTTÉR a kivágatlan részekhez!
-                      clipBehavior: Clip.hardEdge, // Garantálja, hogy a RepaintBoundary ne "lógjon ki"
+                      color: Colors.black, // FEKETE HÁTTÉR a kivágatlan részekhez
+                      // INNEN VETTEM KI A HIBÁT OKOZÓ PARAMÉTERT!
                       child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
                           ? InteractiveViewer(
                               transformationController: _transformationController,
                               minScale: 0.5,
                               maxScale: 4.0,
                               boundaryMargin: const EdgeInsets.all(100),
-                              clipBehavior: Clip.none, // Hogy ki lehessen húzni a széléig
-                              child: Image.file(File(_kepek.first), fit: BoxFit.contain),
+                              clipBehavior: Clip.none, 
+                              child: _kepek.first.startsWith('http')
+                                  ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
+                                  : Image.file(File(_kepek.first), fit: BoxFit.contain),
                             )
-                          : (_indexKep != null && File(_indexKep!).existsSync()
-                              ? Image.file(File(_indexKep!), fit: BoxFit.cover)
-                              : (_kepek.isNotEmpty && File(_kepek.first).existsSync()
-                                  ? Image.file(File(_kepek.first), fit: BoxFit.cover)
+                          : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
+                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
+                              : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
+                                  ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
                                   : const Icon(Icons.image, color: Colors.white24, size: 40))),
                     ),
                   ),
