@@ -286,7 +286,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                 children: [
                   Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                   SizedBox(height: 4),
-                  Text('Verzió 1.4.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
+                  Text('Verzió 1.4.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)), // ÚJ
                 ],
               ),
             ),
@@ -365,7 +365,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
                       children: [
                         Text('Készítette: Google Gemini & B2', style: TextStyle(color: Colors.white, fontSize: 16)),
                         SizedBox(height: 8),
-                        Text('Verzió: 1.4.0', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        Text('Verzió: 1.4.0', style: TextStyle(color: Colors.white70, fontSize: 14)), // ÚJ
                       ],
                     ),
                     actions: [
