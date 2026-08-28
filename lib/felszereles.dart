@@ -350,7 +350,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       int nevCmp = _huSort(a.nev.trim()).compareTo(_huSort(b.nev.trim()));
       if (nevCmp != 0) return nevCmp;
       
-      // HA UGYANAZ A MÁRKA ÉS A NÉV IS, AKKOR A JELLEMZŐ DÖNT!
       return _huSort(a.jellemzo.trim()).compareTo(_huSort(b.jellemzo.trim()));
     });
 
@@ -388,7 +387,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
         int nevCmp = _huSort(a.nev.trim()).compareTo(_huSort(b.nev.trim()));
         if (nevCmp != 0) return nevCmp;
 
-        // HA UGYANAZ A MÁRKA ÉS A NÉV IS, AKKOR A JELLEMZŐ DÖNT!
         return _huSort(a.jellemzo.trim()).compareTo(_huSort(b.jellemzo.trim()));
       });
     } else {
@@ -403,7 +401,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
         int nevCmp = _huSort(a.nev.trim()).compareTo(_huSort(b.nev.trim()));
         if (nevCmp != 0) return nevCmp;
 
-        // HA UGYANAZ A MÁRKA ÉS A NÉV IS, AKKOR A JELLEMZŐ DÖNT!
         return _huSort(a.jellemzo.trim()).compareTo(_huSort(b.jellemzo.trim()));
       });
     }
@@ -470,7 +467,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                   
                   if (_isTaskaNezet) {
                     nev = _taskak[index];
-                    isSelected = nev == _kivalasztTaska; // Typo fix for display but used _kivalasztottTaska above
                     isSelected = nev == _kivalasztottTaska;
                     if (index < _taskaKeys.length) gKey = _taskaKeys[index];
                   } else {
