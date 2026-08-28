@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:archive/archive.dart';
@@ -170,6 +171,28 @@ class AdatTarolo {
     List<FelszerelesKategoria> list = adatok.map((e) => FelszerelesKategoria.fromJson(e)).toList();
     list.sort((a, b) => a.sorrend.compareTo(b.sorrend));
     return list;
+  }
+
+  // ÚJRA BETETTÜK AZ ELHAGYOTT FÜGGVÉNYT
+  static Future<void> gyariFelszerelesKategoriakVisszaallitas() async {
+    List<FelszerelesKategoria> gyari = [
+      FelszerelesKategoria(id: 'kat_1', nev: 'Botok', sorrend: 1),
+      FelszerelesKategoria(id: 'kat_2', nev: 'Orsók', sorrend: 2),
+      FelszerelesKategoria(id: 'kat_3', nev: 'Zsinórok', sorrend: 3),
+      FelszerelesKategoria(id: 'kat_4', nev: 'Szerelékek', sorrend: 4),
+      FelszerelesKategoria(id: 'kat_5', nev: 'Csalik', sorrend: 5),
+      FelszerelesKategoria(id: 'kat_6', nev: 'Egyéb', sorrend: 6),
+    ];
+    List<FelszerelesKategoria> jelenlegi = await felszerelesKategoriakBetoltese();
+    for (var g in gyari) {
+      if (!jelenlegi.any((k) => k.id == g.id)) {
+        jelenlegi.add(g);
+      } else {
+        final idx = jelenlegi.indexWhere((k) => k.id == g.id);
+        jelenlegi[idx] = g;
+      }
+    }
+    await felszerelesKategoriakMentes(jelenlegi);
   }
 
   static Future<void> felszerelesTetelekMentes(List<FelszerelesTetel> tetelek) async => await _mentes(_felszerelesTetelekKulcs, tetelek);
