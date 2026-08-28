@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart'; // ÚJ: A 'compute' (Isolate) funkcióhoz kell!
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:archive/archive.dart';
@@ -24,11 +25,9 @@ class AdatTarolo {
   static const String _felszerelesKategoriakKulcs = 'felszereles_kategoriak';
   static const String _felszerelesTetelekKulcs = 'felszereles_tetelek';
   
-  // DOKUMENTUMOK KULCSAI
   static const String _dokMappakKulcs = 'dok_mappak';
   static const String _dokFajlokKulcs = 'dok_fajlok';
 
-  // --- BIZTONSÁGOS KÉPKEZELÉS ---
   static Future<String> biztonsagosKepMasolas(String eredetiUtvonal, {String? egyediNev}) async {
     if (eredetiUtvonal.startsWith('http')) return eredetiUtvonal; 
     
@@ -51,7 +50,6 @@ class AdatTarolo {
     return ujUtvonal;
   }
 
-  // --- BIZTONSÁGOS PDF KEZELÉS ---
   static Future<String> biztonsagosDokumentumMasolas(String eredetiUtvonal) async {
     final eredetiFajl = File(eredetiUtvonal);
     if (!await eredetiFajl.exists()) return eredetiUtvonal;
@@ -71,7 +69,6 @@ class AdatTarolo {
     return ujUtvonal;
   }
 
-  // --- ALAPVETŐ MENTÉS ÉS BETÖLTÉS LOKÁLISAN ---
   static Future<void> _mentes(String kulcs, List<dynamic> adatLista) async {
     final prefs = await SharedPreferences.getInstance();
     List<dynamic> jsonLista = [];
@@ -92,7 +89,6 @@ class AdatTarolo {
     return [];
   }
 
-  // --- TÚRÁK ÉS FOGÁSOK ---
   static Future<void> turakMentes(List<Tura> turak) async => await _mentes(_turakKulcs, turak);
   static Future<List<Tura>> turakBetoltese() async {
     final adatok = await _betoltes(_turakKulcs);
@@ -105,14 +101,12 @@ class AdatTarolo {
     return adatok.map((e) => FogasModel.fromJson(e)).toList();
   }
 
-  // --- HELYSZÍNEK ---
   static Future<void> helyszinekMentes(List<Helyszin> helyszinek) async => await _mentes(_helyszinekKulcs, helyszinek);
   static Future<List<Helyszin>> helyszinekBetoltese() async {
     final adatok = await _betoltes(_helyszinekKulcs);
     return adatok.map((e) => Helyszin.fromJson(e)).toList();
   }
 
-  // --- DOKUMENTUMOK MENTÉSE ÉS BETÖLTÉSE ---
   static Future<void> dokMappakMentes(List<DokumentumMappa> mappak) async => await _mentes(_dokMappakKulcs, mappak);
   static Future<List<DokumentumMappa>> dokMappakBetoltese() async {
     final adatok = await _betoltes(_dokMappakKulcs);
@@ -154,7 +148,6 @@ class AdatTarolo {
     await dokMappakMentes(mappak);
   }
 
-  // --- FELSZERELÉSEK ---
   static Future<void> felszerelesKategoriakMentes(List<FelszerelesKategoria> kategoriak) async => await _mentes(_felszerelesKategoriakKulcs, kategoriak);
   static Future<List<FelszerelesKategoria>> felszerelesKategoriakBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
@@ -186,7 +179,6 @@ class AdatTarolo {
     return adatok.map((e) => FelszerelesTetel.fromJson(e)).toList();
   }
 
-  // --- TÖRZSDATOK (EGYSZERŰ LISTÁK) ---
   static Future<void> botokMentes(List<String> adatok) async => await _mentes(_botokKulcs, adatok);
   static Future<List<String>> botokBetoltese() async => List<String>.from(await _betoltes(_botokKulcs));
   static Future<void> modszerekMentes(List<String> adatok) async => await _mentes(_modszerekKulcs, adatok);
@@ -200,11 +192,9 @@ class AdatTarolo {
   static Future<void> tarsakMentes(List<String> adatok) async => await _mentes(_tarsakKulcs, adatok);
   static Future<List<String>> tarsakBetoltese() async => List<String>.from(await _betoltes(_tarsakKulcs));
   
-  // ÚJ TÁSKÁK TÖRZSDAT FUNKCIÓI
   static Future<void> taskakMentes(List<String> adatok) async => await _mentes(_taskakKulcs, adatok);
   static Future<List<String>> taskakBetoltese() async => List<String>.from(await _betoltes(_taskakKulcs));
 
-  // --- IDŐJÁRÁS & HAL SORSA VISSZAÁLLÍTÁSOK ---
   static Future<void> idojarasMentes(List<String> adatok) async => await _mentes(_idojarasKulcs, adatok);
   static Future<List<String>> idojarasBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
@@ -264,7 +254,6 @@ class AdatTarolo {
     await felszerelesKategoriakMentes(jelenlegi);
   }
 
-  // --- HALFAJOK (Okos visszaállítás beépítve) ---
   static Future<void> halfajokMentes(List<Halfaj> halfajok) async => await _mentes(_halfajokKulcs, halfajok);
   static Future<List<Halfaj>> halfajokBetoltese() async {
     final prefs = await SharedPreferences.getInstance();
@@ -309,7 +298,6 @@ class AdatTarolo {
     await halfajokMentes(jelenlegi);
   }
 
-  // --- EXPORT / IMPORT (ZIP & JSON) ---
   static Future<String> letrehozExportJson() async {
     Map<String, dynamic> exportData = {
       'verzio': 1,
@@ -344,41 +332,77 @@ class AdatTarolo {
     return path;
   }
 
-  static Future<String> letrehozTeljesExportZIPFajl() async {
-    final appDir = await getApplicationDocumentsDirectory();
+  // ÚJ: A processzorigényes ZIP kódoló feladat a háttérszálnak (Isolated function)
+  // Fontos: Ennek a függvénynek kívülről, statikusként kell léteznie, hogy a compute() tudja hívni!
+  static Future<List<int>> _huzosZipKeszites(Map<String, dynamic> args) async {
+    final String jsonStr = args['jsonStr'];
+    final List<Map<String, dynamic>> kepFajlok = args['kepek'];
+    final List<Map<String, dynamic>> dokFajlok = args['dokumentumok'];
+
     final archive = Archive();
 
-    final jsonStr = await letrehozExportJson();
+    // 1. JSON betétele
     final jsonData = utf8.encode(jsonStr);
     archive.addFile(ArchiveFile('adatbazeis.json', jsonData.length, jsonData));
 
+    // 2. Képek betétele
+    for (var kep in kepFajlok) {
+      archive.addFile(ArchiveFile('kepek/${kep['nev']}', (kep['bytok'] as List<int>).length, kep['bytok']));
+    }
+
+    // 3. Dokumentumok betétele
+    for (var dok in dokFajlok) {
+      archive.addFile(ArchiveFile('dokumentumok/${dok['nev']}', (dok['bytok'] as List<int>).length, dok['bytok']));
+    }
+
+    // 4. A Hosszú tömörítési folyamat
+    final zipEncoder = ZipEncoder();
+    return zipEncoder.encode(archive)!;
+  }
+
+  static Future<String> letrehozTeljesExportZIPFajl() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    
+    // Első lépés: Fő szálon összekészítjük az összes beolvasott adatot (ez gyors)
+    final jsonStr = await letrehozExportJson();
+    
+    List<Map<String, dynamic>> beolvasottKepek = [];
     final kepekMappa = Directory('${appDir.path}/kepek');
     if (await kepekMappa.exists()) {
       for (var f in kepekMappa.listSync()) {
         if (f is File) {
-          final nev = f.path.split('/').last;
-          final bytok = await f.readAsBytes();
-          archive.addFile(ArchiveFile('kepek/$nev', bytok.length, bytok));
+          beolvasottKepek.add({
+            'nev': f.path.split('/').last,
+            'bytok': await f.readAsBytes(),
+          });
         }
       }
     }
 
+    List<Map<String, dynamic>> beolvasottDokumentumok = [];
     final dokMappa = Directory('${appDir.path}/dokumentumok');
     if (await dokMappa.exists()) {
       for (var f in dokMappa.listSync()) {
         if (f is File) {
-          final nev = f.path.split('/').last;
-          final bytok = await f.readAsBytes();
-          archive.addFile(ArchiveFile('dokumentumok/$nev', bytok.length, bytok));
+          beolvasottDokumentumok.add({
+            'nev': f.path.split('/').last,
+            'bytok': await f.readAsBytes(),
+          });
         }
       }
     }
 
-    final zipEncoder = ZipEncoder();
-    final zipAdat = zipEncoder.encode(archive);
+    // Második lépés: Átdobjuk a nehéz tömörítést egy háttérszálra a 'compute'-tal!
+    final zipAdat = await compute(_huzosZipKeszites, {
+      'jsonStr': jsonStr,
+      'kepek': beolvasottKepek,
+      'dokumentumok': beolvasottDokumentumok,
+    });
+
+    // Harmadik lépés: Ha a háttérszál végzett, kiírjuk a fájlt a memóriába
     final String idobelyeg = DateFormat('yyyy_MM_dd_HH_mm_ss').format(DateTime.now());
     final path = '${appDir.path}/horgasznaplo_teljes_mentes_$idobelyeg.zip';
-    await File(path).writeAsBytes(zipAdat!);
+    await File(path).writeAsBytes(zipAdat);
     return path;
   }
 
@@ -435,7 +459,6 @@ class AdatTarolo {
     if (data.containsKey('dok_mappak')) await prefs.setString(_dokMappakKulcs, jsonEncode(data['dok_mappak']));
     if (data.containsKey('dok_fajlok')) await prefs.setString(_dokFajlokKulcs, jsonEncode(data['dok_fajlok']));
 
-    // --- ÚJ RÉSZ: IMPORT UTÁNI VÉDELEM A GYÁRI ADATOK FELÜLÍRÁSA ELLEN ---
     await prefs.setBool('felszereles_init', true);
     await prefs.setBool('halfaj_init', true);
     await prefs.setBool('idojaras_init', true);
