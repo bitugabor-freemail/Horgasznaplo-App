@@ -5,6 +5,61 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'adattarolo.dart';
 
+// ÚJ: A Logós folyamatjelző widget
+class _LogoProgress extends StatelessWidget {
+  final double progress;
+  const _LogoProgress({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 120,
+      height: 120,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          // Kiszürkült háttér logó
+          Opacity(
+            opacity: 0.2,
+            child: Image.asset('assets/small_logo.png', width: 120, height: 120, fit: BoxFit.contain),
+          ),
+          // Lentről felfelé "töltődő" eredeti színű logó
+          ClipRect(
+            clipper: _BottomUpClipper(progress),
+            child: Image.asset('assets/small_logo.png', width: 120, height: 120, fit: BoxFit.contain),
+          ),
+          // Százalék kiírása a közepére egy kis árnyékkal a jó olvashatóságért
+          Center(
+            child: Text(
+              '${(progress * 100).toInt()}%',
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+// ÚJ: A maszkoló osztály, ami levágja a képet a százaléknak megfelelően
+class _BottomUpClipper extends CustomClipper<Rect> {
+  final double progress;
+  _BottomUpClipper(this.progress);
+
+  @override
+  Rect getClip(Size size) {
+    return Rect.fromLTRB(0, size.height * (1 - progress), size.width, size.height);
+  }
+
+  @override
+  bool shouldReclip(_BottomUpClipper oldClipper) => progress != oldClipper.progress;
+}
+
 class AdatkezelesScreen extends StatefulWidget {
   const AdatkezelesScreen({super.key});
 
@@ -18,9 +73,10 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   int _halfajokSzama = 0;
   int _felszerelesSzama = 0;
   int _dokumentumokSzama = 0;
-  
+
   bool _toltesFolyamatban = false;
-  String _toltesSzoveg = 'Művelet folyamatban...\nKérlek, várj!'; // ÚJ: Dinamikus töltőszöveg
+  double _mentesProgress = -1.0; // -1.0 azt jelenti, hogy pörgő kör, >=0 pedig a logós csík
+  String _toltesSzoveg = 'Művelet folyamatban...\nKérlek, várj!'; 
 
   @override
   void initState() {
@@ -129,14 +185,19 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
               Navigator.pop(context);
               setState(() {
                 _toltesFolyamatban = true;
-                _toltesSzoveg = 'A fotók és adatok becsomagolása eltarthat pár másodpercig...\n\nKérlek, ne zárd be az alkalmazást!';
+                _mentesProgress = 0.0;
+                _toltesSzoveg = 'Fotók és adatok csomagolása...\n\nKérlek, ne zárd be az alkalmazást!';
               });
               
-              // Hagyunk egy pillanatot a Flutternek, hogy kirajzolja a töltőképernyőt, mielőtt nekiáll a kemény munkának
               await Future.delayed(const Duration(milliseconds: 300));
               
               try {
-                final path = await AdatTarolo.letrehozTeljesExportZIPFajl();
+                // Átadjuk a frissítő funkciót az AdatTarolónak
+                final path = await AdatTarolo.letrehozTeljesExportZIPFajl((progress) {
+                  if (mounted) {
+                    setState(() => _mentesProgress = progress);
+                  }
+                });
                 await _fajlMenteseLetoltesekbe(path);
               } catch (e) {
                 _mutassUzenetet('Hiba a ZIP mentés során: $e', hiba: true);
@@ -156,6 +217,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
               Navigator.pop(context);
               setState(() {
                 _toltesFolyamatban = true;
+                _mentesProgress = -1.0; // Sima karika
                 _toltesSzoveg = 'Fájl generálása...';
               });
               
@@ -204,6 +266,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                 Navigator.pop(context);
                 setState(() {
                   _toltesFolyamatban = true;
+                  _mentesProgress = -1.0; 
                   _toltesSzoveg = 'Adatok betöltése és kicsomagolása...\n\nKérlek, várj!';
                 });
                 
@@ -298,7 +361,11 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(color: Colors.greenAccent),
+                    if (_mentesProgress >= 0)
+                      _LogoProgress(progress: _mentesProgress)
+                    else
+                      const CircularProgressIndicator(color: Colors.greenAccent),
+                    
                     const SizedBox(height: 24),
                     Text(_toltesSzoveg, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5)),
                   ],
