@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'dart:ui' as ui; 
+import 'dart:typed_data'; 
+import 'package:flutter/rendering.dart'; 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'felszereles.dart';
@@ -627,6 +631,11 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
   String? _kivalasztottStatusz;
   
   List<String> _kepek = []; 
+  
+  String? _indexKep; 
+  bool _isThumbnailSzerkesztes = false;
+  final TransformationController _transformationController = TransformationController();
+  final GlobalKey _cropperKey = GlobalKey();
 
   final List<String> _kategoriak = ['Békés', 'Ragadozó'];
   final List<String> _statuszok = ['Fogható (Őshonos)', 'Fogható (Idegenhonos)', 'Inváziós', 'Nem fogható', 'Védett'];
@@ -636,6 +645,8 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
     super.initState();
     if (widget.szerkeszthetoHalfaj != null) {
       final h = widget.szerkeszthetoHalfaj!;
+      _indexKep = h.indexKep;
+      
       _nevCtrl.text = h.nev;
       _kivalasztottKategoria = h.kategoria.isNotEmpty ? h.kategoria : null;
       _kivalasztottStatusz = h.statusz.isNotEmpty ? h.statusz : null;
@@ -653,7 +664,18 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
     }
   }
 
-  // ÚJ: MULTIPLE IMAGE PICKER
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    _nevCtrl.dispose();
+    _meretCtrl.dispose();
+    _darabCtrl.dispose();
+    _tilalomCtrl.dispose();
+    _evCtrl.dispose();
+    _megjegyzesCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _kepHozzaadasa() async {
     if (_kepek.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 képet adhatsz hozzá!')));
@@ -670,6 +692,9 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
         String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(images[i].path);
         setState(() {
           _kepek.add(biztonsagosUtvonal);
+          if (_kepek.length == 1 && _indexKep == null) {
+            _indexKep = biztonsagosUtvonal;
+          }
         });
       }
       
@@ -678,6 +703,46 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
           content: Text('Csak $szabadHely képet lehetett még hozzáadni a limit miatt!'),
           backgroundColor: Colors.orange,
         ));
+      }
+    }
+  }
+  
+  Future<void> _thumbnailMentese() async {
+    try {
+      RenderRepaintBoundary? boundary = _cropperKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        setState(() => _isThumbnailSzerkesztes = false);
+        return;
+      }
+
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0); 
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('Nem sikerült a kép konvertálása.');
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+
+      final appDir = await getApplicationDocumentsDirectory();
+      final thumbDir = Directory('${appDir.path}/kepek');
+      if (!await thumbDir.exists()) await thumbDir.create(recursive: true);
+      
+      final thumbPath = '${thumbDir.path}/thumb_halfaj_${DateTime.now().millisecondsSinceEpoch}.png';
+      await File(thumbPath).writeAsBytes(pngBytes);
+
+      setState(() {
+        _indexKep = thumbPath;
+        _isThumbnailSzerkesztes = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Indexkép sikeresen frissítve!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hiba az indexkép mentésekor: $e'), backgroundColor: Colors.redAccent),
+        );
+        setState(() => _isThumbnailSzerkesztes = false);
       }
     }
   }
@@ -764,6 +829,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
       szabalyozasEve: _evCtrl.text.trim(),
       megjegyzes: _megjegyzesCtrl.text.trim(),
       kepek: _kepek, 
+      indexKep: _indexKep,
     );
 
     widget.mentesCallback(ujHalfaj);
@@ -782,7 +848,78 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             TextField(controller: _nevCtrl, autofocus: widget.szerkeszthetoHalfaj == null, decoration: const InputDecoration(labelText: 'Halfaj neve *', border: OutlineInputBorder())),
             const SizedBox(height: 16),
             
-            // ÚJ: MULTIPLE IMAGE PICKER
+            const Divider(height: 40, color: Colors.white24),
+
+            // --- HALFAJ INDEXKÉP SZERKESZTŐ (MÁGNESES) ---
+            const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
+            const SizedBox(height: 4),
+            const Text('Két ujjal nagyíthatod, mozgathatod. Ez jelenik meg a lexikon listájában.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 12),
+            
+            Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.greenAccent, width: 2), 
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10), 
+                  child: RepaintBoundary(
+                    key: _cropperKey,
+                    child: Container(
+                      width: 240, 
+                      height: 240, 
+                      color: Colors.black, 
+                      child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
+                          ? InteractiveViewer(
+                              transformationController: _transformationController,
+                              minScale: 1.0,
+                              maxScale: 4.0,
+                              boundaryMargin: EdgeInsets.zero,
+                              clipBehavior: Clip.none, 
+                              child: SizedBox(
+                                width: double.infinity,
+                                height: double.infinity,
+                                child: _kepek.first.startsWith('http')
+                                    ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover)
+                                    : Image.file(File(_kepek.first), fit: BoxFit.cover),
+                              ),
+                            )
+                          : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
+                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
+                              : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
+                                  ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
+                                  : const Icon(Icons.set_meal, color: Colors.white24, size: 60))),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: _isThumbnailSzerkesztes
+                  ? ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+                      onPressed: _thumbnailMentese,
+                      icon: const Icon(Icons.check, color: Colors.white),
+                      label: const Text('OK (Mentés)', style: TextStyle(color: Colors.white)),
+                    )
+                  : OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.greenAccent)),
+                      onPressed: () {
+                        if (_kepek.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Előbb tölts fel legalább egy képet!')));
+                          return;
+                        }
+                        setState(() => _isThumbnailSzerkesztes = true);
+                      },
+                      icon: const Icon(Icons.refresh, color: Colors.greenAccent),
+                      label: const Text('Indexkép Frissítése / Beállítása', style: TextStyle(color: Colors.greenAccent)),
+                    ),
+            ),
+            
+            const Divider(height: 40, color: Colors.white24),
+
             const Text('Fényképek (Maximum 5 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             Wrap(
