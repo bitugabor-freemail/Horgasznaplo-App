@@ -1685,4 +1685,3 @@ class _TaskakSzerkesztoScreenState extends State<TaskakSzerkesztoScreen> {
     );
   }
 }
-]
