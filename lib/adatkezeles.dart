@@ -5,39 +5,86 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'adattarolo.dart';
 
-class _LogoProgress extends StatelessWidget {
+// ÚJ: EXPORTÁLÁS FOLYAMATJELZŐ - Logó alatt a százalék, logó lentről felfelé töltődik
+class _ExportProgressWidget extends StatelessWidget {
   final double progress;
-  const _LogoProgress({required this.progress});
+  const _ExportProgressWidget({required this.progress});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 240, // ÚJ: Dupla méret
-      height: 240,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          Opacity(
-            opacity: 0.2,
-            child: Image.asset('assets/small_logo.png', width: 240, height: 240, fit: BoxFit.contain),
-          ),
-          ClipRect(
-            clipper: _BottomUpClipper(progress),
-            child: Image.asset('assets/small_logo.png', width: 240, height: 240, fit: BoxFit.contain),
-          ),
-          Center(
-            child: Text(
-              '${(progress * 100).toInt()}%',
-              style: const TextStyle(
-                fontSize: 48, // ÚJ: Nagyobb betűméret
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                shadows: [Shadow(color: Colors.black, blurRadius: 12)],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 240, 
+          height: 240,
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              Opacity(
+                opacity: 0.2,
+                child: Image.asset('assets/small_logo.png', width: 240, height: 240, fit: BoxFit.contain),
               ),
-            ),
-          )
-        ],
-      ),
+              ClipRect(
+                clipper: _BottomUpClipper(progress),
+                child: Image.asset('assets/small_logo.png', width: 240, height: 240, fit: BoxFit.contain),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          '${(progress * 100).toInt()}%',
+          style: const TextStyle(
+            fontSize: 48, 
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [Shadow(color: Colors.black, blurRadius: 12)],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ÚJ: IMPORTÁLÁS FOLYAMATJELZŐ - Logó felett a százalék, logó fentről lefelé töltődik
+class _ImportProgressWidget extends StatelessWidget {
+  final double progress;
+  const _ImportProgressWidget({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${(progress * 100).toInt()}%',
+          style: const TextStyle(
+            fontSize: 48, 
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [Shadow(color: Colors.black, blurRadius: 12)],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: 240, 
+          height: 240,
+          child: Stack(
+            alignment: Alignment.topCenter, // Fentre igazítjuk a Stack-et
+            children: [
+              Opacity(
+                opacity: 0.2,
+                child: Image.asset('assets/small_logo.png', width: 240, height: 240, fit: BoxFit.contain),
+              ),
+              ClipRect(
+                clipper: _TopDownClipper(progress), // Fordított maszk
+                child: Image.asset('assets/small_logo.png', width: 240, height: 240, fit: BoxFit.contain),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -55,6 +102,20 @@ class _BottomUpClipper extends CustomClipper<Rect> {
   bool shouldReclip(_BottomUpClipper oldClipper) => progress != oldClipper.progress;
 }
 
+class _TopDownClipper extends CustomClipper<Rect> {
+  final double progress;
+  _TopDownClipper(this.progress);
+
+  @override
+  Rect getClip(Size size) {
+    return Rect.fromLTRB(0, 0, size.width, size.height * progress);
+  }
+
+  @override
+  bool shouldReclip(_TopDownClipper oldClipper) => progress != oldClipper.progress;
+}
+
+
 class AdatkezelesScreen extends StatefulWidget {
   const AdatkezelesScreen({super.key});
 
@@ -70,8 +131,9 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   int _dokumentumokSzama = 0;
 
   bool _toltesFolyamatban = false;
-  bool _mentesMegszakititva = false; // ÚJ: Megszakítás figyelő
+  bool _mentesMegszakititva = false; 
   double _mentesProgress = -1.0; 
+  bool _isImportFolyamat = false; // ÚJ: Figyeljük, hogy épp exportálunk vagy importálunk
   String _toltesSzoveg = 'Művelet folyamatban...\nKérlek, várj!'; 
 
   @override
@@ -180,6 +242,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
             onPressed: () async {
               Navigator.pop(context);
               setState(() {
+                _isImportFolyamat = false; // Jelezzük a UI-nak, hogy exportálunk
                 _toltesFolyamatban = true;
                 _mentesMegszakititva = false;
                 _mentesProgress = 0.0;
@@ -189,7 +252,6 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
               await Future.delayed(const Duration(milliseconds: 300));
               
               try {
-                // A hívás most már figyeli, hogy lenyomták-e a "Mégsem" gombot!
                 final path = await AdatTarolo.letrehozTeljesExportZIPFajl(
                   (progress) {
                     if (mounted) setState(() => _mentesProgress = progress);
@@ -200,7 +262,6 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                 if (_mentesMegszakititva) {
                   _mutassUzenetet('A mentés megszakítva!', hiba: true);
                 } else if (path != null) {
-                  // ÚJ: Sikeres mentés esetén 100%-ra áll, és 2 másodpercig kitartja a képernyőt!
                   if (mounted) setState(() => _mentesProgress = 1.0);
                   await Future.delayed(const Duration(seconds: 2));
                   await _fajlMenteseLetoltesekbe(path);
@@ -222,6 +283,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
             onPressed: () async {
               Navigator.pop(context);
               setState(() {
+                _isImportFolyamat = false;
                 _toltesFolyamatban = true;
                 _mentesProgress = -1.0; 
                 _toltesSzoveg = 'Fájl generálása...';
@@ -271,16 +333,23 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
               onPressed: () async {
                 Navigator.pop(context);
                 setState(() {
+                  _isImportFolyamat = true; // Jelezzük a UI-nak, hogy IMPORTÁLUNK
                   _toltesFolyamatban = true;
-                  _mentesProgress = -1.0; 
+                  _mentesProgress = 0.0; // Pörgő kör helyett induljon nulláról
                   _toltesSzoveg = 'Adatok betöltése és kicsomagolása...\n\nKérlek, várj!';
                 });
                 
                 await Future.delayed(const Duration(milliseconds: 300));
                 
                 try {
-                  await AdatTarolo.importalas(fajlUtvonal);
+                  await AdatTarolo.importalas(fajlUtvonal, onProgress: (progress) {
+                    if (mounted) setState(() => _mentesProgress = progress);
+                  });
                   await _statisztikakFrissitese();
+                  
+                  if (mounted) setState(() => _mentesProgress = 1.0);
+                  await Future.delayed(const Duration(seconds: 2));
+                  
                   _mutassUzenetet('Adatbázis sikeresen betöltve és visszaállítva!');
                 } catch (e) {
                   _mutassUzenetet('Hiba az importálás során: $e', hiba: true);
@@ -368,15 +437,16 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (_mentesProgress >= 0)
-                      _LogoProgress(progress: _mentesProgress)
+                      _isImportFolyamat // ÚJ: Elágazás, hogy az Import vagy Export logót mutassa
+                          ? _ImportProgressWidget(progress: _mentesProgress)
+                          : _ExportProgressWidget(progress: _mentesProgress)
                     else
                       const CircularProgressIndicator(color: Colors.greenAccent),
                     
                     const SizedBox(height: 24),
                     Text(_toltesSzoveg, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5)),
                     
-                    // ÚJ: A megszakítás (Mégsem) gomb, ha a zip mentés tart, és még nincs 100%-on
-                    if (_mentesProgress >= 0 && _mentesProgress < 1.0) ...[
+                    if (!_isImportFolyamat && _mentesProgress >= 0 && _mentesProgress < 1.0) ...[
                       const SizedBox(height: 24),
                       TextButton.icon(
                         icon: const Icon(Icons.close, color: Colors.redAccent),
