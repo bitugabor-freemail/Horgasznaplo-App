@@ -944,7 +944,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
       boritoKep: _kepek.isNotEmpty ? _kepek.first : null, 
       kepek: _kepek, 
       megjegyzes: _megjegyzesCtrl.text.trim(),
-      indexKep: _indexKep, // ÚJ: Elmentjük az indexképet a túrához
+      indexKep: _indexKep, 
     );
 
     final turak = await AdatTarolo.turakBetoltese();
@@ -1063,51 +1063,49 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ],
             const Divider(height: 40, color: Colors.white24),
 
-            // --- ÚJ: TÚRA BORÍTÓKÉP SZERKESZTŐ (SZÉLES PANORÁMA ARÁNNYAL) ---
+            // --- TÚRA BORÍTÓKÉP SZERKESZTŐ (16:9 ARÁNY) ---
             const Text('Túra Borítókép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('Ez jelenik meg a túra fejlécében. Két ujjal nagyíthatod, mozgathatod. Ha kisebbre veszed, a háttér fekete lesz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 8),
+            const Text('Ez jelenik meg a túra fejlécében. Az arány pontosan 16:9, ahogy a kártyán is látszani fog. Két ujjal nagyíthatod, mozgathatod.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 12),
             
             Center(
               child: Container(
-                width: double.infinity, // Kitölti a képernyőt, ahogy a kártyán is fogja
-                height: 180, // A túra kártya fix magassága (fekvő téglalap arány)
+                width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.greenAccent, width: 2), 
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10), 
-                  child: RepaintBoundary(
-                    key: _cropperKey,
-                    child: Container(
-                      width: double.infinity,
-                      height: 180,
-                      color: Colors.black, 
-                      clipBehavior: Clip.hardEdge, 
-                      child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
-                          ? InteractiveViewer(
-                              transformationController: _transformationController,
-                              minScale: 0.5,
-                              maxScale: 4.0,
-                              boundaryMargin: const EdgeInsets.all(100),
-                              clipBehavior: Clip.none, 
-                              child: _kepek.first.startsWith('http')
-                                  ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
-                                  : Image.file(File(_kepek.first), fit: BoxFit.contain),
-                            )
-                          : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
-                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
-                              : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
-                                  ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
-                                  : const Icon(Icons.image, color: Colors.white24, size: 40))),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9, 
+                    child: RepaintBoundary(
+                      key: _cropperKey,
+                      child: Container(
+                        color: Colors.black, 
+                        child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
+                            ? InteractiveViewer(
+                                transformationController: _transformationController,
+                                minScale: 0.5,
+                                maxScale: 4.0,
+                                boundaryMargin: const EdgeInsets.all(100),
+                                child: _kepek.first.startsWith('http')
+                                    ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
+                                    : Image.file(File(_kepek.first), fit: BoxFit.contain),
+                              )
+                            : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
+                                ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
+                                : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
+                                    ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
+                                    : const Icon(Icons.image, color: Colors.white24, size: 60))),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Center(
               child: _isThumbnailSzerkesztes
                   ? ElevatedButton.icon(
@@ -1132,7 +1130,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
 
             const Divider(height: 40, color: Colors.white24),
 
-            // --- FÉNYKÉPEK GALÉRIA ÉS ÁTRENDEZÉS (Drag and Drop) ---
             const Text('Túra fotók (Maximum 10 db - Húzd át a sorrendhez!)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             
