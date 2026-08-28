@@ -1025,7 +1025,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     }
   }
 
-  // TÉNYLEGES KÉPERNYŐKÉP MENTÉSE A FEKETE DOBOZRÓL
   Future<void> _thumbnailMentese() async {
     try {
       RenderRepaintBoundary? boundary = _cropperKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
@@ -1358,31 +1357,29 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             // --- ÚJ JAVÍTOTT: INDEXKÉP / THUMBNAIL BEÁLLÍTÓ BLOKK ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('Ez jelenik meg a listákban kis kékként/dobozként. Két ujjal nagyíthatod, mozgathatod. Ha kisebbre veszed, a háttér fekete lesz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 8),
+            const Text('A szerkesztő doboz nagy, hogy könnyen beállíthasd, de a listában automatikusan a helyére fog igazodni. Két ujjal nagyíthatod, mozgathatod.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 12),
             
             Center(
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.greenAccent, width: 2), // Zöld keret KÍVÜL
+                  border: Border.all(color: Colors.greenAccent, width: 2), 
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10), // Kerekítés a keret miatt
+                  borderRadius: BorderRadius.circular(10), 
                   child: RepaintBoundary(
                     key: _cropperKey,
                     child: Container(
-                      width: 120,
-                      height: 120,
-                      color: Colors.black, // FEKETE HÁTTÉR a kivágatlan részekhez
-                      // INNEN VETTEM KI A HIBÁT OKOZÓ PARAMÉTERT!
+                      width: 240, 
+                      height: 240, 
+                      color: Colors.black, 
                       child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
                           ? InteractiveViewer(
                               transformationController: _transformationController,
                               minScale: 0.5,
                               maxScale: 4.0,
                               boundaryMargin: const EdgeInsets.all(100),
-                              clipBehavior: Clip.none, 
                               child: _kepek.first.startsWith('http')
                                   ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
                                   : Image.file(File(_kepek.first), fit: BoxFit.contain),
@@ -1391,13 +1388,13 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                               ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
                               : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
                                   ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
-                                  : const Icon(Icons.image, color: Colors.white24, size: 40))),
+                                  : const Icon(Icons.image, color: Colors.white24, size: 60))),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Center(
               child: _isThumbnailSzerkesztes
                   ? ElevatedButton.icon(
