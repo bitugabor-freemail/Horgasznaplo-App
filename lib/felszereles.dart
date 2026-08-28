@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:ui' as ui; // ÚJ: a képgeneráláshoz szükséges
+import 'dart:typed_data'; // ÚJ: a bináris mentéshez
+import 'package:flutter/rendering.dart'; // ÚJ: a RepaintBoundary (képernyőkép) funkcióhoz
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -321,7 +324,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       );
     }
 
-    // Kép megjelenítése: Ha van egyedi indexKep és létezik, azt mutatjuk, különben az első képet, különben az ikont
     Widget kepWidget = const Icon(Icons.image_not_supported, color: Colors.white24, size: 30);
     if (tetel.indexKep != null && File(tetel.indexKep!).existsSync()) {
       kepWidget = Image.file(File(tetel.indexKep!), fit: BoxFit.cover);
@@ -921,11 +923,10 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
   String? _kivalasztottKategoriaId;
   List<String> _kepek = [];
   List<String> _elerhetoTaskak = []; 
-  String? _indexKep; // A különálló thumbnail útvonala
+  String? _indexKep; 
   
   List<ElhelyezesVezerlo> _helyek = [];
 
-  // Thumbnail szerkesztési mód vezérlői
   bool _isThumbnailSzerkesztes = false;
   final TransformationController _transformationController = TransformationController();
   final GlobalKey _cropperKey = GlobalKey();
@@ -1008,7 +1009,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
         String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(images[i].path);
         setState(() {
           _kepek.add(biztonsagosUtvonal);
-          // Ha ez az első kép, és még nincs indexKep, beállítjuk alapból
           if (_kepek.length == 1 && _indexKep == null) {
             _indexKep = biztonsagosUtvonal;
           }
@@ -1017,45 +1017,47 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     }
   }
 
-  // Thumbnail "lefotózása" a képernyőről fekete háttérrel, ha kisebbre húznák
+  // ÚJ MEGOLDÁS: Valódi "Képernyőkép" készítése a kivágó dobozról!
   Future<void> _thumbnailMentese() async {
     try {
-      // Megkeressük a kivágó doboz méreteit renderelés után
-      RenderBox? box = _cropperKey.currentContext?.findRenderObject() as RenderBox?;
-      if (box == null) {
+      RenderRepaintBoundary? boundary = _cropperKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
         setState(() => _isThumbnailSzerkesztes = false);
         return;
       }
 
-      // Készítünk egy ideiglenes fájlt a belső tárhelyre
+      // 1. Lefotózzuk a fekete dobozt (pontosan úgy, ahogy te beállítottad a zoomot/pozíciót)
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0); // 3x felbontás a tűéles eredményért
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('Nem sikerült a kép konvertálása.');
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+
+      // 2. Lementjük a telefonba
       final appDir = await getApplicationDocumentsDirectory();
       final thumbDir = Directory('${appDir.path}/kepek');
       if (!await thumbDir.exists()) await thumbDir.create(recursive: true);
       
-      final thumbPath = '${thumbDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final thumbPath = '${thumbDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.png';
+      await File(thumbPath).writeAsBytes(pngBytes);
+
+      // 3. Beállítjuk az új indexképet
+      setState(() {
+        _indexKep = thumbPath;
+        _isThumbnailSzerkesztes = false;
+      });
       
-      // Megjegyzés: A Flutter widget natív "képpé alakítása" (screenshot) Flutter 3+ renderelési egységgel:
-      // Mivel a felhasználó az InteractiveViewer-rel mozgatja, a legtisztább mentés az aktuális zoom/matrix alapján:
-      // Egyszerűsítve és robosztusan elmentjük az első képet referenciaként, vagy ha precíz, akkor beállítjuk:
-      // (Itt a biztonság kedvéért a kiválasztott első képet mentjük, míg a zoom/pozíciót widget szinten tároljuk)
-      if (_kepek.isNotEmpty) {
-        final eredetiFajl = File(_kepek.first);
-        if (await eredetiFajl.exists()) {
-          await eredetiFajl.copy(thumbPath);
-          setState(() {
-            _indexKep = thumbPath;
-            _isThumbnailSzerkesztes = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Indexkép sikeresen frissítve!'), backgroundColor: Colors.green),
-          );
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Indexkép sikeresen frissítve!'), backgroundColor: Colors.green),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Hiba az indexkép mentésekor: $e'), backgroundColor: Colors.redAccent),
-      );
-      setState(() => _isThumbnailSzerkesztes = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hiba az indexkép mentésekor: $e'), backgroundColor: Colors.redAccent),
+        );
+        setState(() => _isThumbnailSzerkesztes = false);
+      }
     }
   }
   
@@ -1212,7 +1214,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       leiras: _leirasCtrl.text.trim(),
       kepek: _kepek,
       elhelyezesek: ujElhelyezesek, 
-      indexKep: _indexKep, // Elmentjük az indexképet is
+      indexKep: _indexKep, 
     );
 
     final osszesTetel = await AdatTarolo.felszerelesTetelekBetoltese();
@@ -1351,38 +1353,41 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             // --- ÚJ: INDEXKÉP / THUMBNAIL BEÁLLÍTÓ BLOKK ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('Ez jelenik meg a listákban kis kékként/dobozként. Ha kisebbre veszed, a háttér fekete lesz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const Text('Ez jelenik meg a listákban kis kékként/dobozként. Két ujjal nagyíthatod, mozgathatod. Ha kisebbre veszed, a háttér fekete lesz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 8),
             
             Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.greenAccent, width: 2), // Zöld keret KÍVÜL
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10), // Enyhén kisebb kerekítés a keret miatt
+                  child: RepaintBoundary(
                     key: _cropperKey,
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.black, // Fekete háttér a kitöltetlen részekhez
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.greenAccent, width: 2),
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      color: Colors.black, // FEKETE HÁTTÉR a kivágatlan részekhez!
+                      clipBehavior: Clip.hardEdge, // Garantálja, hogy a RepaintBoundary ne "lógjon ki"
+                      child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
+                          ? InteractiveViewer(
+                              transformationController: _transformationController,
+                              minScale: 0.5,
+                              maxScale: 4.0,
+                              boundaryMargin: const EdgeInsets.all(100),
+                              clipBehavior: Clip.none, // Hogy ki lehessen húzni a széléig
+                              child: Image.file(File(_kepek.first), fit: BoxFit.contain),
+                            )
+                          : (_indexKep != null && File(_indexKep!).existsSync()
+                              ? Image.file(File(_indexKep!), fit: BoxFit.cover)
+                              : (_kepek.isNotEmpty && File(_kepek.first).existsSync()
+                                  ? Image.file(File(_kepek.first), fit: BoxFit.cover)
+                                  : const Icon(Icons.image, color: Colors.white24, size: 40))),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
-                        ? InteractiveViewer(
-                            transformationController: _transformationController,
-                            minScale: 0.5,
-                            maxScale: 4.0,
-                            boundaryMargin: const EdgeInsets.all(100),
-                            child: Image.file(File(_kepek.first), fit: BoxFit.contain),
-                          )
-                        : (_indexKep != null && File(_indexKep!).existsSync()
-                            ? Image.file(File(_indexKep!), fit: BoxFit.cover)
-                            : (_kepek.isNotEmpty && File(_kepek.first).existsSync()
-                                ? Image.file(File(_kepek.first), fit: BoxFit.cover)
-                                : const Icon(Icons.image, color: Colors.white24, size: 40))),
                   ),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -1410,7 +1415,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
             const Divider(height: 40, color: Colors.white24),
 
-            // --- FÉNYKÉPEK GALÉRIA ÉS ÁTRENDEZÉS (Drag and Drop) ---
             const Text('Fényképek (Maximum 5 db - Húzd át a sorrendhez!)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             
