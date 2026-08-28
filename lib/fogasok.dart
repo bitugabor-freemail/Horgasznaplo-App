@@ -811,7 +811,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const Divider(height: 40, color: Colors.white24),
 
-            // --- ÚJ JAVÍTOTT: FOGÁS INDEXKÉP SZERKESZTŐ (240x240 ARÁNY) ---
+            // --- FOGÁS INDEXKÉP SZERKESZTŐ (MÁGNESES 240x240 ARÁNY) ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('A szerkesztő doboz nagy, hogy könnyen beállíthasd, de a listában automatikusan a helyére fog igazodni. Két ujjal nagyíthatod, mozgathatod.', style: TextStyle(color: Colors.white54, fontSize: 12)),
@@ -834,12 +834,17 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                       child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
                           ? InteractiveViewer(
                               transformationController: _transformationController,
-                              minScale: 0.5,
+                              minScale: 1.0, // <-- Véd a keretnél kisebbre zsugorítástól
                               maxScale: 4.0,
-                              boundaryMargin: const EdgeInsets.all(100),
-                              child: _kepek.first.startsWith('http')
-                                  ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
-                                  : Image.file(File(_kepek.first), fit: BoxFit.contain),
+                              boundaryMargin: EdgeInsets.zero, // <-- Mágneses fal (nem enged üres hátteret)
+                              clipBehavior: Clip.none, 
+                              child: SizedBox(
+                                width: double.infinity,
+                                height: double.infinity,
+                                child: _kepek.first.startsWith('http')
+                                    ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover)
+                                    : Image.file(File(_kepek.first), fit: BoxFit.cover),
+                              ),
                             )
                           : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
                               ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
@@ -876,7 +881,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
 
             const Divider(height: 40, color: Colors.white24),
 
-            // --- FÉNYKÉPEK GALÉRIA ÉS ÁTRENDEZÉS (Drag and Drop) ---
             const Text('Fényképek (Maximum 3 db - Húzd át a sorrendhez!)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
             
