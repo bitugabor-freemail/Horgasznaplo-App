@@ -29,6 +29,10 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   
   final PageController _pageController = PageController();
 
+  // ÚJ: Külön memória a kategóriáknak és a táskáknak
+  int _utolsoKategoriaIndex = 0;
+  int _utolsoTaskaIndex = 0;
+
   bool get isTaskaNezet => _isTaskaNezet;
 
   @override
@@ -56,17 +60,27 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       _kategoriaKeys = List.generate(kat.length, (index) => GlobalKey());
       _taskaKeys = List.generate(taskak.length, (index) => GlobalKey());
       
-      if (_kategoriak.isNotEmpty && _kivalasztottKategoriaId == null) {
-        _kivalasztottKategoriaId = _kategoriak.first.id;
+      // Memória biztonsági ellenőrzése, nehogy törlés után túlmutasson a listán
+      if (_utolsoKategoriaIndex >= _kategoriak.length) _utolsoKategoriaIndex = 0;
+      if (_utolsoTaskaIndex >= _taskak.length) _utolsoTaskaIndex = 0;
+      
+      if (_kategoriak.isNotEmpty) {
+        _kivalasztottKategoriaId = _kategoriak[_utolsoKategoriaIndex].id;
+      } else {
+        _kivalasztottKategoriaId = null;
       }
-      if (_taskak.isNotEmpty && _kivalasztottTaska == null) {
-        _kivalasztottTaska = _taskak.first;
+      
+      if (_taskak.isNotEmpty) {
+        _kivalasztottTaska = _taskak[_utolsoTaskaIndex];
+      } else {
+        _kivalasztottTaska = null;
       }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isKeresoMod && (_kategoriak.isNotEmpty || _taskak.isNotEmpty)) {
-        _KozepreGorget(_pageController.hasClients ? _pageController.page?.round() ?? 0 : 0);
+        int aktIndex = _isTaskaNezet ? _utolsoTaskaIndex : _utolsoKategoriaIndex;
+        _KozepreGorget(aktIndex);
       }
     });
   }
@@ -95,11 +109,19 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     setState(() {
       _isTaskaNezet = !_isTaskaNezet;
     });
+    
+    // ÚJ: Nem 0-ra ugrunk, hanem betöltjük a memóriából a nézet saját utolsó pozícióját!
+    int celIndex = _isTaskaNezet ? _utolsoTaskaIndex : _utolsoKategoriaIndex;
+    
+    // Biztonsági korrekció üres listák esetére
+    if (_isTaskaNezet && _taskak.isNotEmpty && celIndex >= _taskak.length) celIndex = 0;
+    if (!_isTaskaNezet && _kategoriak.isNotEmpty && celIndex >= _kategoriak.length) celIndex = 0;
+
     if (_pageController.hasClients) {
-      _pageController.jumpToPage(0);
+      _pageController.jumpToPage(celIndex);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _KozepreGorget(0);
+      _KozepreGorget(celIndex);
     });
   }
 
@@ -114,13 +136,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     if (!_isKeresoMod) {
       FocusManager.instance.primaryFocus?.unfocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        int celIndex = 0;
-        if (_isTaskaNezet) {
-          celIndex = _taskak.indexOf(_kivalasztottTaska ?? '');
-        } else {
-          celIndex = _kategoriak.indexWhere((k) => k.id == _kivalasztottKategoriaId);
-        }
-        
+        // Visszatérés a keresőből: szintén a memóriából hívjuk be az utolsó oldalt
+        int celIndex = _isTaskaNezet ? _utolsoTaskaIndex : _utolsoKategoriaIndex;
         if (celIndex == -1) celIndex = 0;
 
         if (_pageController.hasClients) {
@@ -145,13 +162,12 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
-  // ÚJ FÜGGVÉNY: Azonnal megnyitja a szerkesztőt a klónozott tétellel!
   void _tetelMasolasa(FelszerelesTetel eredeti) {
     final ujTetel = FelszerelesTetel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // Teljesen új egyedi azonosító
+      id: DateTime.now().millisecondsSinceEpoch.toString(), 
       kategoriaId: eredeti.kategoriaId,
       marka: eredeti.marka,
-      nev: 'Másolat - ${eredeti.nev}', // Névbe biggyesztjük
+      nev: 'Másolat - ${eredeti.nev}', 
       jellemzo: eredeti.jellemzo,
       mertekegyseg: eredeti.mertekegyseg,
       leiras: eredeti.leiras,
@@ -169,7 +185,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
         builder: (context) => TetelSzerkesztoScreen(
           kategoriak: _kategoriak,
           szerkeszthetoTetel: ujTetel,
-          isMasolat: true, // Jelezzük a szerkesztőnek, hogy ez egy új másolat!
+          isMasolat: true, 
           mentesCallback: () {
             adatokBetoltese();
             if (mounted) {
@@ -220,7 +236,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       .replaceAll('ű', 'u~~~');
   }
 
-  // ÚJ: Okos "Natural Sort" algoritmus. Feldarabolja a szöveget, és a számokat érték szerint hasonlítja (150 < 1000).
   int _naturalHuCompare(String a, String b) {
     String aHu = _huSort(a);
     String bHu = _huSort(b);
@@ -413,7 +428,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
       if (katA != katB) return katA.compareTo(katB);
 
-      // ÚJ: A Természetes Rendezést használjuk minden mezőre!
       int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
       if (markaCmp != 0) return markaCmp;
       
@@ -526,67 +540,69 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
               color: const Color(0xFF161616),
               child: oldalszam == 0 
                   ? const SizedBox() 
-                  : ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: oldalszam,
-                itemBuilder: (context, index) {
-                  String nev;
-                  bool isSelected;
-                  GlobalKey? gKey;
-                  
-                  if (_isTaskaNezet) {
-                    nev = _taskak[index];
-                    isSelected = nev == _kivalasztottTaska;
-                    if (index < _taskaKeys.length) gKey = _taskaKeys[index];
-                  } else {
-                    nev = _kategoriak[index].nev;
-                    isSelected = _kategoriak[index].id == _kivalasztottKategoriaId;
-                    if (index < _kategoriaKeys.length) gKey = _kategoriaKeys[index];
-                  }
-                  
-                  return GestureDetector(
-                    onTap: () {
-                      if (_pageController.hasClients) {
-                        _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                      }
-                    },
-                    child: Container(
-                      key: gKey,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: isSelected ? aktivSzin : Colors.transparent,
-                            width: 3,
-                          ),
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Text(
-                            nev,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold, 
-                              color: Colors.transparent,   
+                  // ÚJ: A ListView lecserélve SingleChildScrollView-ra a biztos megjelenítésért és célzásért!
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(oldalszam, (index) {
+                          String nev;
+                          bool isSelected;
+                          GlobalKey? gKey;
+                          
+                          if (_isTaskaNezet) {
+                            nev = _taskak[index];
+                            isSelected = nev == _kivalasztottTaska;
+                            if (index < _taskaKeys.length) gKey = _taskaKeys[index];
+                          } else {
+                            nev = _kategoriak[index].nev;
+                            isSelected = _kategoriak[index].id == _kivalasztottKategoriaId;
+                            if (index < _kategoriaKeys.length) gKey = _kategoriaKeys[index];
+                          }
+                          
+                          return GestureDetector(
+                            onTap: () {
+                              if (_pageController.hasClients) {
+                                _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                              }
+                            },
+                            child: Container(
+                              key: gKey,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: isSelected ? aktivSzin : Colors.transparent,
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Text(
+                                    nev,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold, 
+                                      color: Colors.transparent,   
+                                    ),
+                                  ),
+                                  Text(
+                                    nev,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? aktivSzin : Colors.white54,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Text(
-                            nev,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? aktivSzin : Colors.white54,
-                            ),
-                          ),
-                        ],
+                          );
+                        }),
                       ),
                     ),
-                  );
-                },
-              ),
             ),
           
           Expanded(
@@ -599,10 +615,13 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                     itemCount: oldalszam,
                     onPageChanged: (index) {
                       setState(() {
+                        // ÚJ: Lementjük a memóriába az épp aktív oldalt
                         if (_isTaskaNezet) {
                           _kivalasztottTaska = _taskak[index];
+                          _utolsoTaskaIndex = index;
                         } else {
                           _kivalasztottKategoriaId = _kategoriak[index].id;
+                          _utolsoKategoriaIndex = index;
                         }
                       });
                       _KozepreGorget(index);
@@ -876,7 +895,7 @@ class TetelSzerkesztoScreen extends StatefulWidget {
   final String? alapertelmezettKategoriaId;
   final FelszerelesTetel? szerkeszthetoTetel;
   final VoidCallback mentesCallback;
-  final bool isMasolat; // ÚJ: Jelezzük a képernyőnek, ha ez egy új másolat klónozás
+  final bool isMasolat; 
 
   const TetelSzerkesztoScreen({
     super.key,
@@ -884,7 +903,7 @@ class TetelSzerkesztoScreen extends StatefulWidget {
     this.alapertelmezettKategoriaId,
     this.szerkeszthetoTetel,
     required this.mentesCallback,
-    this.isMasolat = false, // Alapértelmezetten nem másolat
+    this.isMasolat = false, 
   });
 
   @override
@@ -1149,7 +1168,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
     final osszesTetel = await AdatTarolo.felszerelesTetelekBetoltese();
     
-    // ÚJ: Ha másolatként nyitottuk meg, akkor mindenképp új tételként mentjük el, nem írjuk felül az eredetit!
     if (widget.szerkeszthetoTetel != null && !widget.isMasolat) {
       final idx = osszesTetel.indexWhere((t) => t.id == ujTetel.id);
       if (idx != -1) osszesTetel[idx] = ujTetel;
@@ -1164,7 +1182,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ÚJ: Fejléc szövegének cseréje, ha másolatot szerkesztünk!
     String fejlecCim = widget.isMasolat 
         ? 'Másolat Szerkesztése' 
         : (widget.szerkeszthetoTetel == null ? 'Új Tétel Hozzáadása' : 'Tétel Szerkesztése');
