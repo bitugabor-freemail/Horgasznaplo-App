@@ -850,7 +850,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             
             const Divider(height: 40, color: Colors.white24),
 
-            // --- HALFAJ INDEXKÉP SZERKESZTŐ (MÁGNESES) ---
+            // --- HALFAJ INDEXKÉP SZERKESZTŐ (MÁGNESES, 16:9, NINCS ÜRES TÉR) ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('Két ujjal nagyíthatod, mozgathatod. Ez jelenik meg a lexikon listájában.', style: TextStyle(color: Colors.white54, fontSize: 12)),
@@ -858,38 +858,30 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             
             Center(
               child: Container(
+                width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.greenAccent, width: 2), 
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10), 
-                  child: RepaintBoundary(
-                    key: _cropperKey,
-                    child: Container(
-                      width: 240, 
-                      height: 240, 
-                      color: Colors.black, 
-                      child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
-                          ? InteractiveViewer(
-                              transformationController: _transformationController,
-                              minScale: 1.0,
-                              maxScale: 4.0,
-                              boundaryMargin: EdgeInsets.zero,
-                              clipBehavior: Clip.none, 
-                              child: SizedBox(
-                                width: double.infinity,
-                                height: double.infinity,
-                                child: _kepek.first.startsWith('http')
-                                    ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover)
-                                    : Image.file(File(_kepek.first), fit: BoxFit.cover),
-                              ),
-                            )
-                          : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
-                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
-                              : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
-                                  ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
-                                  : const Icon(Icons.set_meal, color: Colors.white24, size: 60))),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9, 
+                    child: RepaintBoundary(
+                      key: _cropperKey,
+                      child: Container(
+                        color: Colors.black, 
+                        child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
+                            ? MagnesesKivago(
+                                kepUtvonal: _kepek.first,
+                                controller: _transformationController,
+                              )
+                            : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
+                                ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
+                                : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
+                                    ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
+                                    : const Icon(Icons.set_meal, color: Colors.white24, size: 60))),
+                      ),
                     ),
                   ),
                 ),
@@ -1038,6 +1030,86 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// --- ÚJ, OKOS KIVÁGÓ KOMPONENS ---
+// Ez biztosítja, hogy a kép tökéletesen lefedje a keretet, és csak abba
+// az irányba (felfelé-lefelé vagy jobbra-balra) tudd húzni, amerre tényleg kilóg.
+class MagnesesKivago extends StatefulWidget {
+  final String kepUtvonal;
+  final TransformationController controller;
+
+  const MagnesesKivago({super.key, required this.kepUtvonal, required this.controller});
+
+  @override
+  State<MagnesesKivago> createState() => _MagnesesKivagoState();
+}
+
+class _MagnesesKivagoState extends State<MagnesesKivago> {
+  ui.Image? _image;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImage();
+  }
+
+  void _loadImage() {
+    ImageProvider provider = widget.kepUtvonal.startsWith('http') 
+        ? CachedNetworkImageProvider(widget.kepUtvonal) 
+        : FileImage(File(widget.kepUtvonal)) as ImageProvider;
+        
+    final ImageStream stream = provider.resolve(const ImageConfiguration());
+    stream.addListener(ImageStreamListener((ImageInfo info, bool _) {
+      if (mounted) {
+        setState(() => _image = info.image);
+      }
+    }));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_image == null) {
+      return const Center(child: CircularProgressIndicator(color: Colors.greenAccent));
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double viewWidth = constraints.maxWidth;
+        double viewHeight = constraints.maxHeight;
+        double viewRatio = viewWidth / viewHeight;
+        double imgRatio = _image!.width / _image!.height;
+
+        double childWidth;
+        double childHeight;
+
+        if (imgRatio > viewRatio) {
+          // A kép "szélesebb", mint a 16:9 keret -> a magasságot igazítjuk a kerethez
+          childHeight = viewHeight;
+          childWidth = viewHeight * imgRatio;
+        } else {
+          // A kép "magasabb", mint a 16:9 keret -> a szélességet igazítjuk a kerethez
+          childWidth = viewWidth;
+          childHeight = viewWidth / imgRatio;
+        }
+
+        return InteractiveViewer(
+          transformationController: widget.controller,
+          boundaryMargin: EdgeInsets.zero, // Emiatt nem tudod kilógatni az űrt
+          minScale: 1.0, 
+          maxScale: 4.0,
+          constrained: false, // Emiatt viszont az InteractiveViewer tudja, hogy a kép nagyobb, és engedi mozgatni
+          child: SizedBox(
+            width: childWidth,
+            height: childHeight,
+            child: widget.kepUtvonal.startsWith('http')
+                ? CachedNetworkImage(imageUrl: widget.kepUtvonal, fit: BoxFit.fill)
+                : Image.file(File(widget.kepUtvonal), fit: BoxFit.fill),
+          ),
+        );
+      }
     );
   }
 }
