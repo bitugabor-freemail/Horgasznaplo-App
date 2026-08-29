@@ -564,7 +564,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                          
                           if (_isTaskaNezet) {
                             nev = _taskak[index];
-                            isSelected = nev == _kivalasztTaska;
+                            isSelected = nev == _kivalasztottTaska;
                             if (index < _taskaKeys.length) gKey = _taskaKeys[index];
                           } else {
                             nev = _kategoriak[index].nev;
