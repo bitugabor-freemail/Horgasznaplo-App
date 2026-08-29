@@ -20,7 +20,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   List<FelszerelesKategoria> _kategoriak = [];
   List<FelszerelesTetel> _tetelek = [];
   List<String> _taskak = [];
-  
   List<GlobalKey> _kategoriaKeys = [];
   List<GlobalKey> _taskaKeys = [];
   
@@ -35,7 +34,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
 
   int _utolsoKategoriaIndex = 0;
   int _utolsoTaskaIndex = 0;
-
   bool get isTaskaNezet => _isTaskaNezet;
 
   @override
@@ -66,6 +64,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       if (_utolsoKategoriaIndex >= _kategoriak.length) _utolsoKategoriaIndex = 0;
       if (_utolsoTaskaIndex >= _taskak.length) _utolsoTaskaIndex = 0;
       
+      
       if (_kategoriak.isNotEmpty) {
         _kivalasztottKategoriaId = _kategoriak[_utolsoKategoriaIndex].id;
       } else {
@@ -78,7 +77,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
         _kivalasztottTaska = null;
       }
     });
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isKeresoMod && (_kategoriak.isNotEmpty || _taskak.isNotEmpty)) {
         int aktIndex = _isTaskaNezet ? _utolsoTaskaIndex : _utolsoKategoriaIndex;
@@ -106,12 +104,11 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
 
   void toggleNezet() {
     if (_isKeresoMod) {
-      toggleKereso(); 
+      toggleKereso();
     }
     setState(() {
       _isTaskaNezet = !_isTaskaNezet;
     });
-    
     int celIndex = _isTaskaNezet ? _utolsoTaskaIndex : _utolsoKategoriaIndex;
     
     if (_isTaskaNezet && _taskak.isNotEmpty && celIndex >= _taskak.length) celIndex = 0;
@@ -132,7 +129,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
         _keresoKifejezes = ''; 
       }
     });
-    
     if (!_isKeresoMod) {
       FocusManager.instance.primaryFocus?.unfocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -178,7 +174,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       )).toList(),
       indexKep: eredeti.indexKep,
     );
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -239,11 +234,9 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   int _naturalHuCompare(String a, String b) {
     String aHu = _huSort(a);
     String bHu = _huSort(b);
-
     final RegExp regExp = RegExp(r'(\d+)|([^\d]+)');
     final List<String> partsA = regExp.allMatches(aHu).map((m) => m.group(0)!).toList();
     final List<String> partsB = regExp.allMatches(bHu).map((m) => m.group(0)!).toList();
-
     int minLen = partsA.length < partsB.length ? partsA.length : partsB.length;
     for (int i = 0; i < minLen; i++) {
       String pA = partsA[i];
@@ -251,7 +244,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       
       bool isNumA = RegExp(r'^\d+$').hasMatch(pA);
       bool isNumB = RegExp(r'^\d+$').hasMatch(pB);
-
       if (isNumA && isNumB) {
         int numA = int.parse(pA);
         int numB = int.parse(pB);
@@ -274,17 +266,13 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     List<FelszerelesElhelyezes> megjelenitendoHelyek = aktivTaskaNezet != null 
         ? tetel.elhelyezesek.where((e) => e.taska == aktivTaskaNezet).toList() 
         : tetel.elhelyezesek;
-
     for (var hely in megjelenitendoHelyek) {
       if (hely.taska == null && hely.pozicio == null && hely.mennyiseg == null) continue;
-      
       List<String> tp = [];
       if (hely.taska != null && hely.taska!.isNotEmpty) tp.add(hely.taska!);
       if (hely.pozicio != null && hely.pozicio!.isNotEmpty) tp.add(hely.pozicio!);
-      
       String balSzoveg = tp.join(' - ');
       String jobbSzoveg = '';
-      
       if (hely.mennyiseg != null) {
         jobbSzoveg = '${hely.mennyiseg.toString().replaceAll('.0', '')} ${tetel.mertekegyseg}'.trim();
         osszesen += hely.mennyiseg!;
@@ -292,7 +280,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       }
 
       if (balSzoveg.isEmpty && jobbSzoveg.isEmpty) continue;
-
       helyWidgetek.add(
         Padding(
           padding: const EdgeInsets.only(top: 4.0),
@@ -423,10 +410,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
 
   Widget _buildKeresoEredmenyek() {
     List<FelszerelesTetel> eredmeny = List.from(_tetelek);
-
     if (_keresoKifejezes.trim().isNotEmpty) {
       List<String> kulcsszavak = _keresoKifejezes.toLowerCase().split(' ').where((s) => s.isNotEmpty).toList();
-      
       eredmeny = eredmeny.where((tetel) {
         String fullSzoveg = '${tetel.marka} ${tetel.nev} ${tetel.jellemzo} ${tetel.leiras}'.toLowerCase();
         for (String szo in kulcsszavak) {
@@ -449,7 +434,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       
       return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
     });
-
     if (eredmeny.isEmpty) {
       return const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)));
     }
@@ -466,12 +450,10 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   Widget _buildListaOldal(int index) {
     List<FelszerelesTetel> mutathato;
     String? aktTaska;
-    
     if (_isTaskaNezet) {
       if (_taskak.isEmpty) return const Center(child: Text('Nincsenek rögzített táskák.', style: TextStyle(color: Colors.white54)));
       aktTaska = _taskak[index];
       mutathato = _tetelek.where((t) => t.elhelyezesek.any((e) => e.taska == aktTaska)).toList();
-      
       mutathato.sort((a, b) {
         int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
         int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
@@ -489,7 +471,6 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       if (_kategoriak.isEmpty) return const Center(child: Text('Nincsenek kategóriák. Hozz létre egyet!'));
       String aktKat = _kategoriak[index].id;
       mutathato = _tetelek.where((t) => t.kategoriaId == aktKat).toList();
-      
       mutathato.sort((a, b) {
         int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
         if (markaCmp != 0) return markaCmp;
@@ -560,7 +541,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                           String nev;
                           bool isSelected;
                           GlobalKey? gKey;
-                          
+                         
                           if (_isTaskaNezet) {
                             nev = _taskak[index];
                             isSelected = nev == _kivalasztottTaska;
@@ -570,7 +551,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                             isSelected = _kategoriak[index].id == _kivalasztottKategoriaId;
                             if (index < _kategoriaKeys.length) gKey = _kategoriaKeys[index];
                           }
-                          
+                         
                           return GestureDetector(
                             onTap: () {
                               if (_pageController.hasClients) {
@@ -658,14 +639,12 @@ class TetelReszletekScreen extends StatefulWidget {
   final VoidCallback? onEdit; 
 
   const TetelReszletekScreen({super.key, required this.tetel, this.onEdit});
-
   @override
   State<TetelReszletekScreen> createState() => _TetelReszletekScreenState();
 }
 
 class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
   final PageController _pageCtrl = PageController();
-
   void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex) {
     final PageController fullPageCtrl = PageController(initialPage: kezdoIndex);
     Navigator.push(
@@ -709,13 +688,11 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
 
     for (var hely in widget.tetel.elhelyezesek) {
       if (hely.taska == null && hely.pozicio == null && hely.mennyiseg == null) continue;
-      
       List<String> tp = [];
       if (hely.taska != null && hely.taska!.isNotEmpty) tp.add(hely.taska!);
       if (hely.pozicio != null && hely.pozicio!.isNotEmpty) tp.add(hely.pozicio!);
       String balSzoveg = tp.join(' - ');
       String jobbSzoveg = '';
-      
       if (hely.mennyiseg != null) {
         jobbSzoveg = '${hely.mennyiseg.toString().replaceAll('.0', '')} ${widget.tetel.mertekegyseg}'.trim();
         osszesen += hely.mennyiseg!;
@@ -723,7 +700,6 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
       }
 
       if (balSzoveg.isEmpty && jobbSzoveg.isEmpty) continue;
-
       helyWidgetekReszletes.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
@@ -799,7 +775,7 @@ class _TetelReszletekScreenState extends State<TetelReszletekScreen> {
                 ],
               ),
             ),
-            
+           
             if (widget.tetel.kepek.isNotEmpty) ...[
               const SizedBox(height: 24),
               const Text('Fényképek', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -894,7 +870,6 @@ class ElhelyezesVezerlo {
   String? taska;
   TextEditingController pozicioCtrl = TextEditingController();
   TextEditingController mennyisegCtrl = TextEditingController();
-  
   void dispose() {
     pozicioCtrl.dispose();
     mennyisegCtrl.dispose();
@@ -916,7 +891,6 @@ class TetelSzerkesztoScreen extends StatefulWidget {
     required this.mentesCallback,
     this.isMasolat = false, 
   });
-
   @override
   State<TetelSzerkesztoScreen> createState() => _TetelSzerkesztoScreenState();
 }
@@ -945,11 +919,9 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     _adatokBetoltese();
 
     _kivalasztottKategoriaId = widget.alapertelmezettKategoriaId;
-    
     _mertekegysegCtrl.addListener(() {
       setState(() {});
     });
-    
     if (widget.szerkeszthetoTetel != null) {
       final t = widget.szerkeszthetoTetel!;
       _kivalasztottKategoriaId = t.kategoriaId;
@@ -960,7 +932,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       _leirasCtrl.text = t.leiras;
       _kepek = List.from(t.kepek);
       _indexKep = t.indexKep;
-      
       if (t.elhelyezesek.isNotEmpty) {
         for (var e in t.elhelyezesek) {
           var v = ElhelyezesVezerlo();
@@ -970,7 +941,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
           _helyek.add(v);
         }
       } else {
-        _helyek.add(ElhelyezesVezerlo()); 
+        _helyek.add(ElhelyezesVezerlo());
       }
     } else {
       if (widget.kategoriak.isNotEmpty && _kivalasztottKategoriaId == null) {
@@ -1012,7 +983,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     if (images.isNotEmpty) {
       int szabadHely = 5 - _kepek.length;
       int hozzaadandoSzam = images.length > szabadHely ? szabadHely : images.length;
-      
       for (int i = 0; i < hozzaadandoSzam; i++) {
         String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(images[i].path);
         setState(() {
@@ -1044,12 +1014,10 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       
       final thumbPath = '${thumbDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.png';
       await File(thumbPath).writeAsBytes(pngBytes);
-
       setState(() {
         _indexKep = thumbPath;
         _isThumbnailSzerkesztes = false;
       });
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Indexkép sikeresen frissítve!'), backgroundColor: Colors.green),
@@ -1103,7 +1071,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
   Future<void> _mutasTaskaKereso(int index) async {
     String kereses = '';
     final keresoCtrl = TextEditingController();
-
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1114,7 +1081,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
           builder: (context, setModalState) {
             final szurt = _elerhetoTaskak.where((e) => e.toLowerCase().contains(kereses.toLowerCase())).toList();
             return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+               padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
               child: Container(
                 height: MediaQuery.of(context).size.height * 0.6,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1202,7 +1169,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       double? menny = double.tryParse(v.mennyisegCtrl.text.replaceAll(',', '.'));
       String? poz = v.pozicioCtrl.text.trim();
       if (poz.isEmpty) poz = null;
-      
       if (v.taska != null || poz != null || menny != null) {
         ujElhelyezesek.add(FelszerelesElhelyezes(taska: v.taska, pozicio: poz, mennyiseg: menny));
       }
@@ -1220,7 +1186,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
       elhelyezesek: ujElhelyezesek, 
       indexKep: _indexKep, 
     );
-
     final osszesTetel = await AdatTarolo.felszerelesTetelekBetoltese();
     
     if (widget.szerkeszthetoTetel != null && !widget.isMasolat) {
@@ -1240,7 +1205,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
     String fejlecCim = widget.isMasolat 
         ? 'Másolat Szerkesztése' 
         : (widget.szerkeszthetoTetel == null ? 'Új Tétel Hozzáadása' : 'Tétel Szerkesztése');
-
     return Scaffold(
       appBar: AppBar(title: Text(fejlecCim)),
       body: SingleChildScrollView(
@@ -1362,8 +1326,6 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             
             Center(
               child: Container(
-                width: 244,
-                height: 244,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.greenAccent, width: 2), 
@@ -1392,7 +1354,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                               ),
                             )
                           : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
-                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
+                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.contain) : Image.file(File(_indexKep!), fit: BoxFit.contain))
                               : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
                                   ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain) : Image.file(File(_kepek.first), fit: BoxFit.contain))
                                   : const Icon(Icons.image, color: Colors.white24, size: 60))),
@@ -1514,14 +1476,12 @@ class KategoriakSzerkesztoScreen extends StatefulWidget {
   final VoidCallback mentesCallback;
 
   const KategoriakSzerkesztoScreen({super.key, required this.kategoriak, required this.mentesCallback});
-
   @override
   State<KategoriakSzerkesztoScreen> createState() => _KategoriakSzerkesztoScreenState();
 }
 
 class _KategoriakSzerkesztoScreenState extends State<KategoriakSzerkesztoScreen> {
   late List<FelszerelesKategoria> _helyiKategoriak;
-
   @override
   void initState() {
     super.initState();
@@ -1692,14 +1652,12 @@ class TaskakSzerkesztoScreen extends StatefulWidget {
   final VoidCallback mentesCallback;
 
   const TaskakSzerkesztoScreen({super.key, required this.taskak, required this.mentesCallback});
-
   @override
   State<TaskakSzerkesztoScreen> createState() => _TaskakSzerkesztoScreenState();
 }
 
 class _TaskakSzerkesztoScreenState extends State<TaskakSzerkesztoScreen> {
   late List<String> _helyiTaskak;
-
   @override
   void initState() {
     super.initState();
@@ -1742,7 +1700,6 @@ class _TaskakSzerkesztoScreenState extends State<TaskakSzerkesztoScreen> {
   void _taskaTorles(int index) async {
     final tet = await AdatTarolo.felszerelesTetelekBetoltese();
     bool vanBenneTetel = tet.any((t) => t.elhelyezesek.any((e) => e.taska == _helyiTaskak[index]));
-
     if (vanBenneTetel) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ez a táska nem törölhető, mert vannak benne tételek!'), backgroundColor: Colors.redAccent));
