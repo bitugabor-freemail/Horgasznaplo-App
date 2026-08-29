@@ -1067,10 +1067,10 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ],
             const Divider(height: 40, color: Colors.white24),
 
-            // --- TÚRA BORÍTÓKÉP SZERKESZTŐ (16:9 ARÁNY, MÁGNESES) ---
+            // --- TÚRA BORÍTÓKÉP SZERKESZTŐ (16:9 ARÁNY, MÁGNESES - BOXFIT.CONTAIN) ---
             const Text('Túra Borítókép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('Ez jelenik meg a túra fejlécében. Az arány pontosan 16:9, ahogy a kártyán is látszani fog. Két ujjal nagyíthatod, mozgathatod.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const Text('Ez jelenik meg a túra fejlécében. Az arány pontosan 16:9, ahogy a kártyán is látszani fog. Két ujjal nagyíthatod, mozgathatod. Az egész kép látszódni fog a keretben.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 12),
             
             Center(
@@ -1091,22 +1091,22 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                         child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
                             ? InteractiveViewer(
                                 transformationController: _transformationController,
-                                minScale: 1.0, // <-- Nem engedi a keretnél kisebbre
+                                minScale: 1.0, 
                                 maxScale: 4.0,
-                                boundaryMargin: EdgeInsets.zero, // <-- Mágneses fal (nem csúszik le)
+                                boundaryMargin: EdgeInsets.zero, 
                                 clipBehavior: Clip.none, 
                                 child: SizedBox(
                                   width: double.infinity,
                                   height: double.infinity,
                                   child: _kepek.first.startsWith('http')
-                                      ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover)
-                                      : Image.file(File(_kepek.first), fit: BoxFit.cover),
+                                      ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
+                                      : Image.file(File(_kepek.first), fit: BoxFit.contain),
                                 ),
                               )
                             : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
                                 ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
                                 : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
-                                    ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
+                                    ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain) : Image.file(File(_kepek.first), fit: BoxFit.contain))
                                     : const Icon(Icons.image, color: Colors.white24, size: 60))),
                       ),
                     ),
