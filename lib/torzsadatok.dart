@@ -967,7 +967,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                                child: const Text('Első', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                                child: const Text('thumbnail', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
                               ),
                             )
                         ],
