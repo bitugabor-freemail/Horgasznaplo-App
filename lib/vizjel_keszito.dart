@@ -87,9 +87,9 @@ class VizjelKeszito {
     // Alapkép kirajzolása
     canvas.drawImage(alapKep, Offset.zero, Paint());
 
-    // Alap méretek és margók kiszámítása a képfelbontás alapján
-    final double padding = alapKep.width * 0.04; 
-    final double fontSize = alapKep.width * 0.05; // Dinamikus betűméret (5%)
+    // Alap méretek és margók kiszámítása a képfelbontás alapján (2/3-ra csökkentve az eddigihez képest)
+    final double padding = alapKep.width * 0.03; 
+    final double fontSize = alapKep.width * 0.033; 
 
     // Szöveg stílusának beállítása (Hófehér, vastag, sötét drop-shadow-val)
     final ui.TextStyle textStyle = ui.TextStyle(
@@ -125,8 +125,8 @@ class VizjelKeszito {
       canvas.drawParagraph(balAlsoParagraph, Offset(padding, yPozicio));
     }
 
-    // LOGÓ megrajzolása (Jobb alsó sarok, áttetszően)
-    final double logoTargetWidth = alapKep.width * 0.20;
+    // LOGÓ megrajzolása (Jobb alsó sarok, áttetszően - méret 2/3-ra csökkentve)
+    final double logoTargetWidth = alapKep.width * 0.133;
     final double logoScale = logoTargetWidth / logoKep.width;
     final double logoTargetHeight = logoKep.height * logoScale;
     
