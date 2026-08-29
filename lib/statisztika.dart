@@ -459,6 +459,177 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     );
   }
 
+  // --- ÚJ: HOLDFÁZIS KALKULÁTOR (Segédfüggvény) ---
+  _HoldfazisAdat _getHoldfazisInfo(DateTime date) {
+    final double newMoon = DateTime.utc(2000, 1, 6, 18, 14).millisecondsSinceEpoch.toDouble();
+    const double msInDay = 86400000.0;
+    const double synodicMonth = 29.53058867;
+    
+    double diffDays = (date.millisecondsSinceEpoch - newMoon) / msInDay;
+    double phase = diffDays % synodicMonth;
+    if (phase < 0) phase += synodicMonth;
+    
+    if (phase < 1.84) return _HoldfazisAdat('Újhold', '🌑', 5, 'Kiváló esély! A Föld, a Hold és a Nap egy vonalban van. A gravitációs húzóerő a legnagyobb, a halak rendkívül aktívak.');
+    if (phase < 5.53) return _HoldfazisAdat('Növő holdsarló', '🌒', 4, 'Jó esély! Erősödő gravitációs hatás, egyre aktívabb táplálkozási kedv.');
+    if (phase < 9.22) return _HoldfazisAdat('Első negyed', '🌓', 3, 'Közepes esély. A gravitációs hatás a legkisebb, a halak visszaállnak a normál, megszokott ritmusukra.');
+    if (phase < 12.91) return _HoldfazisAdat('Növő telihold', '🌔', 4, 'Jó esély! Közeleg a csúcspont. A ragadozók az éjszakai fényben egyre aktívabbak a felszín közelében.');
+    if (phase < 16.61) return _HoldfazisAdat('Telihold', '🌕', 5, 'Kiváló esély! Az éjszakai vízfelszín nagyon világos, a felszíni ragadozók kiemelten aktívak, de a békéshalak óvatosabbak lehetnek.');
+    if (phase < 20.30) return _HoldfazisAdat('Fogyó telihold', '🌖', 4, 'Jó esély! Még kitart az erős aktivitás, érdemes az éjszakai és a hajnali órákat is kihasználni.');
+    if (phase < 24.00) return _HoldfazisAdat('Utolsó negyed', '🌗', 3, 'Közepes esély. Átlagos, kiszámítható táplálkozási ütem várható.');
+    if (phase < 27.68) return _HoldfazisAdat('Fogyó holdsarló', '🌘', 2, 'Gyenge esély. Átmeneti, nyugalmi időszak. Ilyenkor érdemes finomítani a szereléken és a csalin!');
+    return _HoldfazisAdat('Újhold', '🌑', 5, 'Kiváló esély! A Föld, a Hold és a Nap egy vonalban van. A gravitációs húzóerő a legnagyobb, a halak rendkívül aktívak.');
+  }
+
+  String _getMagyarNap(DateTime date) {
+    const days = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat', 'Vasárnap'];
+    return days[date.weekday - 1];
+  }
+
+  // --- ÚJ: HOLDFÁZIS NAPTÁR ÉS ELEMZÉS ---
+  void _mutassHoldnaptar() {
+    final szurt = _getSzurtFogasok();
+    Map<String, int> phaseCounts = {};
+    int total = szurt.length;
+    
+    // Személyes statisztika gyűjtése
+    for(var f in szurt) {
+      final phase = _getHoldfazisInfo(f.datum);
+      String key = '${phase.ikon} ${phase.nev}';
+      phaseCounts[key] = (phaseCounts[key] ?? 0) + 1;
+    }
+    var sortedPhases = phaseCounts.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
+
+    final today = DateTime.now();
+    final todayPhase = _getHoldfazisInfo(today);
+    
+    // Generálunk 380 napot: előző 14 nap + mai nap + 365 nap (1 év) előre
+    List<DateTime> naptarNapok = List.generate(380, (i) => today.add(Duration(days: i - 14))); 
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4, 
+                  margin: const EdgeInsets.only(bottom: 16), 
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))
+                ),
+              ),
+              const Row(
+                children: [
+                  Icon(Icons.brightness_2, color: Colors.greenAccent),
+                  SizedBox(width: 8),
+                  Text('Holdnaptár & Elemzés', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // MAI NAP
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Aktuális Holdfázis (Ma)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('${todayPhase.ikon} ${todayPhase.nev}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                        Row(
+                          children: List.generate(5, (index) => Icon(
+                            Icons.phishing, 
+                            size: 18, 
+                            color: index < todayPhase.kapasIndex ? Colors.greenAccent : Colors.white24
+                          )),
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(todayPhase.leiras, style: const TextStyle(color: Colors.white70, height: 1.4)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // SAJÁT STATISZTIKA
+              if (total > 0) ...[
+                const Text('Saját Statisztikád', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 8),
+                Text('A szűrt $total db fogásod alapján a legeredményesebb holdfázisaid:', style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                const SizedBox(height: 8),
+                ...sortedPhases.take(3).map((e) {
+                  double percent = (e.value / total) * 100;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(e.key, style: const TextStyle(color: Colors.white)),
+                        Text('${e.value} db (${percent.toStringAsFixed(1)}%)', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                      ],
+                    )
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
+
+              // NAPTÁR
+              const Text('Előrejelzés (Naptár)', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: naptarNapok.length,
+                  itemBuilder: (context, idx) {
+                    DateTime date = naptarNapok[idx];
+                    _HoldfazisAdat phase = _getHoldfazisInfo(date);
+                    bool isToday = date.year == today.year && date.month == today.month && date.day == today.day;
+                    
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: isToday ? Colors.green[900]?.withOpacity(0.3) : const Color(0xFF161616),
+                        borderRadius: BorderRadius.circular(8),
+                        border: isToday ? Border.all(color: Colors.greenAccent) : null,
+                      ),
+                      child: ListTile(
+                        leading: Text(phase.ikon, style: const TextStyle(fontSize: 24)),
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('${DateFormat('MM.dd.').format(date)} (${_getMagyarNap(date)})', style: TextStyle(fontWeight: isToday ? FontWeight.bold : FontWeight.normal, fontSize: 14)),
+                            Row(
+                              children: List.generate(5, (index) => Icon(
+                                Icons.phishing, 
+                                size: 14, 
+                                color: index < phase.kapasIndex ? (phase.kapasIndex >= 4 ? Colors.greenAccent : Colors.orangeAccent) : Colors.white24
+                              )),
+                            )
+                          ],
+                        ),
+                        subtitle: Text(phase.nev, style: const TextStyle(color: Colors.white70)),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final szurtTurak = _getSzurtTurak(); 
@@ -524,14 +695,23 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Adatok Elemzése', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isSzurt ? Colors.green[800] : Colors.grey[800],
-                    foregroundColor: Colors.white,
-                  ),
-                  icon: const Icon(Icons.tune, size: 18),
-                  label: const Text('Szűrők'),
-                  onPressed: _nyitReszletesSzurok,
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.brightness_2, color: Colors.greenAccent),
+                      tooltip: 'Holdnaptár & Elemzés',
+                      onPressed: _mutassHoldnaptar,
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isSzurt ? Colors.green[800] : Colors.grey[800],
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.tune, size: 18),
+                      label: const Text('Szűrők'),
+                      onPressed: _nyitReszletesSzurok,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -662,6 +842,14 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
       ),
     );
   }
+}
+
+class _HoldfazisAdat {
+  final String nev;
+  final String ikon;
+  final int kapasIndex; 
+  final String leiras;
+  _HoldfazisAdat(this.nev, this.ikon, this.kapasIndex, this.leiras);
 }
 
 class _TagStat {
