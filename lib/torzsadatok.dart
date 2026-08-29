@@ -922,63 +922,74 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             
             const Divider(height: 40, color: Colors.white24),
 
-            const Text('Fényképek (Maximum 5 db)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+            const Text('Fényképek (Maximum 5 db - Húzd át a sorrendhez!)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                ..._kepek.asMap().entries.map((entry) {
-                  int idx = entry.key;
-                  String utvonal = entry.value;
-                  return Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: utvonal.startsWith('http')
-                            ? CachedNetworkImage(
-                                imageUrl: utvonal,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.white24),
-                              )
-                            : Image.file(File(utvonal), fit: BoxFit.cover),
-                      ),
-                      GestureDetector(
-                        onTap: () => setState(() => _kepek.removeAt(idx)),
-                        child: Container(
-                          margin: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
-                          child: const Icon(Icons.close, color: Colors.redAccent, size: 24),
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-                if (_kepek.length < 5)
-                  GestureDetector(
-                    onTap: _kepHozzaadasa,
-                    child: Container(
+            
+            SizedBox(
+              height: 100,
+              child: ReorderableListView(
+                scrollDirection: Axis.horizontal,
+                onReorder: (oldIndex, newIndex) {
+                  setState(() {
+                    if (newIndex > oldIndex) newIndex -= 1;
+                    final item = _kepek.removeAt(oldIndex);
+                    _kepek.insert(newIndex, item);
+                  });
+                },
+                children: [
+                  for (int idx = 0; idx < _kepek.length; idx++)
+                    Container(
+                      key: ValueKey(_kepek[idx]),
                       width: 100,
                       height: 100,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.greenAccent, width: 2, style: BorderStyle.solid),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.add_a_photo, color: Colors.greenAccent, size: 30),
+                      margin: const EdgeInsets.only(right: 12),
+                      child: Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          Container(
+                            width: 100, height: 100,
+                            decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+                            clipBehavior: Clip.antiAlias,
+                            child: _kepek[idx].startsWith('http')
+                                ? CachedNetworkImage(imageUrl: _kepek[idx], fit: BoxFit.cover)
+                                : Image.file(File(_kepek[idx]), fit: BoxFit.cover),
+                          ),
+                          GestureDetector(
+                            onTap: () => setState(() => _kepek.removeAt(idx)),
+                            child: Container(
+                              margin: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                              child: const Icon(Icons.close, color: Colors.redAccent, size: 20),
+                            ),
+                          ),
+                          if (idx == 0)
+                            Positioned(
+                              bottom: 4, left: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
+                                child: const Text('Első', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                              ),
+                            )
+                        ],
                       ),
                     ),
-                  ),
-              ],
+                  if (_kepek.length < 5)
+                    GestureDetector(
+                      key: const ValueKey('add_button'),
+                      onTap: _kepHozzaadasa,
+                      child: Container(
+                        width: 100, height: 100,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E1E),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.greenAccent, width: 2),
+                        ),
+                        child: const Center(child: Icon(Icons.add_a_photo, color: Colors.greenAccent, size: 30)),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
 
