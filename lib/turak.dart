@@ -259,7 +259,7 @@ class _TuraKartya extends StatefulWidget {
 class _TuraKartyaState extends State<_TuraKartya> {
   final PageController _pageCtrl = PageController();
 
-  void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex, String helyszinNev) {
+  void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex, String helyszinNev, List<String> kepekLista) {
     int aktIndex = kezdoIndex;
     final PageController fullPageCtrl = PageController(initialPage: kezdoIndex);
     
@@ -276,17 +276,17 @@ class _TuraKartyaState extends State<_TuraKartya> {
                   IconButton(
                     icon: const Icon(Icons.download, color: Colors.white),
                     onPressed: () {
-                      VizjelKeszito.turaLetoltes(context, widget.tura, widget.tura.kepek[aktIndex], helyszinNev);
+                      VizjelKeszito.turaLetoltes(context, widget.tura, kepekLista[aktIndex], helyszinNev);
                     },
                   ),
                 ],
               ),
               body: PageView.builder(
                 controller: fullPageCtrl,
-                itemCount: widget.tura.kepek.length,
+                itemCount: kepekLista.length,
                 onPageChanged: (idx) => setFullState(() => aktIndex = idx),
                 itemBuilder: (context, i) {
-                  final utvonal = widget.tura.kepek[i];
+                  final utvonal = kepekLista[i];
                   return InteractiveViewer(
                     minScale: 1.0,
                     maxScale: 5.0,
@@ -321,6 +321,17 @@ class _TuraKartyaState extends State<_TuraKartya> {
     final String extraNapok = diffDays > 0 ? ' (${diffDays + 1} nap)' : '';
     final String fejlecCim = '${DateFormat('yyyy.MM.dd.').format(tura.kezdoDatum)}$extraNapok';
 
+    // Képek összevonása a kártya galériájához
+    List<String> cardImages = [];
+    if (tura.indexKep != null && (tura.indexKep!.startsWith('http') || File(tura.indexKep!).existsSync())) {
+      cardImages.add(tura.indexKep!);
+    }
+    for (var k in tura.kepek) {
+      if (!cardImages.contains(k) && (k.startsWith('http') || File(k).existsSync())) {
+        cardImages.add(k);
+      }
+    }
+
     return Card(
       color: const Color(0xFF1E1E1E),
       margin: const EdgeInsets.only(bottom: 16),
@@ -340,20 +351,7 @@ class _TuraKartyaState extends State<_TuraKartya> {
             ),
           ),
           
-          if (tura.indexKep != null && (tura.indexKep!.startsWith('http') || File(tura.indexKep!).existsSync()))
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: SizedBox(
-                width: double.infinity,
-                child: GestureDetector(
-                  onTap: () => _teljesKepernyosGaleria(context, 0, helyszinNev),
-                  child: tura.indexKep!.startsWith('http')
-                      ? CachedNetworkImage(imageUrl: tura.indexKep!, fit: BoxFit.cover)
-                      : Image.file(File(tura.indexKep!), fit: BoxFit.cover),
-                ),
-              ),
-            )
-          else if (tura.kepek.isNotEmpty)
+          if (cardImages.isNotEmpty)
             AspectRatio(
               aspectRatio: 16 / 9,
               child: SizedBox(
@@ -363,18 +361,18 @@ class _TuraKartyaState extends State<_TuraKartya> {
                   children: [
                     PageView.builder(
                       controller: _pageCtrl,
-                      itemCount: tura.kepek.length,
+                      itemCount: cardImages.length,
                       itemBuilder: (context, i) {
-                        final utvonal = tura.kepek[i];
+                        final utvonal = cardImages[i];
                         return GestureDetector(
-                          onTap: () => _teljesKepernyosGaleria(context, i, helyszinNev),
+                          onTap: () => _teljesKepernyosGaleria(context, i, helyszinNev, cardImages),
                           child: utvonal.startsWith('http')
                               ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.cover)
-                              : (File(utvonal).existsSync() ? Image.file(File(utvonal), fit: BoxFit.cover) : const Icon(Icons.broken_image, size: 50)),
+                              : Image.file(File(utvonal), fit: BoxFit.cover),
                         );
                       },
                     ),
-                    if (tura.kepek.length > 1) ...[
+                    if (cardImages.length > 1) ...[
                       Positioned(
                         left: 8,
                         child: CircleAvatar(
@@ -1185,7 +1183,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                                child: const Text('Első', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                                child: const Text('thumbnail', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
                               ),
                             )
                         ],
