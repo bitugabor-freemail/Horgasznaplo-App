@@ -30,6 +30,9 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
   bool _isKeresoMod = false;
   String _keresoKifejezes = '';
   
+  // ÚJ: Állapot a rendezési módhoz
+  bool _rendezesMarkaSzerint = false;
+  
   final PageController _pageController = PageController();
 
   int _utolsoKategoriaIndex = 0;
@@ -408,6 +411,36 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
     );
   }
 
+  void _rendezesLogika(List<FelszerelesTetel> lista) {
+    lista.sort((a, b) {
+      if (_rendezesMarkaSzerint) {
+        int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
+        if (markaCmp != 0) return markaCmp;
+        
+        int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
+        int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
+        if (katA != katB) return katA.compareTo(katB);
+        
+        int nevCmp = _naturalHuCompare(a.nev.trim(), b.nev.trim());
+        if (nevCmp != 0) return nevCmp;
+        
+        return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
+      } else {
+        int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
+        int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
+        if (katA != katB) return katA.compareTo(katB);
+
+        int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
+        if (markaCmp != 0) return markaCmp;
+        
+        int nevCmp = _naturalHuCompare(a.nev.trim(), b.nev.trim());
+        if (nevCmp != 0) return nevCmp;
+        
+        return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
+      }
+    });
+  }
+
   Widget _buildKeresoEredmenyek() {
     List<FelszerelesTetel> eredmeny = List.from(_tetelek);
     if (_keresoKifejezes.trim().isNotEmpty) {
@@ -421,19 +454,8 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       }).toList();
     }
 
-    eredmeny.sort((a, b) {
-      int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
-      int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
-      if (katA != katB) return katA.compareTo(katB);
-
-      int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
-      if (markaCmp != 0) return markaCmp;
-      
-      int nevCmp = _naturalHuCompare(a.nev.trim(), b.nev.trim());
-      if (nevCmp != 0) return nevCmp;
-      
-      return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
-    });
+    _rendezesLogika(eredmeny);
+    
     if (eredmeny.isEmpty) {
       return const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)));
     }
@@ -454,32 +476,12 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
       if (_taskak.isEmpty) return const Center(child: Text('Nincsenek rögzített táskák.', style: TextStyle(color: Colors.white54)));
       aktTaska = _taskak[index];
       mutathato = _tetelek.where((t) => t.elhelyezesek.any((e) => e.taska == aktTaska)).toList();
-      mutathato.sort((a, b) {
-        int katA = _kategoriak.firstWhere((k) => k.id == a.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
-        int katB = _kategoriak.firstWhere((k) => k.id == b.kategoriaId, orElse: () => FelszerelesKategoria(id: '', nev: '', sorrend: 999)).sorrend;
-        if (katA != katB) return katA.compareTo(katB);
-
-        int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
-        if (markaCmp != 0) return markaCmp;
-        
-        int nevCmp = _naturalHuCompare(a.nev.trim(), b.nev.trim());
-        if (nevCmp != 0) return nevCmp;
-
-        return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
-      });
+      _rendezesLogika(mutathato);
     } else {
       if (_kategoriak.isEmpty) return const Center(child: Text('Nincsenek kategóriák. Hozz létre egyet!'));
       String aktKat = _kategoriak[index].id;
       mutathato = _tetelek.where((t) => t.kategoriaId == aktKat).toList();
-      mutathato.sort((a, b) {
-        int markaCmp = _naturalHuCompare(a.marka.trim(), b.marka.trim());
-        if (markaCmp != 0) return markaCmp;
-        
-        int nevCmp = _naturalHuCompare(a.nev.trim(), b.nev.trim());
-        if (nevCmp != 0) return nevCmp;
-
-        return _naturalHuCompare(a.jellemzo.trim(), b.jellemzo.trim());
-      });
+      _rendezesLogika(mutathato);
     }
 
     if (mutathato.isEmpty) {
@@ -513,16 +515,34 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                 autofocus: true,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Keresés márka, név, jellemző, leírás alapján...',
+                  hintText: 'Keresés márka, név, jellemző...',
                   hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   filled: true,
                   fillColor: const Color(0xFF1E1E1E),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
                   prefixIcon: Icon(Icons.search, color: aktivSzin),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
-                    onPressed: () => setState(() => _keresoKifejezes = ''),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.sort, color: _rendezesMarkaSzerint ? Colors.amber : Colors.white54),
+                        tooltip: 'Rendezés váltása (Kategória / Márka)',
+                        onPressed: () {
+                          setState(() {
+                            _rendezesMarkaSzerint = !_rendezesMarkaSzerint;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(_rendezesMarkaSzerint ? 'Rendezés: Márka -> Kategória -> Név' : 'Rendezés: Kategória -> Márka -> Név'),
+                            duration: const Duration(seconds: 2),
+                          ));
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54),
+                        onPressed: () => setState(() => _keresoKifejezes = ''),
+                      ),
+                    ],
                   ),
                 ),
                 onChanged: (val) => setState(() => _keresoKifejezes = val),
@@ -544,7 +564,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                          
                           if (_isTaskaNezet) {
                             nev = _taskak[index];
-                            isSelected = nev == _kivalasztottTaska;
+                            isSelected = nev == _kivalasztTaska;
                             if (index < _taskaKeys.length) gKey = _taskaKeys[index];
                           } else {
                             nev = _kategoriak[index].nev;
@@ -1434,7 +1454,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                                child: const Text('Első', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                                child: const Text('thumbnail', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
                               ),
                             )
                         ],
