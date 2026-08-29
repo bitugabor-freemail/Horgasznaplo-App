@@ -888,7 +888,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
                               ),
                             )
                           : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
-                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
+                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.contain) : Image.file(File(_indexKep!), fit: BoxFit.contain))
                               : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
                                   ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain) : Image.file(File(_kepek.first), fit: BoxFit.contain))
                                   : const Icon(Icons.set_meal, color: Colors.white24, size: 60))),
@@ -924,7 +924,6 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
 
             const Text('Fényképek (Maximum 5 db - Húzd át a sorrendhez!)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
             const SizedBox(height: 8),
-            
             SizedBox(
               height: 100,
               child: ReorderableListView(
@@ -983,9 +982,11 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E1E1E),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.greenAccent, width: 2),
+                          border: Border.all(color: Colors.greenAccent, width: 2, style: BorderStyle.solid),
                         ),
-                        child: const Center(child: Icon(Icons.add_a_photo, color: Colors.greenAccent, size: 30)),
+                        child: const Center(
+                          child: Icon(Icons.add_a_photo, color: Colors.greenAccent, size: 30),
+                        ),
                       ),
                     ),
                 ],
