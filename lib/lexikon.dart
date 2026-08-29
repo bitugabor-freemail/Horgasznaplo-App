@@ -153,10 +153,17 @@ class _LexikonScreenState extends State<LexikonScreen> {
   }
 }
 
-class HalReszletekScreen extends StatelessWidget {
+class HalReszletekScreen extends StatefulWidget {
   final Halfaj hal;
 
   const HalReszletekScreen({super.key, required this.hal});
+
+  @override
+  State<HalReszletekScreen> createState() => _HalReszletekScreenState();
+}
+
+class _HalReszletekScreenState extends State<HalReszletekScreen> {
+  final PageController _pageCtrl = PageController();
 
   Widget _buildSor(String cim, String tartalom) {
     if (tartalom.isEmpty) return const SizedBox.shrink();
@@ -182,6 +189,7 @@ class HalReszletekScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hal = widget.hal;
     return Scaffold(
       appBar: AppBar(title: Text(hal.nev)),
       body: SingleChildScrollView(
@@ -192,33 +200,61 @@ class HalReszletekScreen extends StatelessWidget {
             if (hal.kepek.isNotEmpty) ...[
               SizedBox(
                 height: 250,
-                child: PageView.builder(
-                  itemCount: hal.kepek.length,
-                  itemBuilder: (context, i) {
-                    final utvonal = hal.kepek[i];
-                    Widget megjelenito;
-                    
-                    if (utvonal.startsWith('http')) {
-                      megjelenito = CachedNetworkImage(
-                        imageUrl: utvonal,
-                        fit: BoxFit.cover, width: double.infinity,
-                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                        errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.white24)),
-                      );
-                    } else if (File(utvonal).existsSync()) {
-                      megjelenito = Image.file(File(utvonal), fit: BoxFit.cover, width: double.infinity);
-                    } else {
-                      return const Center(child: Icon(Icons.error));
-                    }
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PageView.builder(
+                      controller: _pageCtrl,
+                      itemCount: hal.kepek.length,
+                      itemBuilder: (context, i) {
+                        final utvonal = hal.kepek[i];
+                        Widget megjelenito;
+                        
+                        if (utvonal.startsWith('http')) {
+                          megjelenito = CachedNetworkImage(
+                            imageUrl: utvonal,
+                            fit: BoxFit.cover, width: double.infinity,
+                            placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                            errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.white24)),
+                          );
+                        } else if (File(utvonal).existsSync()) {
+                          megjelenito = Image.file(File(utvonal), fit: BoxFit.cover, width: double.infinity);
+                        } else {
+                          return const Center(child: Icon(Icons.error));
+                        }
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: megjelenito,
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: megjelenito,
+                          ),
+                        );
+                      },
+                    ),
+                    if (hal.kepek.length > 1) ...[
+                      Positioned(
+                        left: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_left, color: Colors.white),
+                            onPressed: () => _pageCtrl.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                          ),
+                        ),
                       ),
-                    );
-                  },
+                      Positioned(
+                        right: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_right, color: Colors.white),
+                            onPressed: () => _pageCtrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                          ),
+                        ),
+                      ),
+                    ]
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
