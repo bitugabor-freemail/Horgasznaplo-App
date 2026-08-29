@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:path_provider/path_provider.dart'; 
+import 'package:path_provider/path_provider.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 import 'idojaras_szolgaltato.dart';
@@ -15,7 +15,6 @@ import 'vizjel_keszito.dart';
 
 class FogasokScreen extends StatefulWidget {
   final Tura tura;
-
   const FogasokScreen({super.key, required this.tura});
 
   @override
@@ -36,7 +35,6 @@ class _FogasokScreenState extends State<FogasokScreen> {
   Future<void> _adatokBetoltese() async {
     final osszesFogas = await AdatTarolo.fogasokBetoltese();
     _halfajok = await AdatTarolo.halfajokBetoltese();
-    
     if (widget.tura.helyszinId != null) {
       final helyszinek = await AdatTarolo.helyszinekBetoltese();
       final h = helyszinek.cast<Helyszin?>().firstWhere((x) => x?.id == widget.tura.helyszinId, orElse: () => null);
@@ -95,7 +93,7 @@ class _FogasokScreenState extends State<FogasokScreen> {
     final osszes = await AdatTarolo.fogasokBetoltese();
     final idx = osszes.indexWhere((f) => f.id == fogas.id);
     if (idx != -1) {
-      osszes[idx].isKedvenc = !osszes[idx].isKedvenc; 
+      osszes[idx].isKedvenc = !osszes[idx].isKedvenc;
       await AdatTarolo.fogasokMentes(osszes);
       _adatokBetoltese();
     }
@@ -251,7 +249,6 @@ class FogasSzerkesztoScreen extends StatefulWidget {
   final Tura tura;
   final FogasModel? szerkeszthetoFogas;
   final VoidCallback mentesCallback;
-
   const FogasSzerkesztoScreen({super.key, required this.tura, this.szerkeszthetoFogas, required this.mentesCallback});
 
   @override
@@ -279,14 +276,13 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   final _homersekletCtrl = TextEditingController();
   final _megjegyzesCtrl = TextEditingController();
   
-  List<String> _kepek = []; 
+  List<String> _kepek = [];
   String? _indexKep;
 
   bool _isIdojarasLekeresFolyamatban = false; 
   bool _isThumbnailSzerkesztes = false;
   final TransformationController _transformationController = TransformationController();
   final GlobalKey _cropperKey = GlobalKey();
-
   List<Halfaj> _elerhetoHalfajok = [];
   List<String> _elerhetoSorsok = []; 
   List<String> _elerhetoBotok = [];
@@ -295,7 +291,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
   List<String> _elerhetoCsalik = [];
   List<String> _elerhetoEtetoanyagok = [];
   List<String> _elerhetoIdojarasok = [];
-
   @override
   void initState() {
     super.initState();
@@ -304,7 +299,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       _datum = f.datum;
       final tParts = f.idopont.split(':');
       if (tParts.length == 2) _idopont = TimeOfDay(hour: int.parse(tParts[0]), minute: int.parse(tParts[1]));
-      
       _kivalasztottHalfaj = f.halfaj.isEmpty ? null : f.halfaj; 
       if (f.suly != null) _sulyCtrl.text = f.suly.toString();
       if (f.hossz != null) _hosszCtrl.text = f.hossz.toString();
@@ -328,11 +322,10 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       final maiNap = DateTime(most.year, most.month, most.day);
       final tKezd = DateTime(widget.tura.kezdoDatum.year, widget.tura.kezdoDatum.month, widget.tura.kezdoDatum.day);
       final tVeg = DateTime(widget.tura.befejezoDatum.year, widget.tura.befejezoDatum.month, widget.tura.befejezoDatum.day);
-
       if (maiNap.isBefore(tKezd) || maiNap.isAfter(tVeg)) {
-        _datum = tKezd; 
+        _datum = tKezd;
       } else {
-        _datum = maiNap; 
+        _datum = maiNap;
       }
     }
     _adatokBetoltese();
@@ -358,7 +351,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     
     _elerhetoModszerek = await AdatTarolo.modszerekBetoltese();
     _elerhetoModszerek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    
     _elerhetoVegszerelekek = await AdatTarolo.szerelekekBetoltese();
     _elerhetoVegszerelekek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     
@@ -372,7 +364,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     
     List<String> mentettSorsok = await AdatTarolo.sorsBetoltese();
     _elerhetoSorsok = mentettSorsok;
-    
     if (_sors != null && !_elerhetoSorsok.contains(_sors)) {
       _sors = null;
     }
@@ -415,10 +406,14 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
               if (ctrl.text.trim().isNotEmpty) {
                 final nev = ctrl.text.trim();
                 if (kategoria == 'Horgászbot') { _elerhetoBotok.add(nev); _elerhetoBotok.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.botokMentes(_elerhetoBotok); }
-                if (kategoria == 'Módszer') { _elerhetoModszerek.add(nev); _elerhetoModszerek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.modszerekMentes(_elerhetoModszerek); }
-                if (kategoria == 'Végszerelék') { _elerhetoVegszerelekek.add(nev); _elerhetoVegszerelekek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.szerelekekMentes(_elerhetoVegszerelekek); }
-                if (kategoria == 'Csali') { _elerhetoCsalik.add(nev); _elerhetoCsalik.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.csalikMentes(_elerhetoCsalik); }
-                if (kategoria == 'Etetőanyag') { _elerhetoEtetoanyagok.add(nev); _elerhetoEtetoanyagok.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.etetoanyagokMentes(_elerhetoEtetoanyagok); }
+                if (kategoria == 'Módszer') { _elerhetoModszerek.add(nev);
+                  _elerhetoModszerek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.modszerekMentes(_elerhetoModszerek); }
+                if (kategoria == 'Végszerelék') { _elerhetoVegszerelekek.add(nev);
+                  _elerhetoVegszerelekek.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.szerelekekMentes(_elerhetoVegszerelekek); }
+                if (kategoria == 'Csali') { _elerhetoCsalik.add(nev);
+                  _elerhetoCsalik.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.csalikMentes(_elerhetoCsalik); }
+                if (kategoria == 'Etetőanyag') { _elerhetoEtetoanyagok.add(nev);
+                  _elerhetoEtetoanyagok.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())); await AdatTarolo.etetoanyagokMentes(_elerhetoEtetoanyagok); }
                 
                 onAdded(nev);
                 setState(() {});
@@ -446,7 +441,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
           builder: (context, setModalState) {
             final szurt = elemek.where((e) => e.toLowerCase().contains(kereses.toLowerCase())).toList();
             return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+               padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
               child: Container(
                 height: MediaQuery.of(context).size.height * 0.6,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -546,7 +541,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: Text(value ?? '-- Nincs kiválasztva --', style: TextStyle(color: value == null ? Colors.white54 : Colors.white))),
+           Expanded(child: Text(value ?? '-- Nincs kiválasztva --', style: TextStyle(color: value == null ? Colors.white54 : Colors.white))),
             const Icon(Icons.arrow_drop_down, color: Colors.white70),
           ],
         ),
@@ -562,7 +557,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
         const SizedBox(height: 8),
         InkWell(
           onTap: () => _mutasKereshetoAblak(label, elerhetoElemek, (val) {
-            if (val != null && !kivalasztottElemek.contains(val)) {
+            if (val != null && 
+              !kivalasztottElemek.contains(val)) {
               setState(() => kivalasztottElemek.add(val));
             }
           }, true),
@@ -590,17 +586,19 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                 backgroundColor: Colors.green[800],
                 label: Container(
                   constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
-                  child: Text(
-                    elem, 
-                    style: const TextStyle(color: Colors.white),
-                    softWrap: true,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: 
+                    Text(
+                      elem, 
+                      style: const TextStyle(color: Colors.white),
+                      softWrap: true,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ),
                 avatar: const Icon(Icons.close, size: 16, color: Colors.white70),
                 onPressed: () {
-                  setState(() => kivalasztottElemek.remove(elem));
+                  setState(() 
+                    => kivalasztottElemek.remove(elem));
                 },
               );
             }).toList(),
@@ -620,7 +618,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     if (images.isNotEmpty) {
       int szabadHely = 3 - _kepek.length;
       int hozzaadandoSzam = images.length > szabadHely ? szabadHely : images.length;
-      
       for (int i = 0; i < hozzaadandoSzam; i++) {
         String biztonsagosUtvonal = await AdatTarolo.biztonsagosKepMasolas(images[i].path);
         setState(() {
@@ -659,12 +656,10 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
       
       final thumbPath = '${thumbDir.path}/thumb_fogas_${DateTime.now().millisecondsSinceEpoch}.png';
       await File(thumbPath).writeAsBytes(pngBytes);
-
       setState(() {
         _indexKep = thumbPath;
         _isThumbnailSzerkesztes = false;
       });
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Indexkép sikeresen frissítve!'), backgroundColor: Colors.green),
@@ -684,7 +679,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
     DateTime tKeze = DateTime(widget.tura.kezdoDatum.year, widget.tura.kezdoDatum.month, widget.tura.kezdoDatum.day);
     DateTime tVege = DateTime(widget.tura.befejezoDatum.year, widget.tura.befejezoDatum.month, widget.tura.befejezoDatum.day);
     DateTime fDatum = DateTime(_datum.year, _datum.month, _datum.day);
-
     if (fDatum.isBefore(tKeze) || fDatum.isAfter(tVege)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -746,7 +740,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
               children: [
                 Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.calendar_today, color: Colors.greenAccent), label: Text(DateFormat('yyyy.MM.dd').format(_datum)), onPressed: () async { final p = await showDatePicker(context: context, initialDate: _datum, firstDate: DateTime(2000), lastDate: DateTime(2100)); if (p != null) setState(() => _datum = p); })),
                 const SizedBox(width: 8),
-                Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.access_time, color: Colors.greenAccent), label: Text(_idopont.format(context)), onPressed: () async { final t = await showTimePicker(context: context, initialTime: _idopont); if (t != null) setState(() => _idopont = t); })),
+                Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.access_time, color: Colors.greenAccent), label: Text(_idopont.format(context)), onPressed: () async { final t = await showTimePicker(context: context, initialTime: _idopont); if (t != null) setState(() => _idopont = t);
+                })),
               ],
             ),
             const SizedBox(height: 16),
@@ -777,7 +772,8 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                 const DropdownMenuItem<String?>(value: null, child: Text('-- Nincs kiválasztva --')),
                 ..._elerhetoSorsok.map((s) => DropdownMenuItem<String?>(value: s, child: Text(s))),
               ],
-              onChanged: (val) { if (val != null) setState(() => _sors = val); },
+              onChanged: (val) { if (val != null) setState(() => _sors = val);
+              },
             ),
             const Divider(height: 32, color: Colors.white24),
 
@@ -811,10 +807,10 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const Divider(height: 40, color: Colors.white24),
 
-            // --- FOGÁS INDEXKÉP SZERKESZTŐ (MÁGNESES 240x240 ARÁNY) ---
+            // --- FOGÁS INDEXKÉP SZERKESZTŐ (MÁGNESES 240x240 ARÁNY - BOXFIT.CONTAIN) ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('A szerkesztő doboz nagy, hogy könnyen beállíthasd, de a listában automatikusan a helyére fog igazodni. Két ujjal nagyíthatod, mozgathatod.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const Text('A szerkesztő doboz nagy, hogy könnyen beállíthasd, de a listában automatikusan a helyére fog igazodni. Két ujjal nagyíthatod, mozgathatod. Az egész kép látszódni fog a kockában.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 12),
             
             Center(
@@ -832,24 +828,24 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                       height: 240, 
                       color: Colors.black, 
                       child: _isThumbnailSzerkesztes && _kepek.isNotEmpty
-                          ? InteractiveViewer(
+                           ? InteractiveViewer(
                               transformationController: _transformationController,
-                              minScale: 1.0, // <-- Véd a keretnél kisebbre zsugorítástól
+                              minScale: 1.0, 
                               maxScale: 4.0,
-                              boundaryMargin: EdgeInsets.zero, // <-- Mágneses fal (nem enged üres hátteret)
+                              boundaryMargin: EdgeInsets.zero, 
                               clipBehavior: Clip.none, 
                               child: SizedBox(
-                                width: double.infinity,
-                                height: double.infinity,
+                                width: 240,
+                                height: 240,
                                 child: _kepek.first.startsWith('http')
-                                    ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover)
-                                    : Image.file(File(_kepek.first), fit: BoxFit.cover),
+                                    ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain)
+                                    : Image.file(File(_kepek.first), fit: BoxFit.contain),
                               ),
                             )
                           : (_indexKep != null && (_indexKep!.startsWith('http') || File(_indexKep!).existsSync())
-                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.cover) : Image.file(File(_indexKep!), fit: BoxFit.cover))
+                              ? (_indexKep!.startsWith('http') ? CachedNetworkImage(imageUrl: _indexKep!, fit: BoxFit.contain) : Image.file(File(_indexKep!), fit: BoxFit.contain))
                               : (_kepek.isNotEmpty && (_kepek.first.startsWith('http') || File(_kepek.first).existsSync())
-                                  ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.cover) : Image.file(File(_kepek.first), fit: BoxFit.cover))
+                                  ? (_kepek.first.startsWith('http') ? CachedNetworkImage(imageUrl: _kepek.first, fit: BoxFit.contain) : Image.file(File(_kepek.first), fit: BoxFit.contain))
                                   : const Icon(Icons.set_meal, color: Colors.white24, size: 60))),
                     ),
                   ),
@@ -972,7 +968,6 @@ class FogasReszletekScreen extends StatefulWidget {
   final String helyszinNev;
   final String horgaszhely;
   final VoidCallback onEdit;
-
   const FogasReszletekScreen({
     super.key,
     required this.fogas,
@@ -980,18 +975,15 @@ class FogasReszletekScreen extends StatefulWidget {
     required this.horgaszhely,
     required this.onEdit,
   });
-
   @override
   State<FogasReszletekScreen> createState() => _FogasReszletekScreenState();
 }
 
 class _FogasReszletekScreenState extends State<FogasReszletekScreen> {
   final PageController _pageCtrl = PageController();
-
   void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex) {
     int aktIndex = kezdoIndex;
     final PageController fullPageCtrl = PageController(initialPage: kezdoIndex);
-    
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1043,7 +1035,6 @@ class _FogasReszletekScreenState extends State<FogasReszletekScreen> {
     if (widget.fogas.sors == 'Elvittem') badgeSzin = Colors.blue[900]!;
     if (widget.fogas.sors == 'Elajándékoztam') badgeSzin = Colors.orange[900]!;
     if (widget.fogas.sors == 'Elpusztult') badgeSzin = Colors.red[900]!;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Fogás Részletei'),
@@ -1204,7 +1195,6 @@ class _AdatSor extends StatelessWidget {
   final String cim;
   final String ertek;
   const _AdatSor({required this.cim, required this.ertek});
-
   @override
   Widget build(BuildContext context) {
     return Padding(
