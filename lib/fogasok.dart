@@ -923,7 +923,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                                child: const Text('Első', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                                child: const Text('thumbnail', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
                               ),
                             )
                         ],
@@ -981,6 +981,29 @@ class FogasReszletekScreen extends StatefulWidget {
 
 class _FogasReszletekScreenState extends State<FogasReszletekScreen> {
   final PageController _pageCtrl = PageController();
+  
+  // --- ÚJ: HOLDFÁZIS KALKULÁTOR ---
+  String _getHoldfazis(DateTime date) {
+    // Referencia újhold: 2000. január 6. 18:14 UTC
+    final double newMoon = DateTime.utc(2000, 1, 6, 18, 14).millisecondsSinceEpoch.toDouble();
+    const double msInDay = 86400000.0;
+    const double synodicMonth = 29.53058867;
+    
+    double diffDays = (date.millisecondsSinceEpoch - newMoon) / msInDay;
+    double phase = diffDays % synodicMonth;
+    if (phase < 0) phase += synodicMonth;
+    
+    if (phase < 1.84) return '🌑 Újhold';
+    if (phase < 5.53) return '🌒 Növő holdsarló';
+    if (phase < 9.22) return '🌓 Első negyed';
+    if (phase < 12.91) return '🌔 Növő telihold';
+    if (phase < 16.61) return '🌕 Telihold';
+    if (phase < 20.30) return '🌖 Fogyó telihold';
+    if (phase < 24.00) return '🌗 Utolsó negyed';
+    if (phase < 27.68) return '🌘 Fogyó holdsarló';
+    return '🌑 Újhold';
+  }
+  
   void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex) {
     int aktIndex = kezdoIndex;
     final PageController fullPageCtrl = PageController(initialPage: kezdoIndex);
@@ -1154,6 +1177,8 @@ class _FogasReszletekScreenState extends State<FogasReszletekScreen> {
                   const Divider(color: Colors.white24),
                   _AdatSor(cim: 'Időjárás', ertek: widget.fogas.idojaras?.isEmpty ?? true ? '-' : widget.fogas.idojaras!),
                   _AdatSor(cim: 'Hőmérséklet', ertek: widget.fogas.homerseklet == null ? '-' : '${widget.fogas.homerseklet} °C'),
+                  // ÚJ: HOLDFÁZIS MEGJELENÍTÉSE
+                  _AdatSor(cim: 'Holdfázis', ertek: _getHoldfazis(widget.fogas.datum)),
                 ],
               ),
             ),
