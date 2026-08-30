@@ -165,6 +165,39 @@ class HalReszletekScreen extends StatefulWidget {
 class _HalReszletekScreenState extends State<HalReszletekScreen> {
   final PageController _pageCtrl = PageController();
 
+  void _teljesKepernyosGaleria(BuildContext context, int kezdoIndex) {
+    final PageController fullPageCtrl = PageController(initialPage: kezdoIndex);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          body: PageView.builder(
+            controller: fullPageCtrl,
+            itemCount: widget.hal.kepek.length,
+            itemBuilder: (context, i) {
+              final utvonal = widget.hal.kepek[i];
+              return InteractiveViewer(
+                minScale: 1.0,
+                maxScale: 5.0,
+                child: Center(
+                  child: utvonal.startsWith('http')
+                    ? CachedNetworkImage(imageUrl: utvonal, fit: BoxFit.contain)
+                    : Image.file(File(utvonal), fit: BoxFit.contain),
+                ),
+              );
+            }
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSor(String cim, String tartalom) {
     if (tartalom.isEmpty) return const SizedBox.shrink();
     return Padding(
@@ -225,9 +258,12 @@ class _HalReszletekScreenState extends State<HalReszletekScreen> {
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: megjelenito,
+                          child: GestureDetector(
+                            onTap: () => _teljesKepernyosGaleria(context, i),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: megjelenito,
+                            ),
                           ),
                         );
                       },
