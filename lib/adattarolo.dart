@@ -27,6 +27,10 @@ class AdatTarolo {
   static const String _felszerelesTetelekKulcs = 'felszereles_tetelek';
   static const String _dokMappakKulcs = 'dok_mappak';
   static const String _dokFajlokKulcs = 'dok_fajlok';
+  
+  // --- ÚJ KULCSOK A JEGYZETEKNEK ÉS LISTÁKNAK ---
+  static const String _jegyzetekKulcs = 'jegyzetek_adatok';
+  static const String _listakKulcs = 'listak_adatok';
 
   static Future<String> biztonsagosKepMasolas(String eredetiUtvonal, {String? egyediNev}) async {
     if (eredetiUtvonal.startsWith('http')) return eredetiUtvonal; 
@@ -264,9 +268,26 @@ class AdatTarolo {
     await halfajokMentes(jelenlegi);
   }
 
+  // --- ÚJ: Jegyzetek és Listák betöltése és mentése ---
+  static Future<void> jegyzetekMentes(List<Jegyzet> jegyzetek) async => await _mentes(_jegyzetekKulcs, jegyzetek);
+  static Future<List<Jegyzet>> jegyzetekBetoltese() async {
+    final adatok = await _betoltes(_jegyzetekKulcs);
+    List<Jegyzet> list = adatok.map((e) => Jegyzet.fromJson(e)).toList();
+    list.sort((a, b) => a.sorrend.compareTo(b.sorrend));
+    return list;
+  }
+
+  static Future<void> listakMentes(List<Checklista> listak) async => await _mentes(_listakKulcs, listak);
+  static Future<List<Checklista>> listakBetoltese() async {
+    final adatok = await _betoltes(_listakKulcs);
+    List<Checklista> list = adatok.map((e) => Checklista.fromJson(e)).toList();
+    list.sort((a, b) => a.sorrend.compareTo(b.sorrend));
+    return list;
+  }
+
   static Future<String> letrehozExportJson() async {
     Map<String, dynamic> exportData = {
-      'verzio': 1.5,
+      'verzio': 1.6, // ÚJ: Frissítve 1.6-ra
       'turak': await _betoltes(_turakKulcs),
       'fogasok': await _betoltes(_fogasokKulcs),
       'halfajok': await _betoltes(_halfajokKulcs),
@@ -284,6 +305,8 @@ class AdatTarolo {
       'taskak': await _betoltes(_taskakKulcs), 
       'dok_mappak': await _betoltes(_dokMappakKulcs),
       'dok_fajlok': await _betoltes(_dokFajlokKulcs),
+      'jegyzetek': await _betoltes(_jegyzetekKulcs), // ÚJ: Jegyzetek bevétele az exportba
+      'listak': await _betoltes(_listakKulcs),       // ÚJ: Listák bevétele az exportba
     };
     return jsonEncode(exportData);
   }
@@ -416,6 +439,10 @@ class AdatTarolo {
     if (data.containsKey('taskak')) await prefs.setString(_taskakKulcs, jsonEncode(data['taskak'])); 
     if (data.containsKey('dok_mappak')) await prefs.setString(_dokMappakKulcs, jsonEncode(data['dok_mappak']));
     if (data.containsKey('dok_fajlok')) await prefs.setString(_dokFajlokKulcs, jsonEncode(data['dok_fajlok']));
+    
+    // ÚJ: Jegyzetek és Listák importálása (biztonságos visszamenőleges kompatibilitás)
+    if (data.containsKey('jegyzetek')) await prefs.setString(_jegyzetekKulcs, jsonEncode(data['jegyzetek']));
+    if (data.containsKey('listak')) await prefs.setString(_listakKulcs, jsonEncode(data['listak']));
 
     await prefs.setBool('felszereles_init', true);
     await prefs.setBool('halfaj_init', true);
