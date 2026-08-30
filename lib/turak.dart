@@ -1068,7 +1068,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             // --- TÚRA BORÍTÓKÉP SZERKESZTŐ (16:9 ARÁNY, MÁGNESES - BOXFIT.CONTAIN) ---
             const Text('Túra Borítókép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('Ez jelenik meg a túra fejlécében. Az arány pontosan 16:9, ahogy a kártyán is látszani fog. Két ujjal nagyíthatod, mozgathatod. Az egész kép látszódni fog a keretben.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const Text('Állítsd be a borítóképet! Két ujjal nagyíthatod és mozgathatod a fotót a zöld kereten belül. A főképernyőn lévő listákban pontosan az a részlet fog megjelenni, amit most ebben a kockában látsz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 12),
             
             Center(
