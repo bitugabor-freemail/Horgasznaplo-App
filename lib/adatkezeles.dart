@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'adattarolo.dart';
 
-// ÚJ: EXPORTÁLÁS FOLYAMATJELZŐ - Logó alatt a százalék, logó lentről felfelé töltődik
+// EXPORTÁLÁS FOLYAMATJELZŐ - Logó alatt a százalék, logó lentről felfelé töltődik
 class _ExportProgressWidget extends StatelessWidget {
   final double progress;
   const _ExportProgressWidget({required this.progress});
@@ -47,7 +47,7 @@ class _ExportProgressWidget extends StatelessWidget {
   }
 }
 
-// ÚJ: IMPORTÁLÁS FOLYAMATJELZŐ - Logó felett a százalék, logó fentről lefelé töltődik
+// IMPORTÁLÁS FOLYAMATJELZŐ - Logó felett a százalék, logó fentről lefelé töltődik
 class _ImportProgressWidget extends StatelessWidget {
   final double progress;
   const _ImportProgressWidget({required this.progress});
@@ -128,12 +128,13 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   int _fogasokSzama = 0;
   int _halfajokSzama = 0;
   int _felszerelesSzama = 0;
+  int _jegyzetEsListaSzama = 0; // ÚJ SZÁMLÁLÓ
   int _dokumentumokSzama = 0;
 
   bool _toltesFolyamatban = false;
   bool _mentesMegszakititva = false; 
   double _mentesProgress = -1.0; 
-  bool _isImportFolyamat = false; // ÚJ: Figyeljük, hogy épp exportálunk vagy importálunk
+  bool _isImportFolyamat = false; 
   String _toltesSzoveg = 'Művelet folyamatban...\nKérlek, várj!'; 
 
   @override
@@ -147,6 +148,8 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
     final fogasok = await AdatTarolo.fogasokBetoltese();
     final halfajok = await AdatTarolo.halfajokBetoltese();
     final felszerelesek = await AdatTarolo.felszerelesTetelekBetoltese();
+    final jegyzetek = await AdatTarolo.jegyzetekBetoltese(); // Jegyzetek betöltése
+    final listak = await AdatTarolo.listakBetoltese();       // Listák betöltése
     final dokumentumok = await AdatTarolo.dokFajlokBetoltese();
 
     setState(() {
@@ -154,6 +157,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
       _fogasokSzama = fogasok.length;
       _halfajokSzama = halfajok.length;
       _felszerelesSzama = felszerelesek.length;
+      _jegyzetEsListaSzama = jegyzetek.length + listak.length; // Összeadás
       _dokumentumokSzama = dokumentumok.length;
     });
   }
@@ -333,9 +337,9 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
               onPressed: () async {
                 Navigator.pop(context);
                 setState(() {
-                  _isImportFolyamat = true; // Jelezzük a UI-nak, hogy IMPORTÁLUNK
+                  _isImportFolyamat = true; 
                   _toltesFolyamatban = true;
-                  _mentesProgress = 0.0; // Pörgő kör helyett induljon nulláról
+                  _mentesProgress = 0.0; 
                   _toltesSzoveg = 'Adatok betöltése és kicsomagolása...\n\nKérlek, várj!';
                 });
                 
@@ -393,6 +397,8 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                         const Divider(color: Colors.white24),
                         _StatRow(cim: 'Mentett halfajok:', ertek: '$_halfajokSzama db'),
                         const Divider(color: Colors.white24),
+                        _StatRow(cim: 'Jegyzetek és listák:', ertek: '$_jegyzetEsListaSzama db'), // ÚJ SOR
+                        const Divider(color: Colors.white24),
                         _StatRow(cim: 'Mentett dokumentumok:', ertek: '$_dokumentumokSzama db'),
                       ],
                     ),
@@ -437,7 +443,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (_mentesProgress >= 0)
-                      _isImportFolyamat // ÚJ: Elágazás, hogy az Import vagy Export logót mutassa
+                      _isImportFolyamat 
                           ? _ImportProgressWidget(progress: _mentesProgress)
                           : _ExportProgressWidget(progress: _mentesProgress)
                     else
