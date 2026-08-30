@@ -853,7 +853,7 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             // --- HALFAJ INDEXKÉP SZERKESZTŐ (KOCKA - BOXFIT.CONTAIN) ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text('Két ujjal nagyíthatod, mozgathatod. Az egész kép látszódni fog a kockában.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const Text('Állítsd be a borítóképet! Két ujjal nagyíthatod és mozgathatod a fotót a zöld kereten belül. A főképernyőn lévő listákban pontosan az a részlet fog megjelenni, amit most ebben a kockában látsz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 12),
             
             Center(
