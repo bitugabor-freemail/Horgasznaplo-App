@@ -8,6 +8,8 @@ import 'statisztika.dart';
 import 'adatkezeles.dart';
 import 'torzsadatok.dart';
 import 'dokumentumok.dart'; 
+import 'jegyzetek.dart'; // ÚJ: Jegyzetek importálása
+import 'listak.dart';    // ÚJ: Listák importálása
 
 void main() {
   runApp(const HorgaszNaploApp());
@@ -84,8 +86,6 @@ class FomenuScreen extends StatefulWidget {
 class _FomenuScreenState extends State<FomenuScreen> {
   int _currentIndex = 0;
   final GlobalKey<FelszerelesScreenState> _felszerelesKey = GlobalKey<FelszerelesScreenState>();
-  
-  // ÚJ: Kulcs a statisztika képernyőhöz, hogy elérjük a Holdnaptárat
   final GlobalKey<StatisztikaScreenState> _statisztikaKey = GlobalKey<StatisztikaScreenState>();
   
   late List<Widget> _kepernyok; 
@@ -98,7 +98,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
       const KedvencekScreen(),
       FelszerelesScreen(key: _felszerelesKey),
       const LexikonScreen(),
-      StatisztikaScreen(key: _statisztikaKey), // ÚJ: Kulcs átadása
+      StatisztikaScreen(key: _statisztikaKey), 
     ];
   }
 
@@ -109,11 +109,11 @@ class _FomenuScreenState extends State<FomenuScreen> {
         KedvencekScreen(key: UniqueKey()),
         FelszerelesScreen(key: _felszerelesKey),
         LexikonScreen(key: UniqueKey()),
-        StatisztikaScreen(key: _statisztikaKey), // ÚJ: Kulcs átadása
+        StatisztikaScreen(key: _statisztikaKey), 
       ];
     });
     _felszerelesKey.currentState?.adatokBetoltese();
-    _statisztikaKey.currentState?.adatokBetoltese(); // ÚJ: Frissítés
+    _statisztikaKey.currentState?.adatokBetoltese(); 
   }
 
   final List<String> _cimek = [
@@ -265,7 +265,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
           onPressed: _mutassHalStatuszInfot,
         ),
       ];
-    } else if (_currentIndex == 4) { // ÚJ: Holdnaptár gomb a Statisztikánál
+    } else if (_currentIndex == 4) { 
       return [
         IconButton(
           icon: const Icon(Icons.brightness_2, color: Colors.greenAccent),
@@ -289,108 +289,115 @@ class _FomenuScreenState extends State<FomenuScreen> {
       ),
       drawer: Drawer(
         backgroundColor: const Color(0xFF161616),
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: Colors.green[900]?.withOpacity(0.5)),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
                 children: [
-                  Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('Verzió 1.4.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)), // ÚJ
+                  DrawerHeader(
+                    decoration: BoxDecoration(color: Colors.green[900]?.withOpacity(0.5)),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text('Horgásznapló', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text('Verzió 1.6.0', style: TextStyle(color: Colors.greenAccent, fontSize: 14)), // Frissítve 1.6.0
+                      ],
+                    ),
+                  ),
+                  
+                  // FŐ FUNKCIÓK
+                  ListTile(
+                    leading: const Icon(Icons.map_outlined, color: Colors.greenAccent),
+                    title: const Text('1. Horgásztúráim', style: TextStyle(fontSize: 16)),
+                    onTap: () { setState(() => _currentIndex = 0); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.favorite, color: Colors.greenAccent),
+                    title: const Text('2. Kedvenc fogások', style: TextStyle(fontSize: 16)),
+                    onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.backpack_outlined, color: Colors.greenAccent),
+                    title: const Text('3. Felszerelés', style: TextStyle(fontSize: 16)),
+                    onTap: () { setState(() => _currentIndex = 2); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.library_books_outlined, color: Colors.greenAccent),
+                    title: const Text('4. Halfajok', style: TextStyle(fontSize: 16)),
+                    onTap: () { setState(() => _currentIndex = 3); Navigator.pop(context); },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.bar_chart, color: Colors.greenAccent),
+                    title: const Text('5. Statisztika', style: TextStyle(fontSize: 16)),
+                    onTap: () { setState(() => _currentIndex = 4); Navigator.pop(context); },
+                  ),
+                  
+                  const Divider(color: Colors.white24),
+                  
+                  // SZEMÉLYES ASSZISZTENS
+                  ListTile(
+                    leading: const Icon(Icons.notes, color: Colors.greenAccent),
+                    title: const Text('6. Jegyzetek', style: TextStyle(fontSize: 16)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const JegyzetekScreen()));
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.checklist, color: Colors.greenAccent),
+                    title: const Text('7. Listák', style: TextStyle(fontSize: 16)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ListakScreen()));
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.folder_shared_outlined, color: Colors.greenAccent),
+                    title: const Text('8. Dokumentumok', style: TextStyle(fontSize: 16)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const DokumentumokScreen()));
+                    },
+                  ),
+                  
+                  const Divider(color: Colors.white24),
+                  
+                  // RENDSZER
+                  ListTile(
+                    leading: const Icon(Icons.category, color: Colors.greenAccent),
+                    title: const Text('9. Törzsadatok', style: TextStyle(fontSize: 16)),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await Navigator.push(context, MaterialPageRoute(builder: (context) => const TorzsadatokScreen()));
+                      _kepernyokFrissitese();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.settings, color: Colors.greenAccent),
+                    title: const Text('10. Adatkezelés', style: TextStyle(fontSize: 16)),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await Navigator.push(context, MaterialPageRoute(builder: (context) => const AdatkezelesScreen()));
+                      _kepernyokFrissitese();
+                    },
+                  ),
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.map_outlined, color: Colors.greenAccent),
-              title: const Text('1. Horgásztúráim'),
-              onTap: () { setState(() => _currentIndex = 0); Navigator.pop(context); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.favorite, color: Colors.greenAccent),
-              title: const Text('2. Kedvenc fogások'),
-              onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.backpack_outlined, color: Colors.greenAccent),
-              title: const Text('3. Felszerelés'),
-              onTap: () { setState(() => _currentIndex = 2); Navigator.pop(context); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.library_books_outlined, color: Colors.greenAccent),
-              title: const Text('4. Halfajok'),
-              onTap: () { setState(() => _currentIndex = 3); Navigator.pop(context); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.bar_chart, color: Colors.greenAccent),
-              title: const Text('5. Statisztika'),
-              onTap: () { setState(() => _currentIndex = 4); Navigator.pop(context); },
-            ),
-            const Divider(color: Colors.white24),
-            ListTile(
-              leading: const Icon(Icons.folder_shared_outlined, color: Colors.greenAccent),
-              title: const Text('6. Dokumentumok'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const DokumentumokScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.category, color: Colors.greenAccent),
-              title: const Text('7. Törzsadatok'),
-              onTap: () async {
-                Navigator.pop(context);
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const TorzsadatokScreen()),
-                );
-                _kepernyokFrissitese();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings, color: Colors.greenAccent),
-              title: const Text('8. Adatkezelés'),
-              onTap: () async {
-                Navigator.pop(context);
-                await Navigator.push(context, MaterialPageRoute(builder: (context) => const AdatkezelesScreen()));
-                _kepernyokFrissitese();
-              },
-            ),
-            const Divider(color: Colors.white24),
-            ListTile(
-              leading: const Icon(Icons.info_outline, color: Colors.white54),
-              title: const Text('9. Névjegy'),
-              onTap: () {
-                Navigator.pop(context);
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: const Color(0xFF1E1E1E),
-                    title: const Text('Névjegy', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                    content: const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Készítette: Google Gemini & B2', style: TextStyle(color: Colors.white, fontSize: 16)),
-                        SizedBox(height: 8),
-                        Text('Verzió: 1.4.0', style: TextStyle(color: Colors.white70, fontSize: 14)), // ÚJ
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Bezár', style: TextStyle(color: Colors.greenAccent)),
-                      ),
-                    ],
-                  ),
-                );
-              },
+            
+            // ÚJ: A logó és a szerzői jog fixen alul
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24.0, top: 12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text('© ', style: TextStyle(color: Colors.greenAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('by B2', style: TextStyle(color: Colors.white, fontSize: 16)),
+                ],
+              ),
             ),
           ],
         ),
@@ -408,7 +415,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Kedvencek'),
           BottomNavigationBarItem(icon: Icon(Icons.backpack_outlined), label: 'Felszerelés'),
           BottomNavigationBarItem(icon: Icon(Icons.library_books_outlined), label: 'Halfajok'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Statisztika'), // ÚJ: Javítva a rövidítés
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Statisztika'), 
         ],
       ),
     );
