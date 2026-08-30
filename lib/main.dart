@@ -85,6 +85,9 @@ class _FomenuScreenState extends State<FomenuScreen> {
   int _currentIndex = 0;
   final GlobalKey<FelszerelesScreenState> _felszerelesKey = GlobalKey<FelszerelesScreenState>();
   
+  // ÚJ: Kulcs a statisztika képernyőhöz, hogy elérjük a Holdnaptárat
+  final GlobalKey<StatisztikaScreenState> _statisztikaKey = GlobalKey<StatisztikaScreenState>();
+  
   late List<Widget> _kepernyok; 
 
   @override
@@ -95,7 +98,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
       const KedvencekScreen(),
       FelszerelesScreen(key: _felszerelesKey),
       const LexikonScreen(),
-      const StatisztikaScreen(),
+      StatisztikaScreen(key: _statisztikaKey), // ÚJ: Kulcs átadása
     ];
   }
 
@@ -106,10 +109,11 @@ class _FomenuScreenState extends State<FomenuScreen> {
         KedvencekScreen(key: UniqueKey()),
         FelszerelesScreen(key: _felszerelesKey),
         LexikonScreen(key: UniqueKey()),
-        StatisztikaScreen(key: UniqueKey()),
+        StatisztikaScreen(key: _statisztikaKey), // ÚJ: Kulcs átadása
       ];
     });
     _felszerelesKey.currentState?.adatokBetoltese();
+    _statisztikaKey.currentState?.adatokBetoltese(); // ÚJ: Frissítés
   }
 
   final List<String> _cimek = [
@@ -261,6 +265,16 @@ class _FomenuScreenState extends State<FomenuScreen> {
           onPressed: _mutassHalStatuszInfot,
         ),
       ];
+    } else if (_currentIndex == 4) { // ÚJ: Holdnaptár gomb a Statisztikánál
+      return [
+        IconButton(
+          icon: const Icon(Icons.brightness_2, color: Colors.greenAccent),
+          tooltip: 'Holdnaptár & Elemzés',
+          onPressed: () {
+            _statisztikaKey.currentState?.mutassHoldnaptar();
+          },
+        ),
+      ];
     }
     return [];
   }
@@ -394,7 +408,7 @@ class _FomenuScreenState extends State<FomenuScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Kedvencek'),
           BottomNavigationBarItem(icon: Icon(Icons.backpack_outlined), label: 'Felszerelés'),
           BottomNavigationBarItem(icon: Icon(Icons.library_books_outlined), label: 'Halfajok'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Statisz.'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Statisztika'), // ÚJ: Javítva a rövidítés
         ],
       ),
     );
