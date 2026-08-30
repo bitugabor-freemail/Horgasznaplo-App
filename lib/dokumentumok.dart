@@ -106,7 +106,7 @@ class _DokumentumokScreenState extends State<DokumentumokScreen> {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100), // ÚJ: Túlcsordulás helye
               itemCount: _mappak.length,
               itemBuilder: (context, index) {
                 final mappa = _mappak[index];
@@ -318,7 +318,7 @@ class _MappaTartalomScreenState extends State<MappaTartalomScreen> {
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100), // ÚJ: Túlcsordulás helye
                   itemCount: _fajlok.length,
                   itemBuilder: (context, index) {
                     final fajl = _fajlok[index];
