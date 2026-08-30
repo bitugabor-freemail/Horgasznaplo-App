@@ -14,6 +14,8 @@ class _ListakScreenState extends State<ListakScreen> {
   bool _isKeresoMod = false;
   String _keresoKifejezes = '';
   final TextEditingController _keresoCtrl = TextEditingController();
+  
+  bool _betoltesFolyamatban = true; 
 
   @override
   void initState() {
@@ -25,6 +27,7 @@ class _ListakScreenState extends State<ListakScreen> {
     final adatok = await AdatTarolo.listakBetoltese();
     setState(() {
       _listak = adatok;
+      _betoltesFolyamatban = false; 
     });
   }
 
@@ -72,7 +75,6 @@ class _ListakScreenState extends State<ListakScreen> {
       final keresoSzoveg = _keresoKifejezes.toLowerCase();
       mutatottListak = _listak.where((l) {
         if (l.cim.toLowerCase().contains(keresoSzoveg)) return true;
-        // Keresés a tételek szövegében is
         if (l.tetelek.any((t) => t.szoveg.toLowerCase().contains(keresoSzoveg))) return true;
         return false;
       }).toList();
@@ -108,85 +110,86 @@ class _ListakScreenState extends State<ListakScreen> {
           ),
         ],
       ),
-      body: _listak.isEmpty
-          ? const Center(
-              child: Text(
-                'Még nincsenek listáid.\nKattints a + gombra egy újhoz!',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 16),
-              ),
-            )
-          : mutatottListak.isEmpty
-              ? const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)))
-              : ReorderableListView(
-                  padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
-                  // Keresés közben nincs rendezés
-                  buildDefaultDragHandles: _keresoKifejezes.isEmpty, 
-                  onReorder: (oldIndex, newIndex) {
-                    if (_keresoKifejezes.isNotEmpty) return;
-                    setState(() {
-                      if (newIndex > oldIndex) newIndex -= 1;
-                      final item = _listak.removeAt(oldIndex);
-                      _listak.insert(newIndex, item);
-                    });
-                    _sorrendMentes();
-                  },
-                  children: mutatottListak.map((lista) {
-                    final osszes = lista.tetelek.length;
-                    final hianyzik = lista.tetelek.where((t) => !t.isKipipava).length;
+      body: _betoltesFolyamatban
+          ? const Center(child: CircularProgressIndicator(color: Colors.greenAccent))
+          : _listak.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Még nincsenek listáid.\nKattints a + gombra egy újhoz!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white54, fontSize: 16),
+                  ),
+                )
+              : mutatottListak.isEmpty
+                  ? const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)))
+                  : ReorderableListView(
+                      padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
+                      buildDefaultDragHandles: _keresoKifejezes.isEmpty, 
+                      onReorder: (oldIndex, newIndex) {
+                        if (_keresoKifejezes.isNotEmpty) return;
+                        setState(() {
+                          if (newIndex > oldIndex) newIndex -= 1;
+                          final item = _listak.removeAt(oldIndex);
+                          _listak.insert(newIndex, item);
+                        });
+                        _sorrendMentes();
+                      },
+                      children: mutatottListak.map((lista) {
+                        final osszes = lista.tetelek.length;
+                        final hianyzik = lista.tetelek.where((t) => !t.isKipipava).length;
 
-                    return Card(
-                      key: ValueKey(lista.id),
-                      color: const Color(0xFF1E1E1E),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => _listaNyitasa(lista),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                lista.cim.isNotEmpty ? lista.cim : 'Névtelen lista',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white), // Fehérre módosítva a Jegyzetek stílusához
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
+                        return Card(
+                          key: ValueKey(lista.id),
+                          color: const Color(0xFF1E1E1E),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => _listaNyitasa(lista),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    hianyzik == 0 && osszes > 0 ? Icons.check_circle : Icons.list_alt,
-                                    color: hianyzik == 0 && osszes > 0 ? Colors.green : Colors.white54,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
                                   Text(
-                                    '$hianyzik tétel (Összesen $osszes)',
-                                    style: TextStyle(
-                                      color: hianyzik == 0 && osszes > 0 ? Colors.green : Colors.white70,
-                                      fontSize: 15,
+                                    lista.cim.isNotEmpty ? lista.cim : 'Névtelen lista',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white), 
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        hianyzik == 0 && osszes > 0 ? Icons.check_circle : Icons.list_alt,
+                                        color: hianyzik == 0 && osszes > 0 ? Colors.green : Colors.white54,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '$hianyzik tétel (Összesen $osszes)',
+                                        style: TextStyle(
+                                          color: hianyzik == 0 && osszes > 0 ? Colors.green : Colors.white70,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: osszes > 0 ? (osszes - hianyzik) / osszes : 0.0,
+                                      backgroundColor: Colors.black26,
+                                      color: hianyzik == 0 && osszes > 0 ? Colors.green : Colors.greenAccent,
+                                      minHeight: 6,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: osszes > 0 ? (osszes - hianyzik) / osszes : 0.0,
-                                  backgroundColor: Colors.black26,
-                                  color: hianyzik == 0 && osszes > 0 ? Colors.green : Colors.greenAccent,
-                                  minHeight: 6,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                        );
+                      }).toList(),
+                    ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green[600],
         onPressed: () => _listaNyitasa(),
@@ -196,7 +199,6 @@ class _ListakScreenState extends State<ListakScreen> {
   }
 }
 
-// --- LISTA RÉSZLETEK ÉS SZERKESZTŐ (INLINE) ---
 class ListaReszletekScreen extends StatefulWidget {
   final Checklista? lista;
   final Function(Checklista) mentesCallback;
@@ -216,15 +218,12 @@ class ListaReszletekScreen extends StatefulWidget {
 class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
   late Checklista _aktLista;
   final TextEditingController _cimCtrl = TextEditingController();
-  
-  // Ezzel azonosítjuk az éppen hozzáadott tételt az automatikus fókuszáláshoz
   String? _ujTetelId; 
 
   @override
   void initState() {
     super.initState();
     if (widget.lista != null) {
-      // Mély másolat, hogy csak mentéskor írjuk felül az eredetit
       _aktLista = Checklista(
         id: widget.lista!.id,
         cim: widget.lista!.cim,
@@ -243,7 +242,7 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
       _aktLista = Checklista(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         letrehozva: DateTime.now(),
-        tetelek: [ListaTetel(id: elsoTetelId, szoveg: '')], // Egy üres indulásnak
+        tetelek: [ListaTetel(id: elsoTetelId, szoveg: '')],
       );
     }
   }
@@ -262,7 +261,7 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
   void _ujTetelHozzaadasa() {
     final ujId = DateTime.now().millisecondsSinceEpoch.toString();
     setState(() {
-      _ujTetelId = ujId; // Megjegyezzük az ID-t az autofocushoz
+      _ujTetelId = ujId; 
       _aktLista.tetelek.add(ListaTetel(id: ujId, szoveg: ''));
     });
     _automatikusMentes();
@@ -301,8 +300,8 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
               onPressed: () {
                 widget.torlesCallback(_aktLista.id);
-                Navigator.pop(context); // Dialog bezárás
-                Navigator.pop(context); // Képernyő bezárás
+                Navigator.pop(context); 
+                Navigator.pop(context); 
               },
               child: const Text('Törlés', style: TextStyle(color: Colors.white)),
             ),
@@ -314,7 +313,6 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Kettébontjuk a listát az indexek megtartása mellett
     List<ListaTetel> aktivTetelek = _aktLista.tetelek.where((t) => !t.isKipipava).toList();
     List<ListaTetel> kipipaltTetelek = _aktLista.tetelek.where((t) => t.isKipipava).toList();
 
@@ -340,10 +338,9 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Címsor
             TextField(
               controller: _cimCtrl,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.greenAccent),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white), // Fehérre módosítva a Jegyzetek stílusához
               decoration: const InputDecoration(
                 hintText: 'Lista címe',
                 hintStyle: TextStyle(color: Colors.white38),
@@ -353,14 +350,12 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
             ),
             const Divider(color: Colors.white24, height: 20),
             
-            // Aktív tételek (Reorderable) stabil listával
             ReorderableListView(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               onReorder: (oldIndex, newIndex) {
                 setState(() {
                   if (newIndex > oldIndex) newIndex -= 1;
-                  // Átrendezés a fő listában is
                   final mozgatottId = aktivTetelek[oldIndex].id;
                   final celId = aktivTetelek[newIndex].id;
                   
@@ -381,7 +376,7 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
                   key: ValueKey(tetel.id),
                   tetel: tetel,
                   isKipipaltNezet: false,
-                  autoFocus: tetel.id == _ujTetelId, // Ha ez a friss tétel, ráugrik a fókusz!
+                  autoFocus: tetel.id == _ujTetelId, 
                   onChanged: _automatikusMentes,
                   onTorles: () => _tetelTorlese(tetel.id),
                   onToggle: (bool val) {
@@ -394,7 +389,6 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
               }).toList(),
             ),
 
-            // Új tétel hozzáadása gomb (ZÖLD felirattal és ikonnal)
             Padding(
               padding: const EdgeInsets.only(top: 8.0, bottom: 24.0, left: 8.0),
               child: InkWell(
@@ -414,7 +408,6 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
               ),
             ),
 
-            // Kipipált tételek (Szürkítve, alul)
             if (kipipaltTetelek.isNotEmpty) ...[
               const Divider(color: Colors.white24),
               Padding(
@@ -426,7 +419,7 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
                   key: ValueKey(tetel.id),
                   tetel: tetel,
                   isKipipaltNezet: true,
-                  autoFocus: false, // Itt értelemszerűen sosem kell autofocus
+                  autoFocus: false,
                   onChanged: _automatikusMentes,
                   onTorles: () => _tetelTorlese(tetel.id),
                   onToggle: (bool val) {
@@ -445,7 +438,6 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
   }
 }
 
-// --- EGYEDI TÉTEL SOR (A kétkattintásos törléssel és autofocussal) ---
 class _TetelSor extends StatefulWidget {
   final ListaTetel tetel;
   final bool isKipipaltNezet;
@@ -499,16 +491,14 @@ class _TetelSorState extends State<_TetelSor> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Drag handle (csak aktívaknál)
           if (!widget.isKipipaltNezet)
             const Padding(
               padding: EdgeInsets.only(right: 8.0),
               child: Icon(Icons.drag_indicator, color: Colors.white24, size: 20),
             )
           else 
-            const SizedBox(width: 28), // Helykitöltés, hogy egy vonalban maradjanak
+            const SizedBox(width: 28),
 
-          // Checkbox
           Checkbox(
             value: widget.tetel.isKipipava,
             activeColor: Colors.green[700],
@@ -519,11 +509,10 @@ class _TetelSorState extends State<_TetelSor> {
             },
           ),
           
-          // Szöveg szerkesztő
           Expanded(
             child: TextField(
               controller: _szovegCtrl,
-              autofocus: widget.autoFocus, // Itt alkalmazzuk a fókusz ugrást!
+              autofocus: widget.autoFocus, 
               style: TextStyle(
                 color: widget.isKipipaltNezet ? Colors.white38 : Colors.white,
                 decoration: widget.isKipipaltNezet ? TextDecoration.lineThrough : null,
@@ -542,7 +531,6 @@ class _TetelSorState extends State<_TetelSor> {
             ),
           ),
 
-          // Kétkattintásos okos törlés gomb (TapRegion-nal)
           TapRegion(
             onTapOutside: (event) {
               if (_isTorlesElesitve) {
