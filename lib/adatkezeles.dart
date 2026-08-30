@@ -71,14 +71,14 @@ class _ImportProgressWidget extends StatelessWidget {
           width: 240, 
           height: 240,
           child: Stack(
-            alignment: Alignment.topCenter, // Fentre igazítjuk a Stack-et
+            alignment: Alignment.topCenter,
             children: [
               Opacity(
                 opacity: 0.2,
                 child: Image.asset('assets/small_logo.png', width: 240, height: 240, fit: BoxFit.contain),
               ),
               ClipRect(
-                clipper: _TopDownClipper(progress), // Fordított maszk
+                clipper: _TopDownClipper(progress), 
                 child: Image.asset('assets/small_logo.png', width: 240, height: 240, fit: BoxFit.contain),
               ),
             ],
@@ -128,7 +128,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   int _fogasokSzama = 0;
   int _halfajokSzama = 0;
   int _felszerelesSzama = 0;
-  int _jegyzetEsListaSzama = 0; // ÚJ SZÁMLÁLÓ
+  int _jegyzetEsListaSzama = 0; 
   int _dokumentumokSzama = 0;
 
   bool _toltesFolyamatban = false;
@@ -144,22 +144,30 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   }
 
   Future<void> _statisztikakFrissitese() async {
-    final turak = await AdatTarolo.turakBetoltese();
-    final fogasok = await AdatTarolo.fogasokBetoltese();
-    final halfajok = await AdatTarolo.halfajokBetoltese();
-    final felszerelesek = await AdatTarolo.felszerelesTetelekBetoltese();
-    final jegyzetek = await AdatTarolo.jegyzetekBetoltese(); // Jegyzetek betöltése
-    final listak = await AdatTarolo.listakBetoltese();       // Listák betöltése
-    final dokumentumok = await AdatTarolo.dokFajlokBetoltese();
+    try {
+      final turak = await AdatTarolo.turakBetoltese();
+      final fogasok = await AdatTarolo.fogasokBetoltese();
+      final halfajok = await AdatTarolo.halfajokBetoltese();
+      final felszerelesek = await AdatTarolo.felszerelesTetelekBetoltese();
+      final jegyzetek = await AdatTarolo.jegyzetekBetoltese(); 
+      final listak = await AdatTarolo.listakBetoltese();       
+      final dokumentumok = await AdatTarolo.dokFajlokBetoltese();
 
-    setState(() {
-      _turakSzama = turak.length;
-      _fogasokSzama = fogasok.length;
-      _halfajokSzama = halfajok.length;
-      _felszerelesSzama = felszerelesek.length;
-      _jegyzetEsListaSzama = jegyzetek.length + listak.length; // Összeadás
-      _dokumentumokSzama = dokumentumok.length;
-    });
+      if (mounted) {
+        setState(() {
+          _turakSzama = turak.length;
+          _fogasokSzama = fogasok.length;
+          _halfajokSzama = halfajok.length;
+          _felszerelesSzama = felszerelesek.length;
+          _jegyzetEsListaSzama = jegyzetek.length + listak.length; 
+          _dokumentumokSzama = dokumentumok.length;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _mutassUzenetet('Hiba a statisztikák betöltésekor: $e', hiba: true);
+      }
+    }
   }
 
   Future<void> _osszesAdatTorlese() async {
@@ -246,7 +254,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
             onPressed: () async {
               Navigator.pop(context);
               setState(() {
-                _isImportFolyamat = false; // Jelezzük a UI-nak, hogy exportálunk
+                _isImportFolyamat = false; 
                 _toltesFolyamatban = true;
                 _mentesMegszakititva = false;
                 _mentesProgress = 0.0;
@@ -372,7 +380,16 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Adatkezelés')),
+      appBar: AppBar(
+        title: const Text('Adatkezelés'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.greenAccent),
+            tooltip: 'Statisztikák frissítése',
+            onPressed: _statisztikakFrissitese,
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -397,7 +414,7 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                         const Divider(color: Colors.white24),
                         _StatRow(cim: 'Mentett halfajok:', ertek: '$_halfajokSzama db'),
                         const Divider(color: Colors.white24),
-                        _StatRow(cim: 'Jegyzetek és listák:', ertek: '$_jegyzetEsListaSzama db'), // ÚJ SOR
+                        _StatRow(cim: 'Jegyzetek és listák:', ertek: '$_jegyzetEsListaSzama db'),
                         const Divider(color: Colors.white24),
                         _StatRow(cim: 'Mentett dokumentumok:', ertek: '$_dokumentumokSzama db'),
                       ],
