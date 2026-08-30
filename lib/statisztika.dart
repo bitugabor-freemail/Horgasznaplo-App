@@ -8,10 +8,11 @@ class StatisztikaScreen extends StatefulWidget {
   const StatisztikaScreen({super.key});
 
   @override
-  State<StatisztikaScreen> createState() => _StatisztikaScreenState();
+  State<StatisztikaScreen> createState() => StatisztikaScreenState(); // ÚJ: Publikus state
 }
 
-class _StatisztikaScreenState extends State<StatisztikaScreen> {
+// ÚJ: Publikus state osztály (alsóvonal nélkül), hogy a main.dart elérhesse
+class StatisztikaScreenState extends State<StatisztikaScreen> {
   // --- ADATBÁZISOK ---
   List<Tura> _osszesTura = [];
   List<FogasModel> _osszesFogas = [];
@@ -43,10 +44,11 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     final most = DateTime.now();
     _kezdoDatum = DateTime(most.year, 1, 1); 
     _vegDatum = DateTime(most.year, 12, 31);
-    _adatokBetoltese();
+    adatokBetoltese();
   }
 
-  Future<void> _adatokBetoltese() async {
+  // ÚJ: Publikus metódus
+  Future<void> adatokBetoltese() async {
     _osszesTura = await AdatTarolo.turakBetoltese();
     
     if (_osszesTura.isNotEmpty) {
@@ -485,13 +487,12 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     return days[date.weekday - 1];
   }
 
-  // --- ÚJ: HOLDFÁZIS NAPTÁR ÉS ELEMZÉS ---
-  void _mutassHoldnaptar() {
+  // ÚJ: Publikussá téve, hogy a main.dart meghívhassa
+  void mutassHoldnaptar() {
     final szurt = _getSzurtFogasok();
     Map<String, int> phaseCounts = {};
     int total = szurt.length;
     
-    // Személyes statisztika gyűjtése
     for(var f in szurt) {
       final phase = _getHoldfazisInfo(f.datum);
       String key = '${phase.ikon} ${phase.nev}';
@@ -502,7 +503,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     final today = DateTime.now();
     final todayPhase = _getHoldfazisInfo(today);
     
-    // Generálunk 380 napot: előző 14 nap + mai nap + 365 nap (1 év) előre
     List<DateTime> naptarNapok = List.generate(380, (i) => today.add(Duration(days: i - 14))); 
 
     showModalBottomSheet(
@@ -533,7 +533,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
               ),
               const SizedBox(height: 16),
               
-              // MAI NAP
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white12)),
@@ -562,7 +561,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
               ),
               const SizedBox(height: 16),
 
-              // SAJÁT STATISZTIKA
               if (total > 0) ...[
                 const Text('Saját Statisztikád', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
@@ -584,40 +582,45 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // NAPTÁR
               const Text('Előrejelzés (Naptár)', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               Expanded(
                 child: ListView.builder(
+                  // A 13. index a "Tegnap", így tegnap, ma és holnap egyből látszik a képernyőn!
+                  controller: ScrollController(initialScrollOffset: 13 * 76.0), 
+                  itemExtent: 76.0,
                   itemCount: naptarNapok.length,
                   itemBuilder: (context, idx) {
                     DateTime date = naptarNapok[idx];
                     _HoldfazisAdat phase = _getHoldfazisInfo(date);
                     bool isToday = date.year == today.year && date.month == today.month && date.day == today.day;
                     
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: isToday ? Colors.green[900]?.withOpacity(0.3) : const Color(0xFF161616),
-                        borderRadius: BorderRadius.circular(8),
-                        border: isToday ? Border.all(color: Colors.greenAccent) : null,
-                      ),
-                      child: ListTile(
-                        leading: Text(phase.ikon, style: const TextStyle(fontSize: 24)),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('${DateFormat('MM.dd.').format(date)} (${_getMagyarNap(date)})', style: TextStyle(fontWeight: isToday ? FontWeight.bold : FontWeight.normal, fontSize: 14)),
-                            Row(
-                              children: List.generate(5, (index) => Icon(
-                                Icons.phishing, 
-                                size: 14, 
-                                color: index < phase.kapasIndex ? (phase.kapasIndex >= 4 ? Colors.greenAccent : Colors.orangeAccent) : Colors.white24
-                              )),
-                            )
-                          ],
+                    return SizedBox(
+                      height: 76.0,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isToday ? Colors.green[900]?.withOpacity(0.3) : const Color(0xFF161616),
+                          borderRadius: BorderRadius.circular(8),
+                          border: isToday ? Border.all(color: Colors.greenAccent) : null,
                         ),
-                        subtitle: Text(phase.nev, style: const TextStyle(color: Colors.white70)),
+                        child: ListTile(
+                          leading: Text(phase.ikon, style: const TextStyle(fontSize: 24)),
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('${DateFormat('MM.dd.').format(date)} (${_getMagyarNap(date)})', style: TextStyle(fontWeight: isToday ? FontWeight.bold : FontWeight.normal, fontSize: 14)),
+                              Row(
+                                children: List.generate(5, (index) => Icon(
+                                  Icons.phishing, 
+                                  size: 14, 
+                                  color: index < phase.kapasIndex ? (phase.kapasIndex >= 4 ? Colors.greenAccent : Colors.orangeAccent) : Colors.white24
+                                )),
+                              )
+                            ],
+                          ),
+                          subtitle: Text(phase.nev, style: const TextStyle(color: Colors.white70)),
+                        ),
                       ),
                     );
                   },
@@ -667,7 +670,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     Map<String, _TagStat> csaliStats = _getCsaliStats(szurtFogasok);
     Map<String, _TagStat> etetoStats = _getEtetoStats(szurtFogasok);
 
-    // --- SZEMÉLYES REKORDOK (PB) SZÁMÍTÁSA ---
     Map<String, FogasModel> rekordok = {};
     for (var f in szurtFogasok) {
       if (f.suly != null && f.suly! > 0) {
@@ -682,7 +684,6 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
     }
     
     var rekordLista = rekordok.values.toList();
-    // Csökkenő sorrendbe rendezzük súly alapján
     rekordLista.sort((a, b) => (b.suly ?? 0).compareTo(a.suly ?? 0));
 
     return Scaffold(
@@ -695,23 +696,14 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Adatok Elemzése', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.brightness_2, color: Colors.greenAccent),
-                      tooltip: 'Holdnaptár & Elemzés',
-                      onPressed: _mutassHoldnaptar,
-                    ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isSzurt ? Colors.green[800] : Colors.grey[800],
-                        foregroundColor: Colors.white,
-                      ),
-                      icon: const Icon(Icons.tune, size: 18),
-                      label: const Text('Szűrők'),
-                      onPressed: _nyitReszletesSzurok,
-                    ),
-                  ],
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isSzurt ? Colors.green[800] : Colors.grey[800],
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.tune, size: 18),
+                  label: const Text('Szűrők'),
+                  onPressed: _nyitReszletesSzurok,
                 ),
               ],
             ),
