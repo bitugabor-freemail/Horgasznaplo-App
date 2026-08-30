@@ -118,10 +118,10 @@ class _ListakScreenState extends State<ListakScreen> {
             )
           : mutatottListak.isEmpty
               ? const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)))
-              : ReorderableListView.builder(
+              : ReorderableListView(
                   padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100),
-                  itemCount: mutatottListak.length,
-                  buildDefaultDragHandles: _keresoKifejezes.isEmpty, // Keresés közben nincs rendezés
+                  // Keresés közben nincs rendezés
+                  buildDefaultDragHandles: _keresoKifejezes.isEmpty, 
                   onReorder: (oldIndex, newIndex) {
                     if (_keresoKifejezes.isNotEmpty) return;
                     setState(() {
@@ -131,8 +131,7 @@ class _ListakScreenState extends State<ListakScreen> {
                     });
                     _sorrendMentes();
                   },
-                  itemBuilder: (context, index) {
-                    final lista = mutatottListak[index];
+                  children: mutatottListak.map((lista) {
                     final osszes = lista.tetelek.length;
                     final hianyzik = lista.tetelek.where((t) => !t.isKipipava).length;
 
@@ -151,7 +150,7 @@ class _ListakScreenState extends State<ListakScreen> {
                             children: [
                               Text(
                                 lista.cim.isNotEmpty ? lista.cim : 'Névtelen lista',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.greenAccent),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white), // Fehérre módosítva a Jegyzetek stílusához
                               ),
                               const SizedBox(height: 8),
                               Row(
@@ -186,7 +185,7 @@ class _ListakScreenState extends State<ListakScreen> {
                         ),
                       ),
                     );
-                  },
+                  }).toList(),
                 ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green[600],
@@ -217,6 +216,9 @@ class ListaReszletekScreen extends StatefulWidget {
 class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
   late Checklista _aktLista;
   final TextEditingController _cimCtrl = TextEditingController();
+  
+  // Ezzel azonosítjuk az éppen hozzáadott tételt az automatikus fókuszáláshoz
+  String? _ujTetelId; 
 
   @override
   void initState() {
@@ -236,10 +238,12 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
       );
       _cimCtrl.text = _aktLista.cim;
     } else {
+      final elsoTetelId = DateTime.now().millisecondsSinceEpoch.toString();
+      _ujTetelId = elsoTetelId;
       _aktLista = Checklista(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         letrehozva: DateTime.now(),
-        tetelek: [ListaTetel(id: DateTime.now().millisecondsSinceEpoch.toString(), szoveg: '')], // Egy üres indulásnak
+        tetelek: [ListaTetel(id: elsoTetelId, szoveg: '')], // Egy üres indulásnak
       );
     }
   }
@@ -256,8 +260,10 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
   }
 
   void _ujTetelHozzaadasa() {
+    final ujId = DateTime.now().millisecondsSinceEpoch.toString();
     setState(() {
-      _aktLista.tetelek.add(ListaTetel(id: DateTime.now().millisecondsSinceEpoch.toString(), szoveg: ''));
+      _ujTetelId = ujId; // Megjegyezzük az ID-t az autofocushoz
+      _aktLista.tetelek.add(ListaTetel(id: ujId, szoveg: ''));
     });
     _automatikusMentes();
   }
@@ -347,11 +353,10 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
             ),
             const Divider(color: Colors.white24, height: 20),
             
-            // Aktív tételek (Reorderable)
-            ReorderableListView.builder(
+            // Aktív tételek (Reorderable) stabil listával
+            ReorderableListView(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: aktivTetelek.length,
               onReorder: (oldIndex, newIndex) {
                 setState(() {
                   if (newIndex > oldIndex) newIndex -= 1;
@@ -371,24 +376,25 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
                 });
                 _automatikusMentes();
               },
-              itemBuilder: (context, index) {
+              children: aktivTetelek.map((tetel) {
                 return _TetelSor(
-                  key: ValueKey(aktivTetelek[index].id),
-                  tetel: aktivTetelek[index],
+                  key: ValueKey(tetel.id),
+                  tetel: tetel,
                   isKipipaltNezet: false,
+                  autoFocus: tetel.id == _ujTetelId, // Ha ez a friss tétel, ráugrik a fókusz!
                   onChanged: _automatikusMentes,
-                  onTorles: () => _tetelTorlese(aktivTetelek[index].id),
+                  onTorles: () => _tetelTorlese(tetel.id),
                   onToggle: (bool val) {
                     setState(() {
-                      aktivTetelek[index].isKipipava = val;
+                      tetel.isKipipava = val;
                     });
                     _automatikusMentes();
                   },
                 );
-              },
+              }).toList(),
             ),
 
-            // Új tétel hozzáadása gomb
+            // Új tétel hozzáadása gomb (ZÖLD felirattal és ikonnal)
             Padding(
               padding: const EdgeInsets.only(top: 8.0, bottom: 24.0, left: 8.0),
               child: InkWell(
@@ -420,6 +426,7 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
                   key: ValueKey(tetel.id),
                   tetel: tetel,
                   isKipipaltNezet: true,
+                  autoFocus: false, // Itt értelemszerűen sosem kell autofocus
                   onChanged: _automatikusMentes,
                   onTorles: () => _tetelTorlese(tetel.id),
                   onToggle: (bool val) {
@@ -438,10 +445,11 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
   }
 }
 
-// --- EGYEDI TÉTEL SOR (A kétkattintásos törléssel) ---
+// --- EGYEDI TÉTEL SOR (A kétkattintásos törléssel és autofocussal) ---
 class _TetelSor extends StatefulWidget {
   final ListaTetel tetel;
   final bool isKipipaltNezet;
+  final bool autoFocus; 
   final VoidCallback onChanged;
   final VoidCallback onTorles;
   final Function(bool) onToggle;
@@ -450,6 +458,7 @@ class _TetelSor extends StatefulWidget {
     super.key,
     required this.tetel,
     required this.isKipipaltNezet,
+    required this.autoFocus,
     required this.onChanged,
     required this.onTorles,
     required this.onToggle,
@@ -514,6 +523,7 @@ class _TetelSorState extends State<_TetelSor> {
           Expanded(
             child: TextField(
               controller: _szovegCtrl,
+              autofocus: widget.autoFocus, // Itt alkalmazzuk a fókusz ugrást!
               style: TextStyle(
                 color: widget.isKipipaltNezet ? Colors.white38 : Colors.white,
                 decoration: widget.isKipipaltNezet ? TextDecoration.lineThrough : null,
