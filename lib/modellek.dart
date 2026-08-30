@@ -8,7 +8,7 @@ class Tura {
   final String? boritoKep;
   final List<String> kepek; 
   final String megjegyzes;
-  final String? indexKep; // ÚJ: Egyedi indexkép a túrához
+  final String? indexKep; 
 
   Tura({
     required this.id,
@@ -78,7 +78,7 @@ class FogasModel {
   final List<String> kepek; 
   final String megjegyzes;
   bool isKedvenc;
-  final String? indexKep; // ÚJ: Egyedi indexkép a fogáshoz
+  final String? indexKep; 
 
   FogasModel({
     required this.id,
@@ -195,7 +195,7 @@ class Halfaj {
   final String szabalyozasEve;
   final String megjegyzes;
   final List<String> kepek;
-  final String? indexKep; // ÚJ: Egyedi indexkép a halfajhoz
+  final String? indexKep; 
 
   Halfaj({
     required this.id,
@@ -320,7 +320,7 @@ class FelszerelesTetel {
   final String leiras;
   final List<String> kepek;
   final List<FelszerelesElhelyezes> elhelyezesek;
-  final String? indexKep; // ÚJ: Egyedi indexkép a felszereléshez
+  final String? indexKep; 
 
   double? get mennyiseg {
     if (elhelyezesek.isEmpty) return null;
@@ -395,4 +395,104 @@ class FelszerelesTetel {
       'indexKep': indexKep,
     };
   }
+}
+
+// --- ÚJ MODELLEK (Jegyzetek és Listák) ---
+
+class Jegyzet {
+  final String id;
+  String cim;
+  String szoveg;
+  List<String> kepek;
+  int szin;
+  final DateTime letrehozva;
+  int sorrend;
+
+  Jegyzet({
+    required this.id,
+    this.cim = '',
+    this.szoveg = '',
+    this.kepek = const [],
+    this.szin = 0xFF1E1E1E,
+    required this.letrehozva,
+    this.sorrend = 0,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'cim': cim,
+    'szoveg': szoveg,
+    'kepek': kepek,
+    'szin': szin,
+    'letrehozva': letrehozva.toIso8601String(),
+    'sorrend': sorrend,
+  };
+
+  factory Jegyzet.fromJson(Map<String, dynamic> json) => Jegyzet(
+    id: json['id'],
+    cim: json['cim'] ?? '',
+    szoveg: json['szoveg'] ?? '',
+    kepek: List<String>.from(json['kepek'] ?? []),
+    szin: json['szin'] ?? 0xFF1E1E1E,
+    letrehozva: json['letrehozva'] != null ? DateTime.parse(json['letrehozva']) : DateTime.now(),
+    sorrend: json['sorrend'] ?? 0,
+  );
+}
+
+class ListaTetel {
+  String id;
+  String szoveg;
+  bool isKipipava;
+
+  ListaTetel({
+    required this.id,
+    required this.szoveg,
+    this.isKipipava = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'szoveg': szoveg,
+    'isKipipava': isKipipava,
+  };
+
+  factory ListaTetel.fromJson(Map<String, dynamic> json) => ListaTetel(
+    id: json['id'],
+    szoveg: json['szoveg'] ?? '',
+    isKipipava: json['isKipipava'] ?? false,
+  );
+}
+
+class Checklista {
+  final String id;
+  String cim;
+  List<ListaTetel> tetelek;
+  final DateTime letrehozva;
+  int sorrend;
+
+  Checklista({
+    required this.id,
+    this.cim = '',
+    this.tetelek = const [],
+    required this.letrehozva,
+    this.sorrend = 0,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'cim': cim,
+    'tetelek': tetelek.map((e) => e.toJson()).toList(),
+    'letrehozva': letrehozva.toIso8601String(),
+    'sorrend': sorrend,
+  };
+
+  factory Checklista.fromJson(Map<String, dynamic> json) => Checklista(
+    id: json['id'],
+    cim: json['cim'] ?? '',
+    tetelek: json['tetelek'] != null 
+        ? (json['tetelek'] as List).map((e) => ListaTetel.fromJson(e)).toList() 
+        : [],
+    letrehozva: json['letrehozva'] != null ? DateTime.parse(json['letrehozva']) : DateTime.now(),
+    sorrend: json['sorrend'] ?? 0,
+  );
 }
