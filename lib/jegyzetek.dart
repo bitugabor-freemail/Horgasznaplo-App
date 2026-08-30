@@ -190,9 +190,8 @@ class _JegyzetekScreenState extends State<JegyzetekScreen> {
             )
           : mutatottJegyzetek.isEmpty
               ? const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)))
-              : ReorderableListView.builder(
+              : ReorderableListView(
                   padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100), // Alsó térköz a gomb miatt
-                  itemCount: mutatottJegyzetek.length,
                   // Keresés közben kikapcsoljuk az átrendezést, mert a szűrt lista indexei eltérnek a valóditól!
                   buildDefaultDragHandles: _keresoKifejezes.isEmpty,
                   onReorder: (oldIndex, newIndex) {
@@ -204,8 +203,7 @@ class _JegyzetekScreenState extends State<JegyzetekScreen> {
                     });
                     _sorrendMentes();
                   },
-                  itemBuilder: (context, index) {
-                    final jegyzet = mutatottJegyzetek[index];
+                  children: mutatottJegyzetek.map((jegyzet) {
                     return Card(
                       key: ValueKey(jegyzet.id),
                       color: Color(jegyzet.szin),
@@ -301,7 +299,7 @@ class _JegyzetekScreenState extends State<JegyzetekScreen> {
                         ),
                       ),
                     );
-                  },
+                  }).toList(),
                 ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green[600],
