@@ -128,7 +128,8 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
   int _fogasokSzama = 0;
   int _halfajokSzama = 0;
   int _felszerelesSzama = 0;
-  int _jegyzetEsListaSzama = 0; 
+  int _jegyzetekSzama = 0; // ÚJ: Külön számláló a jegyzeteknek
+  int _listakSzama = 0;    // ÚJ: Külön számláló a listáknak
   int _dokumentumokSzama = 0;
 
   bool _toltesFolyamatban = false;
@@ -159,7 +160,8 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
           _fogasokSzama = fogasok.length;
           _halfajokSzama = halfajok.length;
           _felszerelesSzama = felszerelesek.length;
-          _jegyzetEsListaSzama = jegyzetek.length + listak.length; 
+          _jegyzetekSzama = jegyzetek.length; // Külön mentve
+          _listakSzama = listak.length;       // Külön mentve
           _dokumentumokSzama = dokumentumok.length;
         });
       }
@@ -414,7 +416,9 @@ class _AdatkezelesScreenState extends State<AdatkezelesScreen> {
                         const Divider(color: Colors.white24),
                         _StatRow(cim: 'Mentett halfajok:', ertek: '$_halfajokSzama db'),
                         const Divider(color: Colors.white24),
-                        _StatRow(cim: 'Jegyzetek és listák:', ertek: '$_jegyzetEsListaSzama db'),
+                        _StatRow(cim: 'Mentett jegyzetek:', ertek: '$_jegyzetekSzama db'), // Külön bontva!
+                        const Divider(color: Colors.white24),
+                        _StatRow(cim: 'Mentett listák:', ertek: '$_listakSzama db'),       // Külön bontva!
                         const Divider(color: Colors.white24),
                         _StatRow(cim: 'Mentett dokumentumok:', ertek: '$_dokumentumokSzama db'),
                       ],
