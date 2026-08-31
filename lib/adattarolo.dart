@@ -28,7 +28,6 @@ class AdatTarolo {
   static const String _dokMappakKulcs = 'dok_mappak';
   static const String _dokFajlokKulcs = 'dok_fajlok';
   
-  // --- ÚJ KULCSOK A JEGYZETEKNEK ÉS LISTÁKNAK ---
   static const String _jegyzetekKulcs = 'jegyzetek_adatok';
   static const String _listakKulcs = 'listak_adatok';
 
@@ -268,7 +267,6 @@ class AdatTarolo {
     await halfajokMentes(jelenlegi);
   }
 
-  // --- ÚJ: Jegyzetek és Listák betöltése és mentése ---
   static Future<void> jegyzetekMentes(List<Jegyzet> jegyzetek) async => await _mentes(_jegyzetekKulcs, jegyzetek);
   static Future<List<Jegyzet>> jegyzetekBetoltese() async {
     final adatok = await _betoltes(_jegyzetekKulcs);
@@ -278,16 +276,40 @@ class AdatTarolo {
   }
 
   static Future<void> listakMentes(List<Checklista> listak) async => await _mentes(_listakKulcs, listak);
+  
+  // A NAGY TAKARÍTÓ: Felismeri a duplikált azonosítójú fantom adatokat, 
+  // eltávolítja őket, és azonnal le is menti a tiszta listát!
   static Future<List<Checklista>> listakBetoltese() async {
     final adatok = await _betoltes(_listakKulcs);
-    List<Checklista> list = adatok.map((e) => Checklista.fromJson(e)).toList();
-    list.sort((a, b) => a.sorrend.compareTo(b.sorrend));
-    return list;
+    List<Checklista> tisztaLista = [];
+    Set<String> egyediIdk = {};
+    bool voltFantomAdat = false;
+
+    for (var e in adatok) {
+      try {
+        Checklista ujLista = Checklista.fromJson(e);
+        if (!egyediIdk.contains(ujLista.id)) {
+          egyediIdk.add(ujLista.id);
+          tisztaLista.add(ujLista);
+        } else {
+          voltFantomAdat = true; // Találtunk egy duplikációt!
+        }
+      } catch (_) {}
+    }
+
+    tisztaLista.sort((a, b) => a.sorrend.compareTo(b.sorrend));
+
+    // Ha gyomláltunk, csendben elmentjük a tiszta adatbázist a telefonra
+    if (voltFantomAdat) {
+      await listakMentes(tisztaLista);
+    }
+
+    return tisztaLista;
   }
 
   static Future<String> letrehozExportJson() async {
     Map<String, dynamic> exportData = {
-      'verzio': 1.6, // ÚJ: Frissítve 1.6-ra
+      'verzio': 1.6, 
       'turak': await _betoltes(_turakKulcs),
       'fogasok': await _betoltes(_fogasokKulcs),
       'halfajok': await _betoltes(_halfajokKulcs),
@@ -305,8 +327,8 @@ class AdatTarolo {
       'taskak': await _betoltes(_taskakKulcs), 
       'dok_mappak': await _betoltes(_dokMappakKulcs),
       'dok_fajlok': await _betoltes(_dokFajlokKulcs),
-      'jegyzetek': await _betoltes(_jegyzetekKulcs), // ÚJ: Jegyzetek bevétele az exportba
-      'listak': await _betoltes(_listakKulcs),       // ÚJ: Listák bevétele az exportba
+      'jegyzetek': await _betoltes(_jegyzetekKulcs), 
+      'listak': await _betoltes(_listakKulcs),       
     };
     return jsonEncode(exportData);
   }
@@ -422,6 +444,18 @@ class AdatTarolo {
     }
 
     final Map<String, dynamic> data = jsonDecode(jsonTartalom);
+    
+    bool isOldBackup = !data.containsKey('jegyzetek') && !data.containsKey('listak');
+    String? currentJegyzetek;
+    String? currentListak;
+    
+    if (isOldBackup) {
+      currentJegyzetek = prefs.getString(_jegyzetekKulcs);
+      currentListak = prefs.getString(_listakKulcs);
+    }
+
+    await prefs.clear();
+
     if (data.containsKey('turak')) await prefs.setString(_turakKulcs, jsonEncode(data['turak']));
     if (data.containsKey('fogasok')) await prefs.setString(_fogasokKulcs, jsonEncode(data['fogasok']));
     if (data.containsKey('halfajok')) await prefs.setString(_halfajokKulcs, jsonEncode(data['halfajok']));
@@ -440,9 +474,17 @@ class AdatTarolo {
     if (data.containsKey('dok_mappak')) await prefs.setString(_dokMappakKulcs, jsonEncode(data['dok_mappak']));
     if (data.containsKey('dok_fajlok')) await prefs.setString(_dokFajlokKulcs, jsonEncode(data['dok_fajlok']));
     
-    // ÚJ: Jegyzetek és Listák importálása (biztonságos visszamenőleges kompatibilitás)
-    if (data.containsKey('jegyzetek')) await prefs.setString(_jegyzetekKulcs, jsonEncode(data['jegyzetek']));
-    if (data.containsKey('listak')) await prefs.setString(_listakKulcs, jsonEncode(data['listak']));
+    if (data.containsKey('jegyzetek')) {
+      await prefs.setString(_jegyzetekKulcs, jsonEncode(data['jegyzetek']));
+    } else if (currentJegyzetek != null) {
+      await prefs.setString(_jegyzetekKulcs, currentJegyzetek);
+    }
+    
+    if (data.containsKey('listak')) {
+      await prefs.setString(_listakKulcs, jsonEncode(data['listak']));
+    } else if (currentListak != null) {
+      await prefs.setString(_listakKulcs, currentListak);
+    }
 
     await prefs.setBool('felszereles_init', true);
     await prefs.setBool('halfaj_init', true);
