@@ -489,7 +489,6 @@ class AdatTarolo {
     await prefs.setBool('sors_init', true);
   }
 
-  // JAVÍTVA: Ezek a funkciók korábban üresen maradtak!
   static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {
     List<String> adatok = List<String>.from(await _betoltes(kategoria));
     int index = adatok.indexOf(regiNev);
@@ -505,6 +504,7 @@ class AdatTarolo {
     await _mentes(kategoria, adatok);
   }
 
+  // A JAVÍTOTT FUNKCIÓ: Kicsomagolja ÉS ÖSSZE IS KÖTI a képeket a halakkal!
   static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {
     try {
       final bytes = await File(zipPath).readAsBytes();
@@ -516,15 +516,80 @@ class AdatTarolo {
         await kepekMappa.create(recursive: true);
       }
 
+      List<String> ujFajlokUtvonalai = [];
+
+      // 1. Fájlok kicsomagolása a mappába
       for (final file in archive) {
         if (file.isFile) {
           final filename = file.name.split('/').last;
-          if (filename.isNotEmpty) {
+          if (filename.isNotEmpty && !filename.startsWith('.')) { 
             final outFile = File('${kepekMappa.path}/$filename');
             await outFile.writeAsBytes(file.content as List<int>);
+            ujFajlokUtvonalai.add(outFile.path);
           }
         }
       }
+
+      // 2. Képek automatikus párosítása a halfajokkal
+      List<Halfaj> halfajok = await halfajokBetoltese();
+      bool voltValtozas = false;
+
+      for (int i = 0; i < halfajok.length; i++) {
+        // Levágjuk a zárójeleket (pl. "Süllő (Fogas)" -> "sullo")
+        String alapNev = halfajok[i].nev.split(' (').first.toLowerCase().trim();
+        
+        // Ékezetek eltávolítása az okos párosításhoz
+        String formazottNev = alapNev
+            .replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i')
+            .replaceAll('ó', 'o').replaceAll('ö', 'o').replaceAll('ő', 'o')
+            .replaceAll('ú', 'u').replaceAll('ü', 'u').replaceAll('ű', 'u')
+            .replaceAll(' ', '_');
+
+        List<String> talaltKepek = [];
+        
+        // Végignézzük az összes most kicsomagolt fájlt, egyezik-e a nevük
+        for (String f in ujFajlokUtvonalai) {
+          String fname = f.split('/').last.toLowerCase();
+          if (fname.startsWith('${formazottNev}_')) { // pl. ponty_1.jpg
+            talaltKepek.add(f);
+          }
+        }
+
+        // Ha találtunk ehhez a halhoz tartozó képet
+        if (talaltKepek.isNotEmpty) {
+          talaltKepek.sort(); // Sorba rendezzük (_1 legyen legelöl)
+          
+          List<String> frissKepek = List.from(halfajok[i].kepek);
+          for (var tk in talaltKepek) {
+            // Hozzáadjuk a listához, ha még nincs ott (max 5 db)
+            if (!frissKepek.contains(tk) && frissKepek.length < 5) {
+              frissKepek.add(tk);
+            }
+          }
+          
+          // Frissítjük a hal adatait a memóriában
+          halfajok[i] = Halfaj(
+            id: halfajok[i].id,
+            nev: halfajok[i].nev,
+            kategoria: halfajok[i].kategoria,
+            statusz: halfajok[i].statusz,
+            meretKorlatozas: halfajok[i].meretKorlatozas,
+            darabKorlatozas: halfajok[i].darabKorlatozas,
+            tilalmiIdoszak: halfajok[i].tilalmiIdoszak,
+            szabalyozasEve: halfajok[i].szabalyozasEve,
+            megjegyzes: halfajok[i].megjegyzes,
+            kepek: frissKepek,
+            indexKep: (halfajok[i].indexKep == null && frissKepek.isNotEmpty) ? frissKepek.first : halfajok[i].indexKep,
+          );
+          voltValtozas = true;
+        }
+      }
+
+      // 3. Ha bármelyik hal frissült, mentjük a teljes listát!
+      if (voltValtozas) {
+        await halfajokMentes(halfajok);
+      }
+
     } catch (e) {
       throw Exception('Hiba a képcsomag kicsomagolásakor: $e');
     }
