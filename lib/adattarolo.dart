@@ -504,7 +504,7 @@ class AdatTarolo {
     await _mentes(kategoria, adatok);
   }
 
-  // A JAVÍTOTT FUNKCIÓ: Kicsomagolja ÉS ÖSSZE IS KÖTI a képeket a halakkal!
+  // Az ÚJ Logika: Semmi gyári foglalás. A program egyszerűen csak kitölti a maximum 5 fős limitet.
   static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {
     try {
       final bytes = await File(zipPath).readAsBytes();
@@ -530,62 +530,70 @@ class AdatTarolo {
         }
       }
 
-      // 2. Képek automatikus párosítása a halfajokkal
+      // 2. Képek egyszerű és okos hozzáfűzése a meglévőkhöz (max 5 db)
       List<Halfaj> halfajok = await halfajokBetoltese();
       bool voltValtozas = false;
 
       for (int i = 0; i < halfajok.length; i++) {
-        // Levágjuk a zárójeleket (pl. "Süllő (Fogas)" -> "sullo")
+        // Zárójelek levágása
         String alapNev = halfajok[i].nev.split(' (').first.toLowerCase().trim();
         
-        // Ékezetek eltávolítása az okos párosításhoz
+        // Ékezetek és szóközök cseréje
         String formazottNev = alapNev
             .replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i')
             .replaceAll('ó', 'o').replaceAll('ö', 'o').replaceAll('ő', 'o')
             .replaceAll('ú', 'u').replaceAll('ü', 'u').replaceAll('ű', 'u')
             .replaceAll(' ', '_');
 
+        // Összegyűjtjük az ehhez a halhoz tartozó ZIP képeket
         List<String> talaltKepek = [];
-        
-        // Végignézzük az összes most kicsomagolt fájlt, egyezik-e a nevük
         for (String f in ujFajlokUtvonalai) {
           String fname = f.split('/').last.toLowerCase();
-          if (fname.startsWith('${formazottNev}_')) { // pl. ponty_1.jpg
+          if (fname.startsWith('${formazottNev}_')) { 
             talaltKepek.add(f);
           }
         }
 
-        // Ha találtunk ehhez a halhoz tartozó képet
+        // Ha találtunk ehhez a halhoz tartozó képet a csomagban
         if (talaltKepek.isNotEmpty) {
-          talaltKepek.sort(); // Sorba rendezzük (_1 legyen legelöl)
-          
+          talaltKepek.sort(); // Sorba rendezzük, hogy _1, _2 érkezési sorrend legyen
+
+          // Levédjük az eddigi (saját) képeket
           List<String> frissKepek = List.from(halfajok[i].kepek);
-          for (var tk in talaltKepek) {
-            // Hozzáadjuk a listához, ha még nincs ott (max 5 db)
-            if (!frissKepek.contains(tk) && frissKepek.length < 5) {
-              frissKepek.add(tk);
+          bool kapottUjKepet = false;
+
+          // Hozzáadjuk a ZIP képeket, de szigorúan csak addig, amíg van hely
+          for (String ujKep in talaltKepek) {
+            if (frissKepek.length >= 5) {
+              break; // Ha megtelt az 5 hely, azonnal befejezzük a betöltést ehhez a halhoz
+            }
+            if (!frissKepek.contains(ujKep)) {
+              frissKepek.add(ujKep);
+              kapottUjKepet = true;
             }
           }
           
-          // Frissítjük a hal adatait a memóriában
-          halfajok[i] = Halfaj(
-            id: halfajok[i].id,
-            nev: halfajok[i].nev,
-            kategoria: halfajok[i].kategoria,
-            statusz: halfajok[i].statusz,
-            meretKorlatozas: halfajok[i].meretKorlatozas,
-            darabKorlatozas: halfajok[i].darabKorlatozas,
-            tilalmiIdoszak: halfajok[i].tilalmiIdoszak,
-            szabalyozasEve: halfajok[i].szabalyozasEve,
-            megjegyzes: halfajok[i].megjegyzes,
-            kepek: frissKepek,
-            indexKep: (halfajok[i].indexKep == null && frissKepek.isNotEmpty) ? frissKepek.first : halfajok[i].indexKep,
-          );
-          voltValtozas = true;
+          // Csak akkor frissítünk, ha valóban befért új kép
+          if (kapottUjKepet) {
+            halfajok[i] = Halfaj(
+              id: halfajok[i].id,
+              nev: halfajok[i].nev,
+              kategoria: halfajok[i].kategoria,
+              statusz: halfajok[i].statusz,
+              meretKorlatozas: halfajok[i].meretKorlatozas,
+              darabKorlatozas: halfajok[i].darabKorlatozas,
+              tilalmiIdoszak: halfajok[i].tilalmiIdoszak,
+              szabalyozasEve: halfajok[i].szabalyozasEve,
+              megjegyzes: halfajok[i].megjegyzes,
+              kepek: frissKepek,
+              indexKep: (halfajok[i].indexKep == null && frissKepek.isNotEmpty) ? frissKepek.first : halfajok[i].indexKep,
+            );
+            voltValtozas = true;
+          }
         }
       }
 
-      // 3. Ha bármelyik hal frissült, mentjük a teljes listát!
+      // Mentjük, ha történt módosítás
       if (voltValtozas) {
         await halfajokMentes(halfajok);
       }
