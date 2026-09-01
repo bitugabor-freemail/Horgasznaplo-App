@@ -504,8 +504,8 @@ class AdatTarolo {
     await _mentes(kategoria, adatok);
   }
 
-  // Az ÚJ Logika: Semmi gyári foglalás. A program egyszerűen csak kitölti a maximum 5 fős limitet.
-  static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {
+  // JAVÍTVA: Kigyomlálja a dead URL-eket, garantálja a 3+2 szabályt, és statisztikát ad vissza!
+  static Future<Map<String, int>> dlcKepCsomagKicsomagolasa(String zipPath) async {
     try {
       final bytes = await File(zipPath).readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
@@ -517,36 +517,40 @@ class AdatTarolo {
       }
 
       List<String> ujFajlokUtvonalai = [];
+      int osszesZipKep = 0;
 
       // 1. Fájlok kicsomagolása a mappába
       for (final file in archive) {
         if (file.isFile) {
           final filename = file.name.split('/').last;
           if (filename.isNotEmpty && !filename.startsWith('.')) { 
-            final outFile = File('${kepekMappa.path}/$filename');
-            await outFile.writeAsBytes(file.content as List<int>);
-            ujFajlokUtvonalai.add(outFile.path);
+            if (filename.toLowerCase().endsWith('.jpg') || filename.toLowerCase().endsWith('.png') || filename.toLowerCase().endsWith('.jpeg')) {
+              osszesZipKep++;
+              final outFile = File('${kepekMappa.path}/$filename');
+              await outFile.writeAsBytes(file.content as List<int>);
+              ujFajlokUtvonalai.add(outFile.path);
+            }
           }
         }
       }
 
-      // 2. Képek egyszerű és okos hozzáfűzése a meglévőkhöz (max 5 db)
+      // 2. Képek szigorú párosítása a 3+2-es szabály alapján, halott linkek törlése!
       List<Halfaj> halfajok = await halfajokBetoltese();
       bool voltValtozas = false;
+      int hozzaadottKep = 0;
 
       for (int i = 0; i < halfajok.length; i++) {
-        // Zárójelek levágása
         String alapNev = halfajok[i].nev.split(' (').first.toLowerCase().trim();
         
-        // Ékezetek és szóközök cseréje
         String formazottNev = alapNev
             .replaceAll('á', 'a').replaceAll('é', 'e').replaceAll('í', 'i')
             .replaceAll('ó', 'o').replaceAll('ö', 'o').replaceAll('ő', 'o')
             .replaceAll('ú', 'u').replaceAll('ü', 'u').replaceAll('ű', 'u')
             .replaceAll(' ', '_');
 
-        // Összegyűjtjük az ehhez a halhoz tartozó ZIP képeket
         List<String> talaltKepek = [];
+        
+        // Csomagban lévő, ehhez a halhoz tartozó (pl. sullo_1, sullo_2) képek keresése
         for (String f in ujFajlokUtvonalai) {
           String fname = f.split('/').last.toLowerCase();
           if (fname.startsWith('${formazottNev}_')) { 
@@ -554,49 +558,54 @@ class AdatTarolo {
           }
         }
 
-        // Ha találtunk ehhez a halhoz tartozó képet a csomagban
         if (talaltKepek.isNotEmpty) {
-          talaltKepek.sort(); // Sorba rendezzük, hogy _1, _2 érkezési sorrend legyen
-
-          // Levédjük az eddigi (saját) képeket
-          List<String> frissKepek = List.from(halfajok[i].kepek);
-          bool kapottUjKepet = false;
-
-          // Hozzáadjuk a ZIP képeket, de szigorúan csak addig, amíg van hely
-          for (String ujKep in talaltKepek) {
-            if (frissKepek.length >= 5) {
-              break; // Ha megtelt az 5 hely, azonnal befejezzük a betöltést ehhez a halhoz
-            }
-            if (!frissKepek.contains(ujKep)) {
-              frissKepek.add(ujKep);
-              kapottUjKepet = true;
-            }
+          talaltKepek.sort(); // Biztosítjuk, hogy a _1 legyen legelöl
+          if (talaltKepek.length > 3) {
+            talaltKepek = talaltKepek.sublist(0, 3); // Maximum 3 jöhet be a csomagból (gyári helyek)
           }
+
+          // A) Kimentjük a SAJÁT (felhasználói) képeket a memóriából
+          List<String> userKepek = halfajok[i].kepek.where((k) {
+            if (k.startsWith('http')) return false; // KUKA: Halott internetes linkek eldobása!
+            String fname = k.split('/').last.toLowerCase();
+            if (fname.startsWith('${formazottNev}_')) return false; // KUKA: Korábbi DLC képek eldobása (mert most cseréljük)
+            return true; // Minden más (amit te töltöttél fel egyedi néven) marad
+          }).toList();
+
+          if (userKepek.length > 2) {
+            userKepek = userKepek.sublist(0, 2); // Maximum 2 saját képed lehet
+          }
+
+          // B) Összefűzzük az új listát: Elöl a ZIP fotók, hátul a Saját fotók
+          List<String> frissKepek = [];
+          frissKepek.addAll(talaltKepek);
+          frissKepek.addAll(userKepek);
+
+          halfajok[i] = Halfaj(
+            id: halfajok[i].id,
+            nev: halfajok[i].nev,
+            kategoria: halfajok[i].kategoria,
+            statusz: halfajok[i].statusz,
+            meretKorlatozas: halfajok[i].meretKorlatozas,
+            darabKorlatozas: halfajok[i].darabKorlatozas,
+            tilalmiIdoszak: halfajok[i].tilalmiIdoszak,
+            szabalyozasEve: halfajok[i].szabalyozasEve,
+            megjegyzes: halfajok[i].megjegyzes,
+            kepek: frissKepek,
+            // A thumbnail automatikusan az új _1-es kép lesz!
+            indexKep: frissKepek.isNotEmpty ? frissKepek.first : null,
+          );
           
-          // Csak akkor frissítünk, ha valóban befért új kép
-          if (kapottUjKepet) {
-            halfajok[i] = Halfaj(
-              id: halfajok[i].id,
-              nev: halfajok[i].nev,
-              kategoria: halfajok[i].kategoria,
-              statusz: halfajok[i].statusz,
-              meretKorlatozas: halfajok[i].meretKorlatozas,
-              darabKorlatozas: halfajok[i].darabKorlatozas,
-              tilalmiIdoszak: halfajok[i].tilalmiIdoszak,
-              szabalyozasEve: halfajok[i].szabalyozasEve,
-              megjegyzes: halfajok[i].megjegyzes,
-              kepek: frissKepek,
-              indexKep: (halfajok[i].indexKep == null && frissKepek.isNotEmpty) ? frissKepek.first : halfajok[i].indexKep,
-            );
-            voltValtozas = true;
-          }
+          hozzaadottKep += talaltKepek.length;
+          voltValtozas = true;
         }
       }
 
-      // Mentjük, ha történt módosítás
       if (voltValtozas) {
         await halfajokMentes(halfajok);
       }
+
+      return {'osszes': osszesZipKep, 'hozzaadva': hozzaadottKep};
 
     } catch (e) {
       throw Exception('Hiba a képcsomag kicsomagolásakor: $e');
