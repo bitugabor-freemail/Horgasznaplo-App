@@ -349,6 +349,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     );
   }
 
+  // JAVÍTOTT FUNKCIÓ: Várja a statisztikát és mutatja a felugró ablakot
   void _kepCsomagFeltoltese() {
     showDialog(
       context: context,
@@ -382,10 +383,38 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
               if (result != null && result.files.single.path != null) {
                 setState(() => _folyamatban = true);
                 try {
-                  await AdatTarolo.dlcKepCsomagKicsomagolasa(result.files.single.path!);
+                  final statisztika = await AdatTarolo.dlcKepCsomagKicsomagolasa(result.files.single.path!);
                   await _adatokBetoltese();
                   setState(() => _folyamatban = false);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Képcsomag sikeresen feldolgozva és mentve!')));
+                  
+                  if (mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        title: const Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.greenAccent),
+                            SizedBox(width: 8),
+                            Text('Sikeres feltöltés!', style: TextStyle(color: Colors.greenAccent)),
+                          ],
+                        ),
+                        content: Text(
+                          'A képcsomag feldolgozása befejeződött.\n\n'
+                          '• ZIP-ben talált képek: ${statisztika['osszes']} db\n'
+                          '• Halfajokhoz illesztve: ${statisztika['hozzaadva']} db',
+                          style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.white),
+                        ),
+                        actions: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+                            onPressed: () => Navigator.pop(context), 
+                            child: const Text('Rendben', style: TextStyle(color: Colors.white))
+                          )
+                        ]
+                      )
+                    );
+                  }
                 } catch (e) {
                   setState(() => _folyamatban = false);
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hiba a kicsomagolás során: $e'), backgroundColor: Colors.redAccent));
@@ -850,7 +879,6 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             
             const Divider(height: 40, color: Colors.white24),
 
-            // --- HALFAJ INDEXKÉP SZERKESZTŐ (KOCKA - BOXFIT.CONTAIN) ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('Állítsd be a borítóképet! Két ujjal nagyíthatod és mozgathatod a fotót a zöld kereten belül. A főképernyőn lévő listákban pontosan az a részlet fog megjelenni, amit most ebben a kockában látsz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
