@@ -108,7 +108,8 @@ class _LexikonScreenState extends State<LexikonScreen> {
                                 ? CachedNetworkImage(
                                     imageUrl: megjelenitendoUtvonal,
                                     width: 50, height: 50, fit: BoxFit.cover,
-                                    placeholder: (context, url) => const SizedBox(width: 50, height: 50, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2))),
+                                    // JAVÍTVA: Nincs többé homokóra, ha lassú a net vagy halott a link, azonnal a halacskát mutatja!
+                                    placeholder: (context, url) => const Icon(Icons.set_meal, size: 40, color: Colors.white24),
                                     errorWidget: (context, url, error) => const Icon(Icons.set_meal, size: 40, color: Colors.white24),
                                   )
                                 : Image.file(File(megjelenitendoUtvonal), width: 50, height: 50, fit: BoxFit.cover),
@@ -247,7 +248,8 @@ class _HalReszletekScreenState extends State<HalReszletekScreen> {
                           megjelenito = CachedNetworkImage(
                             imageUrl: utvonal,
                             fit: BoxFit.cover, width: double.infinity,
-                            placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                            // JAVÍTVA: Itt sincs töltőkarika, ami feleslegesen pörögne!
+                            placeholder: (context, url) => const Center(child: Icon(Icons.set_meal, size: 50, color: Colors.white24)),
                             errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.white24)),
                           );
                         } else if (File(utvonal).existsSync()) {
