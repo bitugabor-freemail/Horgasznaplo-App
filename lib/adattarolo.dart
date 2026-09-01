@@ -277,8 +277,6 @@ class AdatTarolo {
 
   static Future<void> listakMentes(List<Checklista> listak) async => await _mentes(_listakKulcs, listak);
   
-  // A NAGY TAKARÍTÓ: Felismeri a duplikált azonosítójú fantom adatokat, 
-  // eltávolítja őket, és azonnal le is menti a tiszta listát!
   static Future<List<Checklista>> listakBetoltese() async {
     final adatok = await _betoltes(_listakKulcs);
     List<Checklista> tisztaLista = [];
@@ -292,14 +290,13 @@ class AdatTarolo {
           egyediIdk.add(ujLista.id);
           tisztaLista.add(ujLista);
         } else {
-          voltFantomAdat = true; // Találtunk egy duplikációt!
+          voltFantomAdat = true;
         }
       } catch (_) {}
     }
 
     tisztaLista.sort((a, b) => a.sorrend.compareTo(b.sorrend));
 
-    // Ha gyomláltunk, csendben elmentjük a tiszta adatbázist a telefonra
     if (voltFantomAdat) {
       await listakMentes(tisztaLista);
     }
@@ -492,7 +489,44 @@ class AdatTarolo {
     await prefs.setBool('sors_init', true);
   }
 
-  static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {}
-  static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {}
-  static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {}
+  // JAVÍTVA: Ezek a funkciók korábban üresen maradtak!
+  static Future<void> torzsadatNevFrissites(String kategoria, String regiNev, String ujNev) async {
+    List<String> adatok = List<String>.from(await _betoltes(kategoria));
+    int index = adatok.indexOf(regiNev);
+    if (index != -1) {
+      adatok[index] = ujNev;
+      await _mentes(kategoria, adatok);
+    }
+  }
+
+  static Future<void> torzsadatTorles(String kategoria, String toroltNevVagyId) async {
+    List<String> adatok = List<String>.from(await _betoltes(kategoria));
+    adatok.remove(toroltNevVagyId);
+    await _mentes(kategoria, adatok);
+  }
+
+  static Future<void> dlcKepCsomagKicsomagolasa(String zipPath) async {
+    try {
+      final bytes = await File(zipPath).readAsBytes();
+      final archive = ZipDecoder().decodeBytes(bytes);
+      final appDir = await getApplicationDocumentsDirectory();
+      
+      final kepekMappa = Directory('${appDir.path}/kepek');
+      if (!await kepekMappa.exists()) {
+        await kepekMappa.create(recursive: true);
+      }
+
+      for (final file in archive) {
+        if (file.isFile) {
+          final filename = file.name.split('/').last;
+          if (filename.isNotEmpty) {
+            final outFile = File('${kepekMappa.path}/$filename');
+            await outFile.writeAsBytes(file.content as List<int>);
+          }
+        }
+      }
+    } catch (e) {
+      throw Exception('Hiba a képcsomag kicsomagolásakor: $e');
+    }
+  }
 }
