@@ -101,12 +101,12 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     final ctrl = TextEditingController(text: regiNev ?? '');
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: Text(regiNev == null ? 'Új $_kivKategoria hozzáadása' : '$_kivKategoria szerkesztése'),
         content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Megnevezés')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mégse')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
             onPressed: () async {
@@ -124,7 +124,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 
                 await _simaAdatMentes();
                 _adatokBetoltese(); 
-                if (mounted) Navigator.pop(context);
+                if (mounted) Navigator.pop(dialogContext);
               }
             },
             child: const Text('Mentés', style: TextStyle(color: Colors.white)),
@@ -139,7 +139,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     final kodCtrl = TextEditingController(text: regiHelyszin?.vizterKod ?? '');
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: Text(regiHelyszin == null ? 'Új Helyszín hozzáadása' : 'Helyszín szerkesztése'),
         content: Column(
@@ -151,7 +151,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mégse')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
             onPressed: () async {
@@ -170,7 +170,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 
                 await AdatTarolo.helyszinekMentes(_helyszinek);
                 _adatokBetoltese(); 
-                if (mounted) Navigator.pop(context);
+                if (mounted) Navigator.pop(dialogContext);
               }
             },
             child: const Text('Mentés', style: TextStyle(color: Colors.white)),
@@ -184,12 +184,12 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     final ctrl = TextEditingController(text: kategoria?.nev ?? '');
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: Text(kategoria == null ? 'Új Kategória' : 'Kategória szerkesztése'),
         content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Név')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mégse')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
             onPressed: () async {
@@ -209,7 +209,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 }
                 await AdatTarolo.felszerelesKategoriakMentes(_felszKategoriak);
                 _adatokBetoltese();
-                if (mounted) Navigator.pop(context);
+                if (mounted) Navigator.pop(dialogContext);
               }
             },
             child: const Text('Mentés', style: TextStyle(color: Colors.white)),
@@ -222,12 +222,12 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   void _adatTorlese(int valodiIndex) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Törlés'),
         content: const Text('Biztosan törölni szeretnéd ezt a törzsadatot?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégsem')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mégsem')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
             onPressed: () async {
@@ -246,7 +246,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
               } else if (_kivKategoria == 'Felszerelés Kategória') {
                 bool inUse = _felszTetelek.any((t) => t.kategoriaId == _felszKategoriak[valodiIndex].id);
                 if (inUse) {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nem törölhető, mert vannak benne tételek!')));
                   return;
                 }
@@ -263,7 +263,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
               }
               
               setState(() {});
-              if (mounted) Navigator.pop(context);
+              if (mounted) Navigator.pop(dialogContext);
             },
             child: const Text('Törlés', style: TextStyle(color: Colors.white)),
           ),
@@ -277,7 +277,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
       context: context,
       backgroundColor: const Color(0xFF1E1E1E),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -293,7 +293,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                   icon: const Icon(Icons.file_upload, color: Colors.white),
                   label: const Text('Képcsomag feltöltése (.zip)', style: TextStyle(color: Colors.white)),
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     _kepCsomagFeltoltese();
                   },
                 ),
@@ -305,7 +305,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                 icon: const Icon(Icons.restore, color: Colors.white),
                 label: const Text('Gyári alapértékek visszaállítása', style: TextStyle(color: Colors.white)),
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   _gyariVisszaallitas();
                 },
               ),
@@ -320,16 +320,16 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
   Future<void> _gyariVisszaallitas() async {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Gyári Visszaállítás', style: TextStyle(color: Colors.orangeAccent)),
         content: const Text('Ez a funkció visszapótolja a hiányzó gyári adatokat.\n\nA saját, egyedi hozzáadott adataidat NEM módosítja és NEM törli! Biztosan folytatod?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mégse')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[800]),
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               setState(() => _folyamatban = true);
               
               if (_kivKategoria == 'Halfaj') await AdatTarolo.gyariHalfajokVisszaallitas();
@@ -349,11 +349,10 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
     );
   }
 
-  // JAVÍTOTT FUNKCIÓ: Várja a statisztikát és mutatja a felugró ablakot
   void _kepCsomagFeltoltese() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Képcsomag feltöltése', style: TextStyle(color: Colors.blueAccent)),
         content: const SingleChildScrollView(
@@ -374,11 +373,12 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mégse')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800]),
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext); // ITT VOLT A HIBA JAVÍTÁSA: A helyes ablakot zárjuk be!
+              
               FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
               if (result != null && result.files.single.path != null) {
                 setState(() => _folyamatban = true);
@@ -389,8 +389,8 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                   
                   if (mounted) {
                     showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
+                      context: context, // ITT MÁR A FŐKÉPERNYŐ AKTÍV ABLAKÁT HASZNÁLJUK
+                      builder: (innerContext) => AlertDialog(
                         backgroundColor: const Color(0xFF1E1E1E),
                         title: const Row(
                           children: [
@@ -408,7 +408,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                         actions: [
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
-                            onPressed: () => Navigator.pop(context), 
+                            onPressed: () => Navigator.pop(innerContext), 
                             child: const Text('Rendben', style: TextStyle(color: Colors.white))
                           )
                         ]
@@ -417,7 +417,9 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                   }
                 } catch (e) {
                   setState(() => _folyamatban = false);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hiba a kicsomagolás során: $e'), backgroundColor: Colors.redAccent));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hiba a kicsomagolás során: $e'), backgroundColor: Colors.redAccent));
+                  }
                 }
               }
             },
