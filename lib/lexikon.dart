@@ -248,7 +248,6 @@ class _HalReszletekScreenState extends State<HalReszletekScreen> {
                           megjelenito = CachedNetworkImage(
                             imageUrl: utvonal,
                             fit: BoxFit.cover, width: double.infinity,
-                            // JAVÍTVA: Itt sincs töltőkarika, ami feleslegesen pörögne!
                             placeholder: (context, url) => const Center(child: Icon(Icons.set_meal, size: 50, color: Colors.white24)),
                             errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.white24)),
                           );
@@ -523,7 +522,7 @@ class _KvizScreenState extends State<KvizScreen> {
                                     borderRadius: BorderRadius.circular(15),
                                     child: Image.file(
                                       File(kivalasztottKep), 
-                                      fit: BoxFit.cover, 
+                                      fit: BoxFit.contain, // JAVÍTVA: cover helyett contain
                                       width: double.infinity, 
                                       height: double.infinity,
                                       errorBuilder: (context, error, stackTrace) {
