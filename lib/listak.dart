@@ -86,6 +86,7 @@ class _ListakScreenState extends State<ListakScreen> {
             ? TextField(
                 controller: _keresoCtrl,
                 autofocus: true,
+                textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   hintText: 'Keresés listákban...',
@@ -340,7 +341,8 @@ class _ListaReszletekScreenState extends State<ListaReszletekScreen> {
           children: [
             TextField(
               controller: _cimCtrl,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white), // Fehérre módosítva a Jegyzetek stílusához
+              textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white), 
               decoration: const InputDecoration(
                 hintText: 'Lista címe',
                 hintStyle: TextStyle(color: Colors.white38),
@@ -513,6 +515,7 @@ class _TetelSorState extends State<_TetelSor> {
             child: TextField(
               controller: _szovegCtrl,
               autofocus: widget.autoFocus, 
+              textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
               style: TextStyle(
                 color: widget.isKipipaltNezet ? Colors.white38 : Colors.white,
                 decoration: widget.isKipipaltNezet ? TextDecoration.lineThrough : null,
