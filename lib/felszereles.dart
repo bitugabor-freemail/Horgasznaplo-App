@@ -513,7 +513,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: TextField(
                 autofocus: true,
-                textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
+                textCapitalization: TextCapitalization.sentences, 
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Keresés márka, név, jellemző...',
@@ -565,7 +565,7 @@ class FelszerelesScreenState extends State<FelszerelesScreen> {
                          
                           if (_isTaskaNezet) {
                             nev = _taskak[index];
-                            isSelected = nev == _kivalasztTaska;
+                            isSelected = nev == _kivalasztottTaska; // <--- ITT VOLT AZ ELGÉPELÉS JAVÍTVA!
                             if (index < _taskaKeys.length) gKey = _taskaKeys[index];
                           } else {
                             nev = _kategoriak[index].nev;
@@ -1064,7 +1064,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
         content: TextField(
           controller: ctrl, 
           autofocus: true, 
-          textCapitalization: TextCapitalization.words, // ÚJ KÓD
+          textCapitalization: TextCapitalization.words, 
           onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
           decoration: const InputDecoration(labelText: 'Táska megnevezése')
         ),
@@ -1118,7 +1118,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                       child: TextField(
                         controller: keresoCtrl,
                         autofocus: true,
-                        textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
+                        textCapitalization: TextCapitalization.sentences, 
                         onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                         decoration: InputDecoration(
                           hintText: 'Keresés...',
@@ -1244,11 +1244,11 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
             
-            TextField(controller: _markaCtrl, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Márka (opcionális)', border: OutlineInputBorder())), // ÚJ KÓD
+            TextField(controller: _markaCtrl, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Márka (opcionális)', border: OutlineInputBorder())), 
             const SizedBox(height: 16),
-            TextField(controller: _nevCtrl, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név *', border: OutlineInputBorder())), // ÚJ KÓD
+            TextField(controller: _nevCtrl, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név *', border: OutlineInputBorder())), 
             const SizedBox(height: 16),
-            TextField(controller: _jellemzoCtrl, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Jellemző (opcionális)', border: OutlineInputBorder())), // ÚJ KÓD
+            TextField(controller: _jellemzoCtrl, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Jellemző (opcionális)', border: OutlineInputBorder())), 
             const Divider(height: 40, color: Colors.white24),
 
             const Text('Tárolási helyek', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.amber)),
@@ -1297,7 +1297,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      TextField(controller: v.pozicioCtrl, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Pozíció / Rekesz (opcionális)', border: OutlineInputBorder())), // ÚJ KÓD
+                      TextField(controller: v.pozicioCtrl, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Pozíció / Rekesz (opcionális)', border: OutlineInputBorder())), 
                       const SizedBox(height: 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -1338,7 +1338,7 @@ class _TetelSzerkesztoScreenState extends State<TetelSzerkesztoScreen> {
 
             const Divider(height: 40, color: Colors.white24),
 
-            TextField(controller: _leirasCtrl, maxLines: 4, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Felszerelés leírása (opcionális)', border: OutlineInputBorder())), // ÚJ KÓD
+            TextField(controller: _leirasCtrl, maxLines: 4, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Felszerelés leírása (opcionális)', border: OutlineInputBorder())), 
             const SizedBox(height: 24),
 
             // --- INDEXKÉP / THUMBNAIL BEÁLLÍTÓ BLOKK (KOCKA - BOXFIT.CONTAIN) ---
@@ -1527,7 +1527,7 @@ class _KategoriakSzerkesztoScreenState extends State<KategoriakSzerkesztoScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Kategória szerkesztése'),
-        content: TextField(controller: ctrl, autofocus: true, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név')), // ÚJ KÓD
+        content: TextField(controller: ctrl, autofocus: true, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név')), 
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
           ElevatedButton(
@@ -1592,7 +1592,7 @@ class _KategoriakSzerkesztoScreenState extends State<KategoriakSzerkesztoScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Új Kategória'),
-        content: TextField(controller: ctrl, autofocus: true, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név')), // ÚJ KÓD
+        content: TextField(controller: ctrl, autofocus: true, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név')), 
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
           ElevatedButton(
@@ -1699,7 +1699,7 @@ class _TaskakSzerkesztoScreenState extends State<TaskakSzerkesztoScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Táska szerkesztése'),
-        content: TextField(controller: ctrl, autofocus: true, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név')), // ÚJ KÓD
+        content: TextField(controller: ctrl, autofocus: true, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név')), 
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
           ElevatedButton(
@@ -1759,7 +1759,7 @@ class _TaskakSzerkesztoScreenState extends State<TaskakSzerkesztoScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Új Táska / Doboz'),
-        content: TextField(controller: ctrl, autofocus: true, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név')), // ÚJ KÓD
+        content: TextField(controller: ctrl, autofocus: true, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Név')), 
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Mégse')),
           ElevatedButton(
