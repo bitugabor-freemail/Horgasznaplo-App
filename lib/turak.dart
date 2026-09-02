@@ -602,12 +602,14 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             TextField(
               controller: nevCtrl, 
               autofocus: true, 
+              textCapitalization: TextCapitalization.words, // <--- ÚJ: Szavankénti nagybetű (pl. Nagy Duna)
               onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
               decoration: const InputDecoration(labelText: 'Helyszín neve *')
             ),
             const SizedBox(height: 12),
             TextField(
               controller: kodCtrl, 
+              textCapitalization: TextCapitalization.characters, // <--- ÚJ: Kódoknál mindent naggyal írjon
               onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
               decoration: const InputDecoration(labelText: 'Víztér kód (opcionális)')
             ),
@@ -650,6 +652,7 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
         content: TextField(
           controller: ctrl, 
           autofocus: true, 
+          textCapitalization: TextCapitalization.words, // <--- ÚJ: Neveknél szavankénti nagybetű
           onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
           decoration: const InputDecoration(labelText: 'Név')
         ),
@@ -1024,7 +1027,12 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            TextField(controller: _horgaszhelyCtrl, decoration: const InputDecoration(labelText: 'Horgászhely / Állás', border: OutlineInputBorder())),
+            // <--- ÚJ: Horgászhely / Állás mező nagybetűsítése mondatonként
+            TextField(
+              controller: _horgaszhelyCtrl, 
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Horgászhely / Állás', border: OutlineInputBorder())
+            ),
             const SizedBox(height: 20),
 
             const Text('Horgásztársak hozzáadása:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -1065,7 +1073,6 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ],
             const Divider(height: 40, color: Colors.white24),
 
-            // --- TÚRA BORÍTÓKÉP SZERKESZTŐ (16:9 ARÁNY, MÁGNESES - BOXFIT.CONTAIN) ---
             const Text('Túra Borítókép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('Állítsd be a borítóképet! Két ujjal nagyíthatod és mozgathatod a fotót a zöld kereten belül. A főképernyőn lévő listákban pontosan az a részlet fog megjelenni, amit most ebben a kockában látsz.', style: TextStyle(color: Colors.white54, fontSize: 12)),
@@ -1208,7 +1215,13 @@ class _TuraSzerkesztoScreenState extends State<TuraSzerkesztoScreen> {
             ),
             const SizedBox(height: 16),
 
-            TextField(controller: _megjegyzesCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Megjegyzés', border: OutlineInputBorder())),
+            // <--- ÚJ: Megjegyzés mező nagybetűsítése mondatonként
+            TextField(
+              controller: _megjegyzesCtrl, 
+              maxLines: 3, 
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Megjegyzés', border: OutlineInputBorder())
+            ),
             const SizedBox(height: 24),
 
             ElevatedButton(
