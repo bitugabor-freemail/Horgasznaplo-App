@@ -8,10 +8,9 @@ class StatisztikaScreen extends StatefulWidget {
   const StatisztikaScreen({super.key});
 
   @override
-  State<StatisztikaScreen> createState() => StatisztikaScreenState(); // ÚJ: Publikus state
+  State<StatisztikaScreen> createState() => StatisztikaScreenState();
 }
 
-// ÚJ: Publikus state osztály (alsóvonal nélkül), hogy a main.dart elérhesse
 class StatisztikaScreenState extends State<StatisztikaScreen> {
   // --- ADATBÁZISOK ---
   List<Tura> _osszesTura = [];
@@ -47,7 +46,6 @@ class StatisztikaScreenState extends State<StatisztikaScreen> {
     adatokBetoltese();
   }
 
-  // ÚJ: Publikus metódus
   Future<void> adatokBetoltese() async {
     _osszesTura = await AdatTarolo.turakBetoltese();
     
@@ -461,7 +459,6 @@ class StatisztikaScreenState extends State<StatisztikaScreen> {
     );
   }
 
-  // --- ÚJ: HOLDFÁZIS KALKULÁTOR (Segédfüggvény) ---
   _HoldfazisAdat _getHoldfazisInfo(DateTime date) {
     final double newMoon = DateTime.utc(2000, 1, 6, 18, 14).millisecondsSinceEpoch.toDouble();
     const double msInDay = 86400000.0;
@@ -487,7 +484,6 @@ class StatisztikaScreenState extends State<StatisztikaScreen> {
     return days[date.weekday - 1];
   }
 
-  // ÚJ: Publikussá téve, hogy a main.dart meghívhassa
   void mutassHoldnaptar() {
     final szurt = _getSzurtFogasok();
     Map<String, int> phaseCounts = {};
@@ -586,7 +582,6 @@ class StatisztikaScreenState extends State<StatisztikaScreen> {
               const SizedBox(height: 8),
               Expanded(
                 child: ListView.builder(
-                  // A 13. index a "Tegnap", így tegnap, ma és holnap egyből látszik a képernyőn!
                   controller: ScrollController(initialScrollOffset: 13 * 76.0), 
                   itemExtent: 76.0,
                   itemCount: naptarNapok.length,
@@ -656,10 +651,12 @@ class StatisztikaScreenState extends State<StatisztikaScreen> {
 
     int visszaDb = szurtFogasok.where((f) => f.sors == 'Visszaengedtem').length;
     int elvittDb = szurtFogasok.where((f) => f.sors == 'Elvittem').length;
+    int elajandekozottDb = szurtFogasok.where((f) => f.sors == 'Elajándékoztam').length; // ÚJ KÓD
     int elpusztultDb = szurtFogasok.where((f) => f.sors == 'Elpusztult').length;
 
     double visszaSuly = szurtFogasok.where((f) => f.sors == 'Visszaengedtem').fold(0.0, (s, f) => s + (f.suly ?? 0.0));
     double elvittSuly = szurtFogasok.where((f) => f.sors == 'Elvittem').fold(0.0, (s, f) => s + (f.suly ?? 0.0));
+    double elajandekozottSuly = szurtFogasok.where((f) => f.sors == 'Elajándékoztam').fold(0.0, (s, f) => s + (f.suly ?? 0.0)); // ÚJ KÓD
     double elpusztultSuly = szurtFogasok.where((f) => f.sors == 'Elpusztult').fold(0.0, (s, f) => s + (f.suly ?? 0.0));
 
     Map<String, int> halfajDb = {};
@@ -752,6 +749,9 @@ class StatisztikaScreenState extends State<StatisztikaScreen> {
                               const SizedBox(height: 12),
                               _SorsSor(nev: 'Elvitt', db: elvittDb, osszes: darab, suly: elvittSuly, szin: Colors.orangeAccent),
                               const SizedBox(height: 12),
+                              // ÚJ KÓD: Elajándékozott sor hozzáadása
+                              _SorsSor(nev: 'Elajándékozott', db: elajandekozottDb, osszes: darab, suly: elajandekozottSuly, szin: Colors.blueAccent),
+                              const SizedBox(height: 12),
                               _SorsSor(nev: 'Elpusztult', db: elpusztultDb, osszes: darab, suly: elpusztultSuly, szin: Colors.redAccent),
                             ],
                           ),
@@ -805,7 +805,6 @@ class StatisztikaScreenState extends State<StatisztikaScreen> {
                           ),
                         ),
                         
-                      // --- ÚJ RÉSZ: SZEMÉLYES REKORDOK (PB) ---
                       if (rekordLista.isNotEmpty)
                         _Kartya(
                           cim: 'Személyes Rekordok (Fajonként)',
