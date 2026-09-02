@@ -71,6 +71,7 @@ class _LexikonScreenState extends State<LexikonScreen> {
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: TextField(
+              textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 hintText: 'Keresés halfaj vagy státusz szerint...',
                 prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
@@ -108,7 +109,6 @@ class _LexikonScreenState extends State<LexikonScreen> {
                                 ? CachedNetworkImage(
                                     imageUrl: megjelenitendoUtvonal,
                                     width: 50, height: 50, fit: BoxFit.cover,
-                                    // JAVÍTVA: Nincs többé homokóra, ha lassú a net vagy halott a link, azonnal a halacskát mutatja!
                                     placeholder: (context, url) => const Icon(Icons.set_meal, size: 40, color: Colors.white24),
                                     errorWidget: (context, url, error) => const Icon(Icons.set_meal, size: 40, color: Colors.white24),
                                   )
@@ -358,6 +358,7 @@ class _KvizScreenState extends State<KvizScreen> {
   bool _valaszolva = false;
   String? _kivalasztottValasz;
   bool _kepesMod = false; 
+  String? _aktualisKep; // ÚJ KÓD: Itt tároljuk le az aktuálisan kiválasztott képet
 
   @override
   void initState() {
@@ -419,6 +420,19 @@ class _KvizScreenState extends State<KvizScreen> {
 
     elerhetoHalak.shuffle(random);
     _aktualisKerdes = elerhetoHalak[0];
+
+    // ÚJ KÓD: A kép kiválasztása ITT történik meg, nem a build metódusban!
+    if (_kepesMod) {
+      List<String> validKepek = _aktualisKerdes.kepek.where((kep) => _ervenyestKep(kep)).toList();
+      validKepek.shuffle(random);
+      if (validKepek.isNotEmpty) {
+        _aktualisKep = validKepek.first;
+      } else {
+        _aktualisKep = null;
+      }
+    } else {
+      _aktualisKep = null;
+    }
 
     List<String> valaszok = [_aktualisKerdes.nev];
     List<Halfaj> opcioHalak = List.from(_osszesHal);
@@ -507,22 +521,13 @@ class _KvizScreenState extends State<KvizScreen> {
                       ),
                       child: Center(
                         child: _kepesMod
-                            ? Builder(
-                                builder: (context) {
-                                  List<String> validKepek = _aktualisKerdes.kepek.where((kep) => _ervenyestKep(kep)).toList();
-                                  validKepek.shuffle();
-                                  
-                                  if (validKepek.isEmpty) {
-                                     return const Icon(Icons.error, color: Colors.red, size: 50);
-                                  }
-
-                                  String kivalasztottKep = validKepek.first;
-                                  
-                                  return ClipRRect(
+                            // ÚJ KÓD: Itt már csak a stabil, elmentett képet jelenítjük meg
+                            ? (_aktualisKep != null
+                                ? ClipRRect(
                                     borderRadius: BorderRadius.circular(15),
                                     child: Image.file(
-                                      File(kivalasztottKep), 
-                                      fit: BoxFit.contain, // JAVÍTVA: cover helyett contain
+                                      File(_aktualisKep!), 
+                                      fit: BoxFit.contain, 
                                       width: double.infinity, 
                                       height: double.infinity,
                                       errorBuilder: (context, error, stackTrace) {
@@ -538,9 +543,8 @@ class _KvizScreenState extends State<KvizScreen> {
                                         );
                                       },
                                     ),
-                                  );
-                                },
-                              )
+                                  )
+                                : const Icon(Icons.error, color: Colors.red, size: 50))
                             : Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Builder(
