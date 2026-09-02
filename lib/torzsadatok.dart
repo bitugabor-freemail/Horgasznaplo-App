@@ -104,7 +104,12 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: Text(regiNev == null ? 'Új $_kivKategoria hozzáadása' : '$_kivKategoria szerkesztése'),
-        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Megnevezés')),
+        content: TextField(
+          controller: ctrl, 
+          autofocus: true, 
+          textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
+          decoration: const InputDecoration(labelText: 'Megnevezés')
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mégse')),
           ElevatedButton(
@@ -145,9 +150,18 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nevCtrl, autofocus: true, decoration: const InputDecoration(labelText: 'Helyszín neve *')),
+            TextField(
+              controller: nevCtrl, 
+              autofocus: true, 
+              textCapitalization: TextCapitalization.words, // ÚJ KÓD
+              decoration: const InputDecoration(labelText: 'Helyszín neve *')
+            ),
             const SizedBox(height: 12),
-            TextField(controller: kodCtrl, decoration: const InputDecoration(labelText: 'Víztér kód (opcionális)')),
+            TextField(
+              controller: kodCtrl, 
+              textCapitalization: TextCapitalization.characters, // ÚJ KÓD
+              decoration: const InputDecoration(labelText: 'Víztér kód (opcionális)')
+            ),
           ],
         ),
         actions: [
@@ -187,7 +201,12 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: Text(kategoria == null ? 'Új Kategória' : 'Kategória szerkesztése'),
-        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(labelText: 'Név')),
+        content: TextField(
+          controller: ctrl, 
+          autofocus: true, 
+          textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
+          decoration: const InputDecoration(labelText: 'Név')
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Mégse')),
           ElevatedButton(
@@ -490,6 +509,7 @@ class _TorzsadatokScreenState extends State<TorzsadatokScreen> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _keresoCtrl,
+                      textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
                       decoration: InputDecoration(
                         hintText: 'Keresés a listában...',
                         prefixIcon: const Icon(Icons.search, color: Colors.greenAccent),
@@ -876,7 +896,12 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(controller: _nevCtrl, autofocus: widget.szerkeszthetoHalfaj == null, decoration: const InputDecoration(labelText: 'Halfaj neve *', border: OutlineInputBorder())),
+            TextField(
+              controller: _nevCtrl, 
+              autofocus: widget.szerkeszthetoHalfaj == null, 
+              textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
+              decoration: const InputDecoration(labelText: 'Halfaj neve *', border: OutlineInputBorder())
+            ),
             const SizedBox(height: 16),
             
             const Divider(height: 40, color: Colors.white24),
@@ -1061,17 +1086,17 @@ class _HalfajSzerkesztoScreenState extends State<HalfajSzerkesztoScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: TextField(controller: _meretCtrl, decoration: const InputDecoration(labelText: 'Méretkorlátozás (pl. 30 cm)', border: OutlineInputBorder()))),
+                Expanded(child: TextField(controller: _meretCtrl, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Méretkorlátozás (pl. 30 cm)', border: OutlineInputBorder()))), // ÚJ KÓD
                 const SizedBox(width: 8),
-                Expanded(child: TextField(controller: _darabCtrl, decoration: const InputDecoration(labelText: 'Darabkorlát (pl. 3 db)', border: OutlineInputBorder()))),
+                Expanded(child: TextField(controller: _darabCtrl, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Darabkorlát (pl. 3 db)', border: OutlineInputBorder()))), // ÚJ KÓD
               ],
             ),
             const SizedBox(height: 16),
-            TextField(controller: _tilalomCtrl, decoration: const InputDecoration(labelText: 'Tilalmi időszak (pl. 05.02 - 05.31)', border: OutlineInputBorder())),
+            TextField(controller: _tilalomCtrl, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Tilalmi időszak (pl. 05.02 - 05.31)', border: OutlineInputBorder())), // ÚJ KÓD
             const SizedBox(height: 16),
             TextField(controller: _evCtrl, decoration: const InputDecoration(labelText: 'Szabályozás éve', border: OutlineInputBorder())),
             const SizedBox(height: 16),
-            TextField(controller: _megjegyzesCtrl, maxLines: 5, decoration: const InputDecoration(labelText: 'Leírás / Megjegyzés', border: OutlineInputBorder())),
+            TextField(controller: _megjegyzesCtrl, maxLines: 5, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Leírás / Megjegyzés', border: OutlineInputBorder())), // ÚJ KÓD
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], padding: const EdgeInsets.symmetric(vertical: 16)),
