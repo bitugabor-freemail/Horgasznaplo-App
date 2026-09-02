@@ -395,6 +395,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
         content: TextField(
           controller: ctrl, 
           autofocus: true, 
+          textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
           onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
           decoration: const InputDecoration(labelText: 'Megnevezés')
         ),
@@ -456,6 +457,7 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
                       child: TextField(
                         controller: keresoCtrl,
                         autofocus: true,
+                        textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
                         onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                         decoration: InputDecoration(
                           hintText: 'Keresés...',
@@ -807,7 +809,6 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
             ),
             const Divider(height: 40, color: Colors.white24),
 
-            // --- FOGÁS INDEXKÉP SZERKESZTŐ (MÁGNESES 240x240 ARÁNY - BOXFIT.CONTAIN) ---
             const Text('Listanézeti Indexkép (Thumbnail)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('A szerkesztő doboz nagy, hogy könnyen beállíthasd, de a listában automatikusan a helyére fog igazodni. Két ujjal nagyíthatod, mozgathatod. Az egész kép látszódni fog a kockában.', style: TextStyle(color: Colors.white54, fontSize: 12)),
@@ -947,7 +948,12 @@ class _FogasSzerkesztoScreenState extends State<FogasSzerkesztoScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            TextField(controller: _megjegyzesCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Megjegyzés', border: OutlineInputBorder())),
+            TextField(
+              controller: _megjegyzesCtrl, 
+              maxLines: 3, 
+              textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
+              decoration: const InputDecoration(labelText: 'Megjegyzés', border: OutlineInputBorder())
+            ),
             const SizedBox(height: 24),
 
             ElevatedButton(
@@ -982,9 +988,7 @@ class FogasReszletekScreen extends StatefulWidget {
 class _FogasReszletekScreenState extends State<FogasReszletekScreen> {
   final PageController _pageCtrl = PageController();
   
-  // --- ÚJ: HOLDFÁZIS KALKULÁTOR ---
   String _getHoldfazis(DateTime date) {
-    // Referencia újhold: 2000. január 6. 18:14 UTC
     final double newMoon = DateTime.utc(2000, 1, 6, 18, 14).millisecondsSinceEpoch.toDouble();
     const double msInDay = 86400000.0;
     const double synodicMonth = 29.53058867;
@@ -1177,7 +1181,6 @@ class _FogasReszletekScreenState extends State<FogasReszletekScreen> {
                   const Divider(color: Colors.white24),
                   _AdatSor(cim: 'Időjárás', ertek: widget.fogas.idojaras?.isEmpty ?? true ? '-' : widget.fogas.idojaras!),
                   _AdatSor(cim: 'Hőmérséklet', ertek: widget.fogas.homerseklet == null ? '-' : '${widget.fogas.homerseklet} °C'),
-                  // ÚJ: HOLDFÁZIS MEGJELENÍTÉSE
                   _AdatSor(cim: 'Holdfázis', ertek: _getHoldfazis(widget.fogas.datum)),
                 ],
               ),
