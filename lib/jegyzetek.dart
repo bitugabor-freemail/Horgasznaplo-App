@@ -156,6 +156,7 @@ class _JegyzetekScreenState extends State<JegyzetekScreen> {
             ? TextField(
                 controller: _keresoCtrl,
                 autofocus: true,
+                textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   hintText: 'Keresés jegyzetekben...',
@@ -191,11 +192,10 @@ class _JegyzetekScreenState extends State<JegyzetekScreen> {
           : mutatottJegyzetek.isEmpty
               ? const Center(child: Text('Nincs találat a keresésre.', style: TextStyle(color: Colors.white54)))
               : ReorderableListView(
-                  padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100), // Alsó térköz a gomb miatt
-                  // Keresés közben kikapcsoljuk az átrendezést, mert a szűrt lista indexei eltérnek a valóditól!
+                  padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 100), 
                   buildDefaultDragHandles: _keresoKifejezes.isEmpty,
                   onReorder: (oldIndex, newIndex) {
-                    if (_keresoKifejezes.isNotEmpty) return; // Szűrés közben ne lehessen
+                    if (_keresoKifejezes.isNotEmpty) return; 
                     setState(() {
                       if (newIndex > oldIndex) newIndex -= 1;
                       final item = _jegyzetek.removeAt(oldIndex);
@@ -236,7 +236,7 @@ class _JegyzetekScreenState extends State<JegyzetekScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.only(right: 32.0), // Hely a 3 pontnak
+                                    padding: const EdgeInsets.only(right: 32.0), 
                                     child: Text(
                                       jegyzet.cim.isNotEmpty ? jegyzet.cim : 'Névtelen jegyzet',
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
@@ -252,14 +252,12 @@ class _JegyzetekScreenState extends State<JegyzetekScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   
-                                  // Ha van kép, jelezzük ikonnal (és hagyjunk neki helyet)
                                   if (jegyzet.kepek.isNotEmpty) ...[
                                     const SizedBox(height: 16),
                                   ]
                                 ],
                               ),
                               
-                              // 3-pontos menü jobb felül
                               Positioned(
                                 top: -12,
                                 right: -12,
@@ -279,7 +277,6 @@ class _JegyzetekScreenState extends State<JegyzetekScreen> {
                                 ),
                               ),
 
-                              // Kép indikátor jobb alul
                               if (jegyzet.kepek.isNotEmpty)
                                 Positioned(
                                   bottom: -4,
@@ -354,7 +351,7 @@ class JegyzetReszletekScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(jegyzet.szin), // Felvesszük a jegyzet háttérszínét
+      backgroundColor: Color(jegyzet.szin), 
       appBar: AppBar(
         title: Text(jegyzet.cim.isNotEmpty ? jegyzet.cim : 'Jegyzet Részletei'),
         backgroundColor: Colors.black12,
@@ -459,7 +456,7 @@ class _JegyzetSzerkesztoScreenState extends State<JegyzetSzerkesztoScreen> {
   final _cimCtrl = TextEditingController();
   final _szovegCtrl = TextEditingController();
   List<String> _kepek = [];
-  int _kivalasztottSzin = 0xFF1E1E1E; // Alap szín
+  int _kivalasztottSzin = 0xFF1E1E1E; 
 
   final List<Color> _valaszthatoSzinek = [
     const Color(0xFF1E1E1E), 
@@ -594,6 +591,7 @@ class _JegyzetSzerkesztoScreenState extends State<JegyzetSzerkesztoScreen> {
             TextField(
               controller: _cimCtrl,
               autofocus: widget.szerkeszthetoJegyzet == null,
+              textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
               decoration: const InputDecoration(
                 hintText: 'Cím',
@@ -606,6 +604,7 @@ class _JegyzetSzerkesztoScreenState extends State<JegyzetSzerkesztoScreen> {
               controller: _szovegCtrl,
               maxLines: null,
               minLines: 8,
+              textCapitalization: TextCapitalization.sentences, // ÚJ KÓD
               style: const TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
               decoration: const InputDecoration(
                 hintText: 'Írd ide a jegyzeted...',
@@ -677,7 +676,7 @@ class _JegyzetSzerkesztoScreenState extends State<JegyzetSzerkesztoScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 100), // Alsó kilógás
+            const SizedBox(height: 100), 
           ],
         ),
       ),
