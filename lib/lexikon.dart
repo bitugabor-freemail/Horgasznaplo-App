@@ -1,7 +1,9 @@
 import 'dart:math';
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'adattarolo.dart';
 import 'modellek.dart';
 
@@ -343,6 +345,14 @@ class _HalReszletekScreenState extends State<HalReszletekScreen> {
   }
 }
 
+// --- ÚJ KVÍZ MODELL ---
+class QuizFeladvany {
+  final Halfaj hal;
+  final bool isKepes;
+  final String tartalom; 
+  QuizFeladvany({required this.hal, required this.isKepes, required this.tartalom});
+}
+
 class KvizScreen extends StatefulWidget {
   const KvizScreen({super.key});
 
@@ -352,13 +362,23 @@ class KvizScreen extends StatefulWidget {
 
 class _KvizScreenState extends State<KvizScreen> {
   List<Halfaj> _osszesHal = [];
-  late Halfaj _aktualisKerdes;
+  
+  List<QuizFeladvany> _szovegesMedence = [];
+  List<QuizFeladvany> _kepesMedence = [];
+  
+  QuizFeladvany? _aktualisKerdes;
   List<String> _opciok = [];
+  
   int _pontszam = 0;
+  int _hibakSzama = 0; // Max 3
   bool _valaszolva = false;
   String? _kivalasztottValasz;
+  
   bool _kepesMod = false; 
-  String? _aktualisKep; // ÚJ KÓD: Itt tároljuk le az aktuálisan kiválasztott képet
+  bool _isJatekVege = false;
+  bool _isVillog = false;
+  
+  List<Map<String, dynamic>> _rekordok = [];
 
   @override
   void initState() {
@@ -368,8 +388,18 @@ class _KvizScreenState extends State<KvizScreen> {
 
   Future<void> _adatokBetoltese() async {
     final adatok = await AdatTarolo.halfajokBetoltese();
+    final prefs = await SharedPreferences.getInstance();
+    final String? rekordJson = prefs.getString('kviz_rekordok');
+    
+    if (rekordJson != null) {
+      List<dynamic> dekodolt = jsonDecode(rekordJson);
+      _rekordok = dekodolt.map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+
     setState(() => _osszesHal = adatok);
-    if (_osszesHal.length >= 2) _ujKerdes();
+    if (_osszesHal.length >= 2) {
+      _jatekInicializalasa();
+    }
   }
 
   bool _ervenyestKep(String kep) {
@@ -378,68 +408,95 @@ class _KvizScreenState extends State<KvizScreen> {
     return File(kep).existsSync();
   }
 
-  void _onKepesModValtas(bool ujErtek) {
-    if (ujErtek) {
-      int kepesHalakSzama = _osszesHal.where((h) => h.kepek.any((k) => _ervenyestKep(k))).length;
-      
-      if (kepesHalakSzama < 4) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nincs elég fotóval rendelkező halfaj (min. 4 kell)! Kérlek, tölts fel saját képeket a Törzsadatoknál!'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-        setState(() { _kepesMod = false; });
-        return;
+  void _jatekInicializalasa() {
+    _szovegesMedence.clear();
+    _kepesMedence.clear();
+    _pontszam = 0;
+    _hibakSzama = 0;
+    _isJatekVege = false;
+    _valaszolva = false;
+
+    for (var hal in _osszesHal) {
+      if (hal.megjegyzes.trim().isNotEmpty) {
+        _szovegesMedence.add(QuizFeladvany(hal: hal, isKepes: false, tartalom: hal.megjegyzes));
       }
+      for (var kep in hal.kepek) {
+        if (_ervenyestKep(kep)) {
+          _kepesMedence.add(QuizFeladvany(hal: hal, isKepes: true, tartalom: kep));
+        }
+      }
+    }
+    
+    _szovegesMedence.shuffle();
+    _kepesMedence.shuffle();
+    
+    // Ha eleve nincs kép, kikényszerítjük a szövegest
+    if (_kepesMod && _kepesMedence.isEmpty) {
+      _kepesMod = false;
+    }
+
+    _ujKerdes();
+  }
+
+  void _onKepesModValtas(bool ujErtek) {
+    if (ujErtek && _kepesMedence.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Elfogyott az összes képes kérdés!'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+    if (!ujErtek && _szovegesMedence.isEmpty) {
+       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Elfogyott az összes szöveges kérdés!'), backgroundColor: Colors.orange),
+      );
+      return;
     }
     
     setState(() { 
       _kepesMod = ujErtek; 
-      _pontszam = 0; 
+      // Visszatesszük a jelenlegi kérdést a medencébe, hogy ne vesszen el a váltás miatt
+      if (_aktualisKerdes != null) {
+        if (_aktualisKerdes!.isKepes) {
+          _kepesMedence.add(_aktualisKerdes!);
+          _kepesMedence.shuffle();
+        } else {
+          _szovegesMedence.add(_aktualisKerdes!);
+          _szovegesMedence.shuffle();
+        }
+      }
     });
     _ujKerdes();
   }
 
   void _ujKerdes() {
-    final random = Random();
-    
-    List<Halfaj> elerhetoHalak = List.from(_osszesHal);
-    
-    if (_kepesMod) {
-      elerhetoHalak = elerhetoHalak.where((h) {
-        return h.kepek.any((kep) => _ervenyestKep(kep));
-      }).toList();
+    if (_isJatekVege) return;
+
+    // Automata váltó, ha kifogyott a medence
+    if (_kepesMod && _kepesMedence.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('A képek elfogytak! Automatikus váltás szöveges módra...')));
+      setState(() => _kepesMod = false);
+    } else if (!_kepesMod && _szovegesMedence.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('A szöveges kérdések elfogytak! Automatikus váltás képes módra...')));
+      setState(() => _kepesMod = true);
     }
 
-    if (elerhetoHalak.isEmpty) {
-      setState(() => _valaszolva = true); 
+    // Ha MINDEN elfogyott -> GYŐZELEM!
+    if (_kepesMedence.isEmpty && _szovegesMedence.isEmpty) {
+      _jatekVegeFolyamat(isGyozelem: true);
       return;
     }
 
-    elerhetoHalak.shuffle(random);
-    _aktualisKerdes = elerhetoHalak[0];
+    final random = Random();
+    
+    // Kivesszük a következőt
+    _aktualisKerdes = _kepesMod ? _kepesMedence.removeLast() : _szovegesMedence.removeLast();
 
-    // ÚJ KÓD: A kép kiválasztása ITT történik meg, nem a build metódusban!
-    if (_kepesMod) {
-      List<String> validKepek = _aktualisKerdes.kepek.where((kep) => _ervenyestKep(kep)).toList();
-      validKepek.shuffle(random);
-      if (validKepek.isNotEmpty) {
-        _aktualisKep = validKepek.first;
-      } else {
-        _aktualisKep = null;
-      }
-    } else {
-      _aktualisKep = null;
-    }
-
-    List<String> valaszok = [_aktualisKerdes.nev];
+    List<String> valaszok = [_aktualisKerdes!.hal.nev];
     List<Halfaj> opcioHalak = List.from(_osszesHal);
     opcioHalak.shuffle(random);
     
     for (var h in opcioHalak) {
-      if (h.nev != _aktualisKerdes.nev && valaszok.length < 4) {
+      if (h.nev != _aktualisKerdes!.hal.nev && valaszok.length < 4) {
         valaszok.add(h.nev);
       }
     }
@@ -452,16 +509,227 @@ class _KvizScreenState extends State<KvizScreen> {
     });
   }
 
-  void _valasztas(String valasz) {
-    if (_valaszolva) return;
+  void _valasztas(String valasz) async {
+    if (_valaszolva || _isJatekVege) return;
+    
     setState(() {
       _valaszolva = true;
       _kivalasztottValasz = valasz;
-      if (valasz == _aktualisKerdes.nev) _pontszam++;
     });
-    Future.delayed(const Duration(seconds: 2), () {
+
+    if (valasz == _aktualisKerdes!.hal.nev) {
+      setState(() => _pontszam++);
+      await Future.delayed(const Duration(seconds: 2));
       if (mounted) _ujKerdes();
-    });
+    } else {
+      setState(() => _hibakSzama++);
+      
+      if (_hibakSzama >= 4) {
+        _jatekVegeFolyamat(); // Villogás és halál
+      } else {
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) _ujKerdes();
+      }
+    }
+  }
+
+  Future<void> _jatekVegeFolyamat({bool isGyozelem = false}) async {
+    setState(() => _isJatekVege = true);
+
+    if (!isGyozelem) {
+      // 3x villogás a halál előtt
+      for (int i = 0; i < 6; i++) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        if (mounted) setState(() => _isVillog = !_isVillog);
+      }
+      if (mounted) setState(() => _isVillog = false);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    // Rekord ellenőrzés
+    bool isUjRekord = false;
+    if (_pontszam > 0) {
+      if (_rekordok.length < 10) {
+        isUjRekord = true;
+      } else {
+        final legkisebb = _rekordok.last['pont'] as int;
+        if (_pontszam > legkisebb) isUjRekord = true;
+      }
+    }
+
+    if (isUjRekord) {
+      _ujRekordNevezes();
+    } else {
+      _mutasdEredmenyek(null);
+    }
+  }
+
+  void _ujRekordNevezes() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('🎉 ÚJ REKORD!', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Gratulálok! A $_pontszam pontod felkerült a dicsőségtáblára!', style: const TextStyle(color: Colors.white, fontSize: 16)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Írd be a neved', border: OutlineInputBorder()),
+            )
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[800]),
+            onPressed: () async {
+              String nev = ctrl.text.trim().isNotEmpty ? ctrl.text.trim() : 'Névtelen horgász';
+              String ujId = DateTime.now().millisecondsSinceEpoch.toString();
+              
+              _rekordok.add({'id': ujId, 'nev': nev, 'pont': _pontszam});
+              _rekordok.sort((a, b) => (b['pont'] as int).compareTo(a['pont'] as int));
+              if (_rekordok.length > 10) _rekordok = _rekordok.sublist(0, 10);
+              
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('kviz_rekordok', jsonEncode(_rekordok));
+              
+              if (mounted) {
+                Navigator.pop(context);
+                _mutasdEredmenyek(ujId); // Sárgával kiemeljük a táblán
+              }
+            },
+            child: const Text('OK', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _mutasdEredmenyek(String? kiemeltId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        contentPadding: const EdgeInsets.all(16),
+        title: Column(
+          children: [
+            Text('A játék véget ért.', style: TextStyle(color: Colors.red[300], fontSize: 16)),
+            const SizedBox(height: 8),
+            Text('Pontszámod: $_pontszam', style: const TextStyle(color: Colors.greenAccent, fontSize: 28, fontWeight: FontWeight.bold)),
+            const Divider(color: Colors.white24, height: 32),
+            const Text('🏆 TOP 10 REKORD', style: TextStyle(color: Colors.amber)),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: _rekordok.isEmpty 
+              ? const Text('Még nincsenek rekordok.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54))
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _rekordok.length,
+                  itemBuilder: (context, index) {
+                    var r = _rekordok[index];
+                    bool isSajat = r['id'] == kiemeltId;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${index + 1}. ${r['nev']}', style: TextStyle(color: isSajat ? Colors.amber : Colors.white, fontWeight: isSajat ? FontWeight.bold : FontWeight.normal)),
+                          Text('${r['pont']} pont', style: TextStyle(color: isSajat ? Colors.amber : Colors.greenAccent, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Dialog bezárása
+              Navigator.pop(context); // Kvíz bezárása -> Vissza a lexikonba
+            }, 
+            child: const Text('Bezárás', style: TextStyle(color: Colors.white54))
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => _jatekInicializalasa());
+            }, 
+            child: const Text('Új Játék', style: TextStyle(color: Colors.white))
+          )
+        ],
+      ),
+    );
+  }
+
+  void _csakRekordokMegtekintese() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('🏆 Dicsőségtábla', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: _rekordok.isEmpty 
+              ? const Text('Még nincsenek rekordok.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54))
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _rekordok.length,
+                  itemBuilder: (context, index) {
+                    var r = _rekordok[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${index + 1}. ${r['nev']}', style: const TextStyle(color: Colors.white, fontSize: 16)),
+                          Text('${r['pont']}', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Bezárás', style: TextStyle(color: Colors.white54))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEletek() {
+    // 3 pötty: Ha _hibakSzama == 0 -> mind zöld. _hibakSzama == 1 -> jobb oldali piros, stb.
+    List<Widget> pottyok = [];
+    for (int i = 0; i < 3; i++) {
+      // i = 0 (bal), i = 1 (közép), i = 2 (jobb)
+      // Piros lesz, ha (3 - i) <= _hibakSzama
+      bool isPiros = (3 - i) <= _hibakSzama;
+      
+      // Ha villog a halál előtt, és piros, akkor tüntessük el/fel
+      Color szin = isPiros ? Colors.redAccent : Colors.greenAccent;
+      if (_isVillog) {
+        szin = Colors.transparent; 
+      }
+
+      pottyok.add(Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        width: 14,
+        height: 14,
+        decoration: BoxDecoration(color: szin, shape: BoxShape.circle),
+      ));
+    }
+    return Row(mainAxisSize: MainAxisSize.min, children: pottyok);
   }
 
   @override
@@ -480,23 +748,31 @@ class _KvizScreenState extends State<KvizScreen> {
       appBar: AppBar(
         title: const Text('Kvíz'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.emoji_events, color: Colors.amber),
+            tooltip: 'Rekordok',
+            onPressed: _csakRekordokMegtekintese,
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Új játék',
+            onPressed: () => setState(() => _jatekInicializalasa()),
+          ),
+          const SizedBox(width: 8),
           Row(
             children: [
               const Text('Képes', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
               Switch(
                 value: _kepesMod,
                 activeColor: Colors.greenAccent,
-                onChanged: _onKepesModValtas, 
+                onChanged: _kepesMedence.isEmpty && _szovegesMedence.isEmpty ? null : _onKepesModValtas, 
               ),
             ],
           )
         ],
       ),
-      body: _valaszolva && _opciok.isEmpty
-          ? const Center(child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('Nincs elég olyan halfajod, amelyikhez hivatalos vagy saját képet töltöttél volna fel! Válts vissza szöveges módra.', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.orangeAccent)),
-            ))
+      body: _isJatekVege
+          ? const Center(child: Text('Játék vége!', style: TextStyle(fontSize: 24, color: Colors.redAccent, fontWeight: FontWeight.bold)))
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -505,7 +781,8 @@ class _KvizScreenState extends State<KvizScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Melyik halfaj ez?', style: TextStyle(fontSize: 18, color: Colors.white54)),
+                      const Text('Melyik halfaj ez?', style: TextStyle(fontSize: 16, color: Colors.white54)),
+                      _buildEletek(),
                       Text('Pontszám: $_pontszam', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
                     ],
                   ),
@@ -520,48 +797,36 @@ class _KvizScreenState extends State<KvizScreen> {
                         border: Border.all(color: Colors.green[800]!),
                       ),
                       child: Center(
-                        child: _kepesMod
-                            // ÚJ KÓD: Itt már csak a stabil, elmentett képet jelenítjük meg
-                            ? (_aktualisKep != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(15),
-                                    child: Image.file(
-                                      File(_aktualisKep!), 
-                                      fit: BoxFit.contain, 
-                                      width: double.infinity, 
-                                      height: double.infinity,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return const Center(
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.phishing, size: 64, color: Colors.grey),
-                                              SizedBox(height: 8),
-                                              Text('Kép nem található', style: TextStyle(color: Colors.grey)),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  )
-                                : const Icon(Icons.error, color: Colors.red, size: 50))
-                            : Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Builder(
-                                  builder: (context) {
-                                    String alapNev = _aktualisKerdes.nev.split(' (').first;
-                                    String cenzurazottLeiras = _aktualisKerdes.megjegyzes
-                                        .replaceAll(RegExp(RegExp.escape(_aktualisKerdes.nev), caseSensitive: false), '[***]')
-                                        .replaceAll(RegExp(RegExp.escape(alapNev), caseSensitive: false), '[***]');
-                                    
-                                    return Text(
-                                      'Státusz: ${_aktualisKerdes.statusz}\n\nKategória: ${_aktualisKerdes.kategoria}\n\n$cenzurazottLeiras',
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.white),
-                                    );
-                                  }
-                                ),
-                              ),
+                        child: _aktualisKerdes == null 
+                          ? const CircularProgressIndicator(color: Colors.greenAccent)
+                          : (_aktualisKerdes!.isKepes
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(15),
+                                  child: Image.file(
+                                    File(_aktualisKerdes!.tartalom), 
+                                    fit: BoxFit.contain, 
+                                    width: double.infinity, 
+                                    height: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                                  ),
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Builder(
+                                    builder: (context) {
+                                      String alapNev = _aktualisKerdes!.hal.nev.split(' (').first;
+                                      String cenzurazottLeiras = _aktualisKerdes!.tartalom
+                                          .replaceAll(RegExp(RegExp.escape(_aktualisKerdes!.hal.nev), caseSensitive: false), '[***]')
+                                          .replaceAll(RegExp(RegExp.escape(alapNev), caseSensitive: false), '[***]');
+                                      
+                                      return Text(
+                                        'Státusz: ${_aktualisKerdes!.hal.statusz}\n\nKategória: ${_aktualisKerdes!.hal.kategoria}\n\n$cenzurazottLeiras',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.white),
+                                      );
+                                    }
+                                  ),
+                                )),
                       ),
                     ),
                   ),
@@ -575,8 +840,8 @@ class _KvizScreenState extends State<KvizScreen> {
                         String opcio = _opciok[index];
                         Color gombSzin = const Color(0xFF1E1E1E);
 
-                        if (_valaszolva) {
-                          if (opcio == _aktualisKerdes.nev) {
+                        if (_valaszolva && _aktualisKerdes != null) {
+                          if (opcio == _aktualisKerdes!.hal.nev) {
                             gombSzin = Colors.green[800]!;
                           } else if (opcio == _kivalasztottValasz) {
                             gombSzin = Colors.red[800]!;
