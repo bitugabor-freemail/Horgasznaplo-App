@@ -30,6 +30,7 @@ class AdatTarolo {
   
   static const String _jegyzetekKulcs = 'jegyzetek_adatok';
   static const String _listakKulcs = 'listak_adatok';
+  static const String _kvizRekordokKulcs = 'kviz_rekordok'; // ÚJ: Rekordok kulcsa
 
   static Future<String> biztonsagosKepMasolas(String eredetiUtvonal, {String? egyediNev}) async {
     if (eredetiUtvonal.startsWith('http')) return eredetiUtvonal; 
@@ -304,9 +305,10 @@ class AdatTarolo {
     return tisztaLista;
   }
 
+  // JAVÍTVA: 1.7.0 verzió és a kvíz rekordok is mennek a biztonsági mentésbe
   static Future<String> letrehozExportJson() async {
     Map<String, dynamic> exportData = {
-      'verzio': 1.6, 
+      'verzio': 1.7, 
       'turak': await _betoltes(_turakKulcs),
       'fogasok': await _betoltes(_fogasokKulcs),
       'halfajok': await _betoltes(_halfajokKulcs),
@@ -326,6 +328,7 @@ class AdatTarolo {
       'dok_fajlok': await _betoltes(_dokFajlokKulcs),
       'jegyzetek': await _betoltes(_jegyzetekKulcs), 
       'listak': await _betoltes(_listakKulcs),       
+      'kviz_rekordok': await _betoltes(_kvizRekordokKulcs), // ÚJ: Rekordok hozzáadása
     };
     return jsonEncode(exportData);
   }
@@ -482,6 +485,11 @@ class AdatTarolo {
     } else if (currentListak != null) {
       await prefs.setString(_listakKulcs, currentListak);
     }
+    
+    // ÚJ: Kvíz rekordok visszaállítása
+    if (data.containsKey('kviz_rekordok') && data['kviz_rekordok'] != null) {
+      await prefs.setString(_kvizRekordokKulcs, jsonEncode(data['kviz_rekordok']));
+    }
 
     await prefs.setBool('felszereles_init', true);
     await prefs.setBool('halfaj_init', true);
@@ -504,7 +512,6 @@ class AdatTarolo {
     await _mentes(kategoria, adatok);
   }
 
-  // JAVÍTVA: Kigyomlálja a dead URL-eket, garantálja a 3+2 szabályt, és statisztikát ad vissza!
   static Future<Map<String, int>> dlcKepCsomagKicsomagolasa(String zipPath) async {
     try {
       final bytes = await File(zipPath).readAsBytes();
@@ -519,7 +526,6 @@ class AdatTarolo {
       List<String> ujFajlokUtvonalai = [];
       int osszesZipKep = 0;
 
-      // 1. Fájlok kicsomagolása a mappába
       for (final file in archive) {
         if (file.isFile) {
           final filename = file.name.split('/').last;
@@ -534,7 +540,6 @@ class AdatTarolo {
         }
       }
 
-      // 2. Képek szigorú párosítása a 3+2-es szabály alapján, halott linkek törlése!
       List<Halfaj> halfajok = await halfajokBetoltese();
       bool voltValtozas = false;
       int hozzaadottKep = 0;
@@ -550,7 +555,6 @@ class AdatTarolo {
 
         List<String> talaltKepek = [];
         
-        // Csomagban lévő, ehhez a halhoz tartozó (pl. sullo_1, sullo_2) képek keresése
         for (String f in ujFajlokUtvonalai) {
           String fname = f.split('/').last.toLowerCase();
           if (fname.startsWith('${formazottNev}_')) { 
@@ -559,24 +563,22 @@ class AdatTarolo {
         }
 
         if (talaltKepek.isNotEmpty) {
-          talaltKepek.sort(); // Biztosítjuk, hogy a _1 legyen legelöl
+          talaltKepek.sort(); 
           if (talaltKepek.length > 3) {
-            talaltKepek = talaltKepek.sublist(0, 3); // Maximum 3 jöhet be a csomagból (gyári helyek)
+            talaltKepek = talaltKepek.sublist(0, 3); 
           }
 
-          // A) Kimentjük a SAJÁT (felhasználói) képeket a memóriából
           List<String> userKepek = halfajok[i].kepek.where((k) {
-            if (k.startsWith('http')) return false; // KUKA: Halott internetes linkek eldobása!
+            if (k.startsWith('http')) return false; 
             String fname = k.split('/').last.toLowerCase();
-            if (fname.startsWith('${formazottNev}_')) return false; // KUKA: Korábbi DLC képek eldobása (mert most cseréljük)
-            return true; // Minden más (amit te töltöttél fel egyedi néven) marad
+            if (fname.startsWith('${formazottNev}_')) return false; 
+            return true; 
           }).toList();
 
           if (userKepek.length > 2) {
-            userKepek = userKepek.sublist(0, 2); // Maximum 2 saját képed lehet
+            userKepek = userKepek.sublist(0, 2); 
           }
 
-          // B) Összefűzzük az új listát: Elöl a ZIP fotók, hátul a Saját fotók
           List<String> frissKepek = [];
           frissKepek.addAll(talaltKepek);
           frissKepek.addAll(userKepek);
@@ -592,7 +594,6 @@ class AdatTarolo {
             szabalyozasEve: halfajok[i].szabalyozasEve,
             megjegyzes: halfajok[i].megjegyzes,
             kepek: frissKepek,
-            // A thumbnail automatikusan az új _1-es kép lesz!
             indexKep: frissKepek.isNotEmpty ? frissKepek.first : null,
           );
           
