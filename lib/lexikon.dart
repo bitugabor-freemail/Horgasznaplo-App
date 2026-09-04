@@ -345,7 +345,6 @@ class _HalReszletekScreenState extends State<HalReszletekScreen> {
   }
 }
 
-// --- ÚJ KVÍZ MODELL ---
 class QuizFeladvany {
   final Halfaj hal;
   final bool isKepes;
@@ -370,7 +369,7 @@ class _KvizScreenState extends State<KvizScreen> {
   List<String> _opciok = [];
   
   int _pontszam = 0;
-  int _hibakSzama = 0; // Max 3
+  int _hibakSzama = 0; 
   bool _valaszolva = false;
   String? _kivalasztottValasz;
   
@@ -378,7 +377,11 @@ class _KvizScreenState extends State<KvizScreen> {
   bool _isJatekVege = false;
   bool _isVillog = false;
   
+  // ÚJ KÓD: Animációhoz használt kapcsoló
+  bool _isUjJatekAnimacio = false;
+  
   List<Map<String, dynamic>> _rekordok = [];
+  String? _aktualisKep; 
 
   @override
   void initState() {
@@ -415,6 +418,11 @@ class _KvizScreenState extends State<KvizScreen> {
     _hibakSzama = 0;
     _isJatekVege = false;
     _valaszolva = false;
+    
+    // ÚJ KÓD: Elindítjuk az új játék animációját
+    setState(() {
+      _isUjJatekAnimacio = true;
+    });
 
     for (var hal in _osszesHal) {
       if (hal.megjegyzes.trim().isNotEmpty) {
@@ -430,12 +438,20 @@ class _KvizScreenState extends State<KvizScreen> {
     _szovegesMedence.shuffle();
     _kepesMedence.shuffle();
     
-    // Ha eleve nincs kép, kikényszerítjük a szövegest
     if (_kepesMod && _kepesMedence.isEmpty) {
       _kepesMod = false;
     }
 
     _ujKerdes();
+
+    // ÚJ KÓD: 1.5 másodperc múlva levesszük a zöld feliratot, és jönnek a kérdések
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() {
+          _isUjJatekAnimacio = false;
+        });
+      }
+    });
   }
 
   void _onKepesModValtas(bool ujErtek) {
@@ -454,7 +470,6 @@ class _KvizScreenState extends State<KvizScreen> {
     
     setState(() { 
       _kepesMod = ujErtek; 
-      // Visszatesszük a jelenlegi kérdést a medencébe, hogy ne vesszen el a váltás miatt
       if (_aktualisKerdes != null) {
         if (_aktualisKerdes!.isKepes) {
           _kepesMedence.add(_aktualisKerdes!);
@@ -471,7 +486,6 @@ class _KvizScreenState extends State<KvizScreen> {
   void _ujKerdes() {
     if (_isJatekVege) return;
 
-    // Automata váltó, ha kifogyott a medence
     if (_kepesMod && _kepesMedence.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('A képek elfogytak! Automatikus váltás szöveges módra...')));
       setState(() => _kepesMod = false);
@@ -480,7 +494,6 @@ class _KvizScreenState extends State<KvizScreen> {
       setState(() => _kepesMod = true);
     }
 
-    // Ha MINDEN elfogyott -> GYŐZELEM!
     if (_kepesMedence.isEmpty && _szovegesMedence.isEmpty) {
       _jatekVegeFolyamat(isGyozelem: true);
       return;
@@ -488,8 +501,19 @@ class _KvizScreenState extends State<KvizScreen> {
 
     final random = Random();
     
-    // Kivesszük a következőt
     _aktualisKerdes = _kepesMod ? _kepesMedence.removeLast() : _szovegesMedence.removeLast();
+
+    if (_kepesMod) {
+      List<String> validKepek = _aktualisKerdes!.hal.kepek.where((kep) => _ervenyestKep(kep)).toList();
+      validKepek.shuffle(random);
+      if (validKepek.isNotEmpty) {
+        _aktualisKep = validKepek.first;
+      } else {
+        _aktualisKep = null;
+      }
+    } else {
+      _aktualisKep = null;
+    }
 
     List<String> valaszok = [_aktualisKerdes!.hal.nev];
     List<Halfaj> opcioHalak = List.from(_osszesHal);
@@ -525,7 +549,7 @@ class _KvizScreenState extends State<KvizScreen> {
       setState(() => _hibakSzama++);
       
       if (_hibakSzama >= 4) {
-        _jatekVegeFolyamat(); // Villogás és halál
+        _jatekVegeFolyamat(); 
       } else {
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) _ujKerdes();
@@ -537,7 +561,6 @@ class _KvizScreenState extends State<KvizScreen> {
     setState(() => _isJatekVege = true);
 
     if (!isGyozelem) {
-      // 3x villogás a halál előtt
       for (int i = 0; i < 6; i++) {
         await Future.delayed(const Duration(milliseconds: 200));
         if (mounted) setState(() => _isVillog = !_isVillog);
@@ -548,7 +571,6 @@ class _KvizScreenState extends State<KvizScreen> {
     await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
 
-    // Rekord ellenőrzés
     bool isUjRekord = false;
     if (_pontszam > 0) {
       if (_rekordok.length < 10) {
@@ -603,7 +625,7 @@ class _KvizScreenState extends State<KvizScreen> {
               
               if (mounted) {
                 Navigator.pop(context);
-                _mutasdEredmenyek(ujId); // Sárgával kiemeljük a táblán
+                _mutasdEredmenyek(ujId); 
               }
             },
             child: const Text('OK', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
@@ -655,8 +677,8 @@ class _KvizScreenState extends State<KvizScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Dialog bezárása
-              Navigator.pop(context); // Kvíz bezárása -> Vissza a lexikonba
+              Navigator.pop(context); 
+              Navigator.pop(context); 
             }, 
             child: const Text('Bezárás', style: TextStyle(color: Colors.white54))
           ),
@@ -709,14 +731,9 @@ class _KvizScreenState extends State<KvizScreen> {
   }
 
   Widget _buildEletek() {
-    // 3 pötty: Ha _hibakSzama == 0 -> mind zöld. _hibakSzama == 1 -> jobb oldali piros, stb.
     List<Widget> pottyok = [];
     for (int i = 0; i < 3; i++) {
-      // i = 0 (bal), i = 1 (közép), i = 2 (jobb)
-      // Piros lesz, ha (3 - i) <= _hibakSzama
       bool isPiros = (3 - i) <= _hibakSzama;
-      
-      // Ha villog a halál előtt, és piros, akkor tüntessük el/fel
       Color szin = isPiros ? Colors.redAccent : Colors.greenAccent;
       if (_isVillog) {
         szin = Colors.transparent; 
@@ -772,100 +789,103 @@ class _KvizScreenState extends State<KvizScreen> {
         ],
       ),
       body: _isJatekVege
-          ? const Center(child: Text('Játék vége!', style: TextStyle(fontSize: 24, color: Colors.redAccent, fontWeight: FontWeight.bold)))
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ? const Center(child: Text('Játék vége!', style: TextStyle(fontSize: 32, color: Colors.redAccent, fontWeight: FontWeight.bold)))
+          // ÚJ KÓD: Ha animáció van, akkor mutatjuk a zöld feliratot
+          : _isUjJatekAnimacio
+              ? const Center(child: Text('ÚJ JÁTÉK', style: TextStyle(fontSize: 36, color: Colors.greenAccent, fontWeight: FontWeight.bold, letterSpacing: 2)))
+              : Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text('Melyik halfaj ez?', style: TextStyle(fontSize: 16, color: Colors.white54)),
-                      _buildEletek(),
-                      Text('Pontszám: $_pontszam', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Melyik halfaj ez?', style: TextStyle(fontSize: 16, color: Colors.white54)),
+                          _buildEletek(),
+                          Text('Pontszám: $_pontszam', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E1E1E),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.green[800]!),
+                          ),
+                          child: Center(
+                            child: _aktualisKerdes == null 
+                              ? const CircularProgressIndicator(color: Colors.greenAccent)
+                              : (_aktualisKerdes!.isKepes
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: Image.file(
+                                        File(_aktualisKep!), 
+                                        fit: BoxFit.contain, 
+                                        width: double.infinity, 
+                                        height: double.infinity,
+                                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                                      ),
+                                    )
+                                  : Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Builder(
+                                        builder: (context) {
+                                          String alapNev = _aktualisKerdes!.hal.nev.split(' (').first;
+                                          String cenzurazottLeiras = _aktualisKerdes!.tartalom
+                                              .replaceAll(RegExp(RegExp.escape(_aktualisKerdes!.hal.nev), caseSensitive: false), '[***]')
+                                              .replaceAll(RegExp(RegExp.escape(alapNev), caseSensitive: false), '[***]');
+                                          
+                                          return Text(
+                                            'Státusz: ${_aktualisKerdes!.hal.statusz}\n\nKategória: ${_aktualisKerdes!.hal.kategoria}\n\n$cenzurazottLeiras',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.white),
+                                          );
+                                        }
+                                      ),
+                                    )),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      Expanded(
+                        flex: 3,
+                        child: ListView.builder(
+                          itemCount: _opciok.length,
+                          itemBuilder: (context, index) {
+                            String opcio = _opciok[index];
+                            Color gombSzin = const Color(0xFF1E1E1E);
+
+                            if (_valaszolva && _aktualisKerdes != null) {
+                              if (opcio == _aktualisKerdes!.hal.nev) {
+                                gombSzin = Colors.green[800]!;
+                              } else if (opcio == _kivalasztottValasz) {
+                                gombSzin = Colors.red[800]!;
+                              }
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: gombSzin,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                onPressed: () => _valasztas(opcio),
+                                child: Text(opcio, style: const TextStyle(fontSize: 18, color: Colors.white)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.green[800]!),
-                      ),
-                      child: Center(
-                        child: _aktualisKerdes == null 
-                          ? const CircularProgressIndicator(color: Colors.greenAccent)
-                          : (_aktualisKerdes!.isKepes
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(15),
-                                  child: Image.file(
-                                    File(_aktualisKerdes!.tartalom), 
-                                    fit: BoxFit.contain, 
-                                    width: double.infinity, 
-                                    height: double.infinity,
-                                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 64, color: Colors.grey),
-                                  ),
-                                )
-                              : Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Builder(
-                                    builder: (context) {
-                                      String alapNev = _aktualisKerdes!.hal.nev.split(' (').first;
-                                      String cenzurazottLeiras = _aktualisKerdes!.tartalom
-                                          .replaceAll(RegExp(RegExp.escape(_aktualisKerdes!.hal.nev), caseSensitive: false), '[***]')
-                                          .replaceAll(RegExp(RegExp.escape(alapNev), caseSensitive: false), '[***]');
-                                      
-                                      return Text(
-                                        'Státusz: ${_aktualisKerdes!.hal.statusz}\n\nKategória: ${_aktualisKerdes!.hal.kategoria}\n\n$cenzurazottLeiras',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.white),
-                                      );
-                                    }
-                                  ),
-                                )),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  Expanded(
-                    flex: 3,
-                    child: ListView.builder(
-                      itemCount: _opciok.length,
-                      itemBuilder: (context, index) {
-                        String opcio = _opciok[index];
-                        Color gombSzin = const Color(0xFF1E1E1E);
-
-                        if (_valaszolva && _aktualisKerdes != null) {
-                          if (opcio == _aktualisKerdes!.hal.nev) {
-                            gombSzin = Colors.green[800]!;
-                          } else if (opcio == _kivalasztottValasz) {
-                            gombSzin = Colors.red[800]!;
-                          }
-                        }
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: gombSzin,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: () => _valasztas(opcio),
-                            child: Text(opcio, style: const TextStyle(fontSize: 18, color: Colors.white)),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
     );
   }
 }
